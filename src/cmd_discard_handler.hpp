@@ -27,8 +27,8 @@ public:
   CmdDiscardHandler(CmdDiscardHandler &&) = default;
   CmdDiscardHandler &operator=(CmdDiscardHandler &&) = default;
 
-  int handle(ublk_cmd_discard cmd [[maybe_unused]]) noexcept override {
-    discarder_->handle(-1, ublk_cmd_discard_get_sz(&cmd));
+  int handle(ublk_cmd_discard cmd) noexcept override {
+    discarder_->handle(ublk_cmd_discard_get_offset(&cmd), ublk_cmd_discard_get_sz(&cmd));
     return 0;
   }
 

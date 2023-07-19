@@ -20,7 +20,8 @@ inline std::ostream &operator<<(std::ostream &out, ublk_cmd_discard cmd) {
       cfq::container_of(&cmd, &decltype(ublk_cmd::u)::d), &ublk_cmd::u);
   out << fmt::format("cmd: DISCARD [ id={}, op={}, fl={} off={} sz={} ]",
                      ublk_cmd_get_id(&base), ublk_cmd_get_op(&base),
-                     ublk_cmd_get_fl(&base), -1, ublk_cmd_discard_get_sz(&cmd));
+                     ublk_cmd_get_fl(&base), ublk_cmd_discard_get_offset(&cmd),
+                     ublk_cmd_discard_get_sz(&cmd));
   return out;
 }
 
