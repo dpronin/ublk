@@ -1,0 +1,13 @@
+[requires]
+boost/[~1.82]
+fmt/[~10.0]
+spdlog/[~1.11]
+libnl/[~3.2]
+readline/[~8.1]
+
+[generators]
+CMakeToolchain
+CMakeDeps
+
+[layout]
+cmake_layout
