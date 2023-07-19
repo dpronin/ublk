@@ -24,7 +24,7 @@ public:
   ReadHandler(ReadHandler &&) = default;
   ReadHandler &operator=(ReadHandler &&) = default;
 
-  int handle(std::span<std::byte> buf, __off64_t offset) noexcept override {
+  ssize_t handle(std::span<std::byte> buf, __off64_t offset) noexcept override {
     if (auto const res = ::pread64(*fd_, buf.data(), buf.size(), offset);
         res > 0) [[likely]] {
       return res;

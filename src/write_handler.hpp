@@ -24,8 +24,8 @@ public:
   WriteHandler(WriteHandler &&) = default;
   WriteHandler &operator=(WriteHandler &&) = default;
 
-  int handle(std::span<std::byte const> buf,
-             __off64_t offset) noexcept override {
+  ssize_t handle(std::span<std::byte const> buf,
+                 __off64_t offset) noexcept override {
     if (auto const res = ::pwrite64(*fd_, buf.data(), buf.size(), offset);
         res >= 0) [[likely]] {
 

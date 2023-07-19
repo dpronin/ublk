@@ -2,7 +2,8 @@
 
 #include <cstddef>
 
-#include <linux/types.h>
+#include <bits/types.h>
+#include <sys/types.h>
 
 #include <span>
 
@@ -10,5 +11,5 @@
 
 namespace cfq {
 using IWriteHandler =
-    IHandler<int(std::span<std::byte const>, __off64_t) noexcept>;
+    IHandler<ssize_t(std::span<std::byte const>, __off64_t) noexcept>;
 } // namespace cfq

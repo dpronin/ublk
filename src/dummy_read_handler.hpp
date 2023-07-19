@@ -15,8 +15,8 @@ public:
   DummyReadHandler(DummyReadHandler &&) = default;
   DummyReadHandler &operator=(DummyReadHandler &&) = default;
 
-  int handle(std::span<std::byte> buf,
-             __off64_t offset [[maybe_unused]]) noexcept override {
+  ssize_t handle(std::span<std::byte> buf,
+                 __off64_t offset [[maybe_unused]]) noexcept override {
     return buf.size();
   }
 };
