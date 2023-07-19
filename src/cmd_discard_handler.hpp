@@ -1,0 +1,38 @@
+#pragma once
+
+#include <cassert>
+#include <cstddef>
+
+#include <memory>
+#include <utility>
+
+#include <linux/ublk/cmd.h>
+
+#include "discard_handler_interface.hpp"
+#include "handler_interface.hpp"
+
+namespace cfq {
+
+class CmdDiscardHandler : public IHandler<int(ublk_cmd_discard) noexcept> {
+public:
+  explicit CmdDiscardHandler(std::shared_ptr<IDiscardHandler> discarder)
+      : discarder_(std::move(discarder)) {
+    assert(discarder_);
+  }
+  ~CmdDiscardHandler() override = default;
+
+  CmdDiscardHandler(CmdDiscardHandler const &) = default;
+  CmdDiscardHandler &operator=(CmdDiscardHandler const &) = default;
+
+  CmdDiscardHandler(CmdDiscardHandler &&) = default;
+  CmdDiscardHandler &operator=(CmdDiscardHandler &&) = default;
+
+  int handle(ublk_cmd_discard cmd [[maybe_unused]]) noexcept override {
+    return discarder_->handle(-1, ublk_cmd_discard_get_sz(&cmd));
+  }
+
+private:
+  std::shared_ptr<IDiscardHandler> discarder_;
+};
+
+} // namespace cfq

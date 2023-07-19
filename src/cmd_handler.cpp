@@ -30,18 +30,19 @@ CmdHandler::CmdHandler(
 
   assert(acknowledger_);
 
+  for (auto &[op, h] : maphs) {
+    assert(op < std::size(hs_));
+    hs_[op] = std::move(h);
+  }
+
   /* clang-format off */
   static auto cmdh_not_supp = CmdHandlerNotSupp{};
   static auto const sp_cmdh_not_supp =
       std::shared_ptr<IHandler<int(ublk_cmd) noexcept>>{&cmdh_not_supp, [](auto *p) {}};
   /* clang-format on */
 
-  std::ranges::fill(hs_, sp_cmdh_not_supp);
-
-  for (auto &[op, h] : maphs) {
-    assert(op < std::size(hs_));
-    hs_[op] = std::move(h);
-  }
+  std::ranges::transform(hs_, std::begin(hs_),
+                         [](auto &&h) { return h ?: sp_cmdh_not_supp; });
 }
 
 int CmdHandler::handle(ublk_cmd cmd) noexcept {

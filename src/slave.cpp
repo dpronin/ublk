@@ -29,6 +29,8 @@
 
 #include "cmd_acknowledger.hpp"
 #include "cmd_handler_factory.hpp"
+#include "discard_handler_interface.hpp"
+#include "dummy_discard_handler.hpp"
 #include "dummy_flush_handler.hpp"
 #include "dummy_read_handler.hpp"
 #include "dummy_write_handler.hpp"
@@ -171,6 +173,7 @@ void run(cli::bdev_create_param const &param) {
   auto reader = std::shared_ptr<IReadHandler>{};
   auto writer = std::shared_ptr<IWriteHandler>{};
   auto flusher = std::shared_ptr<IFlushHandler>{};
+  auto discarder = std::shared_ptr<IDiscardHandler>{};
 
   if (param.target != "dummy") {
     auto fd_target = std::shared_ptr{open(param.target, O_RDWR | O_CREAT)};
@@ -184,6 +187,7 @@ void run(cli::bdev_create_param const &param) {
     reader = std::make_shared<DummyReadHandler>();
     writer = std::make_shared<DummyWriteHandler>();
     flusher = std::make_shared<DummyFlushHandler>();
+    discarder = std::make_shared<DummyDiscardHandler>();
   }
 
   auto fd_notify = uptrwd<const int>{};
@@ -204,6 +208,7 @@ void run(cli::bdev_create_param const &param) {
   auto handler = CmdHandlerFactory{}.create_unique(
       std::move(req.p_cellc), {req.p_cells.get(), req.cells_sz},
       std::move(reader), std::move(writer), std::move(flusher),
+      std::move(discarder),
       std::make_unique<CmdAcknowledger>(std::move(rsp.p_qcmd),
                                         std::move(fd_notify)));
 
