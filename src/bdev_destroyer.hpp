@@ -18,7 +18,9 @@ public:
     assert(master_);
   }
 
-  void handle(cli::bdev_destroy_param const &param) { master_->destroy(param); }
+  void handle(cli::bdev_destroy_param const &param) override {
+    master_->destroy(param);
+  }
 
 private:
   std::shared_ptr<Master> master_;
