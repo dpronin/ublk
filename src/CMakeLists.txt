@@ -43,7 +43,6 @@ add_executable(${PROJECT_NAME}
     cmd_handler.cpp
     cmd_handler.hpp
     cmd_handler_factory.hpp
-    cmd_handler_interface.hpp
     cmd_handler_not_supp.hpp
     cmd_op_err_handler.hpp
     cmd_read_handler.cpp

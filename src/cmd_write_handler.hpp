@@ -8,12 +8,12 @@
 #include <linux/ublk/cellc.h>
 #include <linux/ublk/cmd.h>
 
-#include "cmd_handler_interface.hpp"
+#include "handler_interface.hpp"
 #include "write_handler_interface.hpp"
 
 namespace cfq {
 
-class CmdWriteHandler : public ICmdHandler<const ublk_cmd_write> {
+class CmdWriteHandler : public IHandler<int(ublk_cmd_write) noexcept> {
 public:
   explicit CmdWriteHandler(std::shared_ptr<ublk_cellc const> cellc,
                            std::span<std::byte const> cells,
@@ -26,7 +26,7 @@ public:
   CmdWriteHandler(CmdWriteHandler &&) = default;
   CmdWriteHandler &operator=(CmdWriteHandler &&) = default;
 
-  int handle(ublk_cmd_write const &cmd) noexcept override;
+  int handle(ublk_cmd_write cmd) noexcept override;
 
 private:
   std::shared_ptr<ublk_cellc const> cellc_;

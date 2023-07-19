@@ -12,11 +12,10 @@
 
 #include <linux/ublk/cmd.h>
 
-#include "cmd_handler_interface.hpp"
+#include "handler_interface.hpp"
 #include "utility.hpp"
 
-inline std::ostream &operator<<(std::ostream &out,
-                                struct ublk_cmd_flush const &cmd) {
+inline std::ostream &operator<<(std::ostream &out, ublk_cmd_flush cmd) {
   auto const &base = *cfq::container_of(
       cfq::container_of(&cmd, &decltype(ublk_cmd::u)::f), &ublk_cmd::u);
   out << fmt::format("cmd: FLUSH [ id={}, op={}, fl={} ]",
@@ -27,7 +26,7 @@ inline std::ostream &operator<<(std::ostream &out,
 
 template <>
 struct fmt::formatter<ublk_cmd_flush> : fmt::formatter<std::string> {
-  decltype(auto) format(ublk_cmd_flush const &cmd, format_context &ctx) {
+  decltype(auto) format(ublk_cmd_flush cmd, format_context &ctx) {
     std::ostringstream oss;
     oss << cmd;
     return format_to(ctx.out(), "{}", oss.str());
@@ -36,10 +35,10 @@ struct fmt::formatter<ublk_cmd_flush> : fmt::formatter<std::string> {
 
 namespace cfq {
 
-class CmdFlushHandlerAdaptor : public ICmdHandler<const ublk_cmd> {
+class CmdFlushHandlerAdaptor : public IHandler<int(ublk_cmd) noexcept> {
 public:
   explicit CmdFlushHandlerAdaptor(
-      std::shared_ptr<ICmdHandler<const ublk_cmd_flush>> handler)
+      std::shared_ptr<IHandler<int(ublk_cmd_flush) noexcept>> handler)
       : handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -51,14 +50,14 @@ public:
   CmdFlushHandlerAdaptor(CmdFlushHandlerAdaptor &&) = default;
   CmdFlushHandlerAdaptor &operator=(CmdFlushHandlerAdaptor &&) = default;
 
-  int handle(ublk_cmd const &cmd) noexcept override {
+  int handle(ublk_cmd cmd) noexcept override {
     assert(UBLK_CMD_OP_FLUSH == ublk_cmd_get_op(&cmd));
     spdlog::debug("process {}", cmd.u.f);
     return handler_->handle(cmd.u.f);
   }
 
 private:
-  std::shared_ptr<ICmdHandler<const ublk_cmd_flush>> handler_;
+  std::shared_ptr<IHandler<int(ublk_cmd_flush) noexcept>> handler_;
 };
 
 } // namespace cfq

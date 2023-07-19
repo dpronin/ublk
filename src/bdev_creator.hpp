@@ -17,6 +17,13 @@ public:
       : master_(std::move(master)) {
     assert(master_);
   }
+  ~BdevCreator() override = default;
+
+  BdevCreator(BdevCreator const &) = default;
+  BdevCreator &operator=(BdevCreator const &) = default;
+
+  BdevCreator(BdevCreator &&) = default;
+  BdevCreator &operator=(BdevCreator &&) = default;
 
   void handle(cli::bdev_create_param const &param) override {
     master_->create(param);

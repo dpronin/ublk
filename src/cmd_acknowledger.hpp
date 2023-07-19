@@ -4,13 +4,13 @@
 
 #include <linux/ublk/cmd_ack.h>
 
-#include "cmd_handler_interface.hpp"
+#include "handler_interface.hpp"
 #include "mem.hpp"
 #include "qublkcmd.hpp"
 
 namespace cfq {
 
-class CmdAcknowledger : public ICmdHandler<const ublk_cmd_ack> {
+class CmdAcknowledger : public IHandler<int(ublk_cmd_ack) noexcept> {
 public:
   explicit CmdAcknowledger(std::unique_ptr<qublkcmd_ack_t> qcmd_ack,
                            uptrwd<const int> fd_notify);
@@ -22,7 +22,7 @@ public:
   CmdAcknowledger(CmdAcknowledger &&) = default;
   CmdAcknowledger &operator=(CmdAcknowledger &&) = default;
 
-  int handle(ublk_cmd_ack const &cmd) noexcept override;
+  int handle(ublk_cmd_ack cmd) noexcept override;
 
 private:
   std::unique_ptr<qublkcmd_ack_t> qcmd_ack_;

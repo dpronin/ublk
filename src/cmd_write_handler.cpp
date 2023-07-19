@@ -17,7 +17,7 @@ CmdWriteHandler::CmdWriteHandler(std::shared_ptr<ublk_cellc const> cellc,
   assert(writer_);
 }
 
-int CmdWriteHandler::handle(ublk_cmd_write const &cmd) noexcept {
+int CmdWriteHandler::handle(ublk_cmd_write cmd) noexcept {
   auto celldn = ublk_cmd_write_get_fcdn(&cmd);
   auto cellds_left = ublk_cmd_write_get_cds_nr(&cmd);
   if (cellds_left > 0 && celldn < cellc_->cellds_len) [[likely]] {

@@ -33,7 +33,7 @@
 namespace cfq {
 
 int handler(qublkcmd_t &qcmd, evpaths_t const &evpaths,
-            ICmdHandler<const ublk_cmd> &handler) {
+            IHandler<int(ublk_cmd) noexcept> &handler) {
   enum {
     EV_FD_EPOLL,
     EV_FD_LISTEN,

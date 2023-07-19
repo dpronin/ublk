@@ -23,8 +23,9 @@
 namespace cfq {
 
 CmdHandler::CmdHandler(
-    std::map<ublk_cmd_op, std::shared_ptr<ICmdHandler<const ublk_cmd>>> maphs,
-    std::shared_ptr<ICmdHandler<const ublk_cmd_ack>> acknowledger)
+    std::map<ublk_cmd_op, std::shared_ptr<IHandler<int(ublk_cmd) noexcept>>>
+        maphs,
+    std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger)
     : acknowledger_(std::move(acknowledger)) {
 
   assert(acknowledger_);
@@ -32,7 +33,7 @@ CmdHandler::CmdHandler(
   /* clang-format off */
   static auto cmdh_not_supp = CmdHandlerNotSupp{};
   static auto const sp_cmdh_not_supp =
-      std::shared_ptr<ICmdHandler<const ublk_cmd>>{&cmdh_not_supp, [](auto *p) {}};
+      std::shared_ptr<IHandler<int(ublk_cmd) noexcept>>{&cmdh_not_supp, [](auto *p) {}};
   /* clang-format on */
 
   std::ranges::fill(hs_, sp_cmdh_not_supp);
@@ -43,7 +44,7 @@ CmdHandler::CmdHandler(
   }
 }
 
-int CmdHandler::handle(ublk_cmd const &cmd) noexcept {
+int CmdHandler::handle(ublk_cmd cmd) noexcept {
   auto const op = ublk_cmd_get_op(&cmd);
   auto const hid = std::min(static_cast<size_t>(op), std::size(hs_) - 1);
 

@@ -17,6 +17,13 @@ public:
       : master_(std::move(master)) {
     assert(master_);
   }
+  ~BdevDestroyer() override = default;
+
+  BdevDestroyer(BdevDestroyer const &) = default;
+  BdevDestroyer &operator=(BdevDestroyer const &) = default;
+
+  BdevDestroyer(BdevDestroyer &&) = default;
+  BdevDestroyer &operator=(BdevDestroyer &&) = default;
 
   void handle(cli::bdev_destroy_param const &param) override {
     master_->destroy(param);

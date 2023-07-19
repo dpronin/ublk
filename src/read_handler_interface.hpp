@@ -6,20 +6,8 @@
 
 #include <span>
 
+#include "handler_interface.hpp"
+
 namespace cfq {
-
-class IReadHandler {
-public:
-  IReadHandler() = default;
-  virtual ~IReadHandler() = default;
-
-  IReadHandler(IReadHandler const &) = default;
-  IReadHandler &operator=(IReadHandler const &) = default;
-
-  IReadHandler(IReadHandler &&) = default;
-  IReadHandler &operator=(IReadHandler &&) = default;
-
-  virtual int handle(std::span<std::byte> buf, __off64_t offset) noexcept = 0;
-};
-
+using IReadHandler = IHandler<int(std::span<std::byte>, __off64_t) noexcept>;
 } // namespace cfq

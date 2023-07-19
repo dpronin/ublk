@@ -17,7 +17,7 @@ CmdReadHandler::CmdReadHandler(std::shared_ptr<ublk_cellc const> cellc,
   assert(reader_);
 }
 
-int CmdReadHandler::handle(ublk_cmd_read const &cmd) noexcept {
+int CmdReadHandler::handle(ublk_cmd_read cmd) noexcept {
   auto celldn = ublk_cmd_read_get_fcdn(&cmd);
   if (auto cellds_left = ublk_cmd_read_get_cds_nr(&cmd);
       cellds_left > 0 && celldn < cellc_->cellds_len) [[likely]] {

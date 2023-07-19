@@ -40,7 +40,7 @@ CmdAcknowledger::CmdAcknowledger(std::unique_ptr<qublkcmd_ack_t> qcmd_ack,
   assert(fd_notify_);
 }
 
-int CmdAcknowledger::handle(ublk_cmd_ack const &cmd) noexcept {
+int CmdAcknowledger::handle(ublk_cmd_ack cmd) noexcept {
   spdlog::debug("acknowledging {}", cmd);
 
   while (!qcmd_ack_->push(cmd))

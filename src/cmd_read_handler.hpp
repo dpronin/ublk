@@ -8,12 +8,12 @@
 #include <linux/ublk/cellc.h>
 #include <linux/ublk/cmd.h>
 
-#include "cmd_handler_interface.hpp"
+#include "handler_interface.hpp"
 #include "read_handler_interface.hpp"
 
 namespace cfq {
 
-class CmdReadHandler : public ICmdHandler<const ublk_cmd_read> {
+class CmdReadHandler : public IHandler<int(ublk_cmd_read) noexcept> {
 public:
   explicit CmdReadHandler(std::shared_ptr<ublk_cellc const> cellc,
                           std::span<std::byte> cells,
@@ -26,7 +26,7 @@ public:
   CmdReadHandler(CmdReadHandler &&) = default;
   CmdReadHandler &operator=(CmdReadHandler &&) = default;
 
-  int handle(ublk_cmd_read const &cmd) noexcept override;
+  int handle(ublk_cmd_read cmd) noexcept override;
 
 private:
   std::shared_ptr<ublk_cellc const> cellc_;

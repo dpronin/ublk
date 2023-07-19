@@ -12,11 +12,10 @@
 
 #include <linux/ublk/cmd.h>
 
-#include "cmd_handler_interface.hpp"
+#include "handler_interface.hpp"
 #include "utility.hpp"
 
-inline std::ostream &operator<<(std::ostream &out,
-                                struct ublk_cmd_write const &cmd) {
+inline std::ostream &operator<<(std::ostream &out, ublk_cmd_write cmd) {
   auto const &base = *cfq::container_of(
       cfq::container_of(&cmd, &decltype(ublk_cmd::u)::w), &ublk_cmd::u);
   out << fmt::format(
@@ -29,7 +28,7 @@ inline std::ostream &operator<<(std::ostream &out,
 
 template <>
 struct fmt::formatter<ublk_cmd_write> : fmt::formatter<std::string> {
-  decltype(auto) format(ublk_cmd_write const &cmd, format_context &ctx) {
+  decltype(auto) format(ublk_cmd_write cmd, format_context &ctx) {
     std::ostringstream oss;
     oss << cmd;
     return format_to(ctx.out(), "{}", oss.str());
@@ -38,10 +37,10 @@ struct fmt::formatter<ublk_cmd_write> : fmt::formatter<std::string> {
 
 namespace cfq {
 
-class CmdWriteHandlerAdaptor : public ICmdHandler<const ublk_cmd> {
+class CmdWriteHandlerAdaptor : public IHandler<int(ublk_cmd) noexcept> {
 public:
   explicit CmdWriteHandlerAdaptor(
-      std::shared_ptr<ICmdHandler<const ublk_cmd_write>> handler)
+      std::shared_ptr<IHandler<int(ublk_cmd_write) noexcept>> handler)
       : handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -53,14 +52,14 @@ public:
   CmdWriteHandlerAdaptor(CmdWriteHandlerAdaptor &&) = default;
   CmdWriteHandlerAdaptor &operator=(CmdWriteHandlerAdaptor &&) = default;
 
-  int handle(ublk_cmd const &cmd) noexcept override {
+  int handle(ublk_cmd cmd) noexcept override {
     assert(UBLK_CMD_OP_WRITE == ublk_cmd_get_op(&cmd));
     spdlog::debug("process {}", cmd.u.w);
     return handler_->handle(cmd.u.w);
   }
 
 private:
-  std::shared_ptr<ICmdHandler<const ublk_cmd_write>> handler_;
+  std::shared_ptr<IHandler<int(ublk_cmd_write) noexcept>> handler_;
 };
 
 } // namespace cfq

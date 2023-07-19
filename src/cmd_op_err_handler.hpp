@@ -2,11 +2,12 @@
 
 #include <linux/ublk/cmd.h>
 
-#include "cmd_handler_interface.hpp"
+#include "handler_interface.hpp"
 
 namespace cfq {
 
-template <int eVal> class CmdOpErrHandler : public ICmdHandler<const ublk_cmd> {
+template <int eVal>
+class CmdOpErrHandler : public IHandler<int(ublk_cmd) noexcept> {
 public:
   CmdOpErrHandler() = default;
   ~CmdOpErrHandler() override = default;
@@ -17,7 +18,7 @@ public:
   CmdOpErrHandler(CmdOpErrHandler &&) = default;
   CmdOpErrHandler &operator=(CmdOpErrHandler &&) = default;
 
-  int handle(ublk_cmd const &cmd [[maybe_unused]]) noexcept override {
+  int handle(ublk_cmd cmd [[maybe_unused]]) noexcept override {
     return eVal;
   }
 };

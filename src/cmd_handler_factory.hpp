@@ -12,13 +12,13 @@
 #include "cmd_flush_handler.hpp"
 #include "cmd_flush_handler_adaptor.hpp"
 #include "cmd_handler.hpp"
-#include "cmd_handler_interface.hpp"
 #include "cmd_read_handler.hpp"
 #include "cmd_read_handler_adaptor.hpp"
 #include "cmd_write_handler.hpp"
 #include "cmd_write_handler_adaptor.hpp"
 #include "factory_unique_interface.hpp"
 #include "flush_handler_interface.hpp"
+#include "handler_interface.hpp"
 #include "mem.hpp"
 #include "read_handler_interface.hpp"
 #include "rvwrap.hpp"
@@ -27,21 +27,32 @@
 namespace cfq {
 
 class CmdHandlerFactory
-    : public IFactoryUnique<rvwrap<ICmdHandler<const ublk_cmd>>(
+    : public IFactoryUnique<rvwrap<IHandler<int(ublk_cmd) noexcept>>(
           std::shared_ptr<ublk_cellc const>, std::span<std::byte>,
           std::shared_ptr<IReadHandler>, std::shared_ptr<IWriteHandler>,
           std::shared_ptr<IFlushHandler>,
-          std::shared_ptr<ICmdHandler<const ublk_cmd_ack>>)> {
+          std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>>)> {
 public:
-  std::unique_ptr<ICmdHandler<const ublk_cmd>> create_unique(
+  CmdHandlerFactory() = default;
+  ~CmdHandlerFactory() override = default;
+
+  CmdHandlerFactory(CmdHandlerFactory const &) = default;
+  CmdHandlerFactory &operator=(CmdHandlerFactory const &) = default;
+
+  CmdHandlerFactory(CmdHandlerFactory &&) = default;
+  CmdHandlerFactory &operator=(CmdHandlerFactory &&) = default;
+
+  std::unique_ptr<IHandler<int(ublk_cmd) noexcept>> create_unique(
       std::shared_ptr<ublk_cellc const> cellc, std::span<std::byte> cells,
       std::shared_ptr<IReadHandler> reader,
       std::shared_ptr<IWriteHandler> writer,
       std::shared_ptr<IFlushHandler> flusher,
-      std::shared_ptr<ICmdHandler<const ublk_cmd_ack>> acknowledger) override {
+      std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger)
+      override {
 
     auto hs =
-        std::map<ublk_cmd_op, std::shared_ptr<ICmdHandler<const ublk_cmd>>>{
+        std::map<ublk_cmd_op,
+                 std::shared_ptr<IHandler<int(ublk_cmd) noexcept>>>{
             {
                 UBLK_CMD_OP_READ,
                 std::make_unique<CmdReadHandlerAdaptor>(
