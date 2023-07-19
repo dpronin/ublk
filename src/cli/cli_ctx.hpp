@@ -14,7 +14,7 @@
 #include "cmd_state.hpp"
 #include "readline.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CliCtx final {
 public:
@@ -60,4 +60,4 @@ private:
   std::shared_ptr<CmdState> state_;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

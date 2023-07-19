@@ -37,7 +37,7 @@ Master::~Master() {
   }
 }
 
-void Master::create(bdev_create_param const &param) {
+void Master::create(cli::bdev_create_param const &param) {
   auto nl_sock = genl::sock_open();
   auto msg = genl::msg_alloc();
 
@@ -62,7 +62,7 @@ void Master::create(bdev_create_param const &param) {
   }
 }
 
-void Master::destroy(bdev_destroy_param const &param) {
+void Master::destroy(cli::bdev_destroy_param const &param) {
   auto nl_sock = genl::sock_open();
   auto msg = genl::msg_alloc();
 

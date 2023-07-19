@@ -7,7 +7,7 @@
 
 #include "cmd_interface.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CmdQuit final : public ICmd {
 public:
@@ -22,4 +22,4 @@ private:
   std::shared_ptr<bool> finish_token_;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

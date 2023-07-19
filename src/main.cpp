@@ -5,28 +5,33 @@
 #include <memory>
 #include <string>
 
-#include "cli_ctx.hpp"
-#include "cmd_invoker.hpp"
-#include "color.hpp"
-#include "main_state.hpp"
+#include "cli/cli_ctx.hpp"
+#include "cli/cmd_invoker.hpp"
+#include "cli/color.hpp"
+#include "cli/main_state.hpp"
+#include "cli/readline.hpp"
+
+#include "bdev_creator.hpp"
+#include "bdev_destroyer.hpp"
 #include "master.hpp"
-#include "readline.hpp"
 
 using namespace cfq;
 
 int main(int argc, char const *argv[]) {
   auto master = std::make_shared<Master>();
   auto finish_token = std::make_shared<bool>(false);
-  auto ctx = std::make_shared<CliCtx>(
-      Readline::instance(), finish_token,
-      std::make_unique<MainState>(master, finish_token));
-  for (CmdInvoker invoker{ctx}; invoker;) {
+  auto ctx = std::make_shared<cli::CliCtx>(
+      cli::Readline::instance(), finish_token,
+      std::make_unique<cli::MainState>(std::make_unique<BdevCreator>(master),
+                                       std::make_unique<BdevDestroyer>(master),
+                                       finish_token));
+  for (cli::CmdInvoker invoker{ctx}; invoker;) {
     try {
       invoker(ctx->ureadcmd());
     } catch (std::exception const &ex) {
-      std::cerr << cred(ex.what()) << '\n';
+      std::cerr << cli::cred(ex.what()) << '\n';
     } catch (...) {
-      std::cerr << cred("unknown error occurred") << '\n';
+      std::cerr << cli::cred("unknown error occurred") << '\n';
       break;
     }
   }

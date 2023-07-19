@@ -15,7 +15,7 @@
 
 #include "cmd_state.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CmdInvoker final {
 public:
@@ -34,4 +34,4 @@ private:
   std::shared_ptr<CliCtx> ctx_;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

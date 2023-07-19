@@ -5,20 +5,39 @@ find_package(spdlog REQUIRED)
 find_package(Boost REQUIRED COMPONENT headers)
 
 add_executable(${PROJECT_NAME}
-    bdev_create_param.hpp
-    bdev_destroy_param.hpp
+    bdev_creator.hpp
+    bdev_destroyer.hpp
     cfq_base.hpp
     cfq_popper.hpp
     cfq_pos.hpp
     cfq_pusher.hpp
-    cli_ctx.hpp
-    cli_state.hpp
-    cmd.hpp
+    cli/bdev_create_param.hpp
+    cli/bdev_creator_interface.hpp
+    cli/bdev_destroy_param.hpp
+    cli/bdev_destroyer_interface.hpp
+    cli/cli_ctx.hpp
+    cli/cli_state.hpp
+    cli/cmd.hpp
+    cli/cmd_args.hpp
+    cli/cmd_bdev_create.hpp
+    cli/cmd_bdev_destroy.hpp
+    cli/cmd_help.hpp
+    cli/cmd_interface.hpp
+    cli/cmd_invoker.hpp
+    cli/cmd_parser_default.cpp
+    cli/cmd_parser_default.hpp
+    cli/cmd_parser_interface.hpp
+    cli/cmd_quit.hpp
+    cli/cmd_state.hpp
+    cli/color.hpp
+    cli/main_state.cpp
+    cli/main_state.hpp
+    cli/readline.cpp
+    cli/readline.hpp
+    cli/suggestions_lister_interface.hpp
+    cli/types.hpp
     cmd_acknowledger.cpp
     cmd_acknowledger.hpp
-    cmd_args.hpp
-    cmd_bdev_create.hpp
-    cmd_bdev_destroy.hpp
     cmd_flush_handler.hpp
     cmd_flush_handler_adaptor.hpp
     cmd_handler.cpp
@@ -26,22 +45,13 @@ add_executable(${PROJECT_NAME}
     cmd_handler_factory.hpp
     cmd_handler_interface.hpp
     cmd_handler_not_supp.hpp
-    cmd_help.hpp
-    cmd_interface.hpp
-    cmd_invoker.hpp
     cmd_op_err_handler.hpp
-    cmd_parser_default.cpp
-    cmd_parser_default.hpp
-    cmd_parser_interface.hpp
-    cmd_quit.hpp
     cmd_read_handler.cpp
     cmd_read_handler.hpp
     cmd_read_handler_adaptor.hpp
-    cmd_state.hpp
     cmd_write_handler.cpp
     cmd_write_handler.hpp
     cmd_write_handler_adaptor.hpp
-    color.hpp
     dummy_flush_handler.hpp
     dummy_read_handler.hpp
     dummy_write_handler.hpp
@@ -51,22 +61,14 @@ add_executable(${PROJECT_NAME}
     handler.cpp
     handler.hpp
     main.cpp
-    main_state.cpp
-    main_state.hpp
     master.cpp
     master.hpp
     qublkcmd.hpp
     read_handler.hpp
     read_handler_interface.hpp
-    readline.cpp
-    readline.hpp
     slave.cpp
     slave.hpp
-    suggestions_lister_interface.hpp
     sysfs_attr.hpp
-    types.hpp
-    uread.hpp
-    utility.hpp
     write_handler.hpp
     write_handler_interface.hpp
 )

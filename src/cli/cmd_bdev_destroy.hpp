@@ -11,15 +11,16 @@
 #include "cmd_args.hpp"
 #include "cmd_interface.hpp"
 
-#include "master.hpp"
+#include "bdev_destroy_param.hpp"
+#include "bdev_destroyer_interface.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CmdBdevDestroy final : public Cmd {
 public:
-  explicit CmdBdevDestroy(CmdArgs args, std::shared_ptr<Master> master)
-      : Cmd(std::move(args)), master_(std::move(master)) {
-    assert(master_);
+  explicit CmdBdevDestroy(CmdArgs args, std::shared_ptr<IBdevDestroyer> handler)
+      : Cmd(std::move(args)), handler_(std::move(handler)) {
+    assert(handler_);
   }
 
   void exec() override {
@@ -31,11 +32,11 @@ public:
       return;
     }
 
-    master_->destroy(param);
+    handler_->handle(param);
   }
 
 private:
-  std::shared_ptr<Master> master_;
+  std::shared_ptr<IBdevDestroyer> handler_;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

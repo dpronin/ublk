@@ -2,10 +2,8 @@
 
 #include <string>
 
-namespace cfq {
-
+namespace cfq::cli {
 struct bdev_destroy_param {
   std::string bdev_suffix;
 };
-
-} // namespace cfq
+} // namespace cfq::cli

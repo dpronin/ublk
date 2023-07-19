@@ -2,7 +2,7 @@
 
 #include "types.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class ISuggestionsLister {
 public:
@@ -18,4 +18,4 @@ public:
   [[nodiscard]] virtual suggestions_t suggestions() const = 0;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

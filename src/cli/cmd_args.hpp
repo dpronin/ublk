@@ -6,7 +6,7 @@
 
 #include "types.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CmdArgs {
   args_t args_;
@@ -34,4 +34,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace cfq::cli

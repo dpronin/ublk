@@ -14,7 +14,7 @@
 
 #include "types.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class Readline {
   std::shared_ptr<ISuggestionsLister> suggester_;
@@ -37,4 +37,4 @@ private:
   }
 };
 
-} // namespace cfq
+} // namespace cfq::cli

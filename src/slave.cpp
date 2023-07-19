@@ -48,10 +48,9 @@ using mem_bytes_t = cfq::mem_t<std::byte>;
 
 } // namespace
 
-namespace cfq {
-namespace slave {
+namespace cfq::slave {
 
-void run(bdev_create_param const &param) {
+void run(cli::bdev_create_param const &param) {
   auto const page_size = boost::interprocess::mapped_region::get_page_size();
 
   auto maps_rng =
@@ -215,5 +214,4 @@ void run(bdev_create_param const &param) {
   _exit(r);
 }
 
-} // namespace slave
-} // namespace cfq
+} // namespace cfq::slave

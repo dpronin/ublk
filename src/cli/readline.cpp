@@ -13,7 +13,7 @@
 
 #include "types.hpp"
 
-using namespace cfq;
+using namespace cfq::cli;
 
 namespace {
 

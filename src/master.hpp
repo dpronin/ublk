@@ -6,8 +6,8 @@
 #include <string_view>
 #include <unordered_set>
 
-#include "bdev_create_param.hpp"
-#include "bdev_destroy_param.hpp"
+#include "cli/bdev_create_param.hpp"
+#include "cli/bdev_destroy_param.hpp"
 
 namespace cfq {
 
@@ -22,8 +22,8 @@ public:
   Master(Master &&) = delete;
   Master &operator=(Master &&) = delete;
 
-  void create(bdev_create_param const &param);
-  void destroy(bdev_destroy_param const &param);
+  void create(cli::bdev_create_param const &param);
+  void destroy(cli::bdev_destroy_param const &param);
 
 private:
   std::unordered_set<pid_t> children_;

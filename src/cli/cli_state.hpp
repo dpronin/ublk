@@ -4,7 +4,7 @@
 
 #include "types.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CliState : public ISuggestionsLister {
 public:
@@ -20,4 +20,4 @@ public:
   [[nodiscard]] virtual prompt_t prompt() const = 0;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

@@ -10,7 +10,7 @@
 #include "cmd_parser_default.hpp"
 #include "types.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CmdState : public CliState {
 private:
@@ -51,4 +51,4 @@ private:
   std::unique_ptr<ICmdParser> parser_;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

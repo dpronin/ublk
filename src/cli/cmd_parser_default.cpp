@@ -11,7 +11,7 @@
 #include "types.hpp"
 #include "utility.hpp"
 
-using namespace cfq;
+using namespace cfq::cli;
 
 CmdParserDefault::CmdParserDefault(cmds_t cmds /* = {}*/)
     : cmds_(std::move(cmds)) {}

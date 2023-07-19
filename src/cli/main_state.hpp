@@ -2,15 +2,17 @@
 
 #include <memory>
 
+#include "bdev_creator_interface.hpp"
+#include "bdev_destroyer_interface.hpp"
 #include "cmd_state.hpp"
-#include "master.hpp"
 #include "types.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class MainState : public CmdState {
 public:
-  explicit MainState(std::shared_ptr<Master> master,
+  explicit MainState(std::shared_ptr<IBdevCreator> bdev_creator,
+                     std::shared_ptr<IBdevDestroyer> bdev_destroyer,
                      std::shared_ptr<bool> finish_token);
   ~MainState() override = default;
 
@@ -26,4 +28,4 @@ protected:
   [[nodiscard]] std::string default_colored(std::string_view input) const;
 };
 
-} // namespace cfq
+} // namespace cfq::cli

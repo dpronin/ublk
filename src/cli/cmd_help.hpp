@@ -15,7 +15,7 @@
 #include "color.hpp"
 #include "types.hpp"
 
-namespace cfq {
+namespace cfq::cli {
 
 class CmdHelp final : public ICmd {
   std::ostream &out_;
@@ -63,4 +63,4 @@ inline cmds_t cmds_with_help(cmds_t cmds) {
   return cmds;
 }
 
-} // namespace cfq
+} // namespace cfq::cli
