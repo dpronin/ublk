@@ -50,6 +50,9 @@ void Master::create(cli::bdev_create_param const &param) {
   nla_put_u64(msg.get(), UBLK_GENL_BDEV_ATTR_CAPACITY_SECTORS,
               param.capacity_sectors);
 
+  if (param.read_only)
+    nla_put_flag(msg.get(), UBLK_GENL_BDEV_ATTR_READ_ONLY);
+
   genl::auto_send(*nl_sock, *msg);
 
   nl_sock.reset();

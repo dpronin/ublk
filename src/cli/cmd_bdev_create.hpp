@@ -49,6 +49,9 @@ public:
       return;
     }
 
+    param.read_only =
+        boost::lexical_cast<bool>(args_.pop().value_or(std::string{"0"}));
+
     handler_->handle(param);
   }
 
