@@ -15,33 +15,29 @@
 
 using namespace cfq::cli;
 
-namespace {
-
-char *completion_generator(const char *text, int state) {
-  static suggestions_t matches;
-  static size_t match_idx = 0;
-  if (0 == state) {
-    matches.clear();
-    match_idx = 0;
-    /* clang-format off */
-    std::ranges::copy_if(Readline::instance().suggestions(), std::back_inserter(matches), [text](auto const &pattern) {
-        return pattern.starts_with(text);
-    });
-    /* clang-format on */
-  }
-  return match_idx < matches.size() ? ::strdup(matches[match_idx++].c_str())
-                                    : nullptr;
-}
-
-char **completer(const char *text, int /*start*/, int /*end*/) {
-  rl_attempted_completion_over = 1;
-  return rl_completion_matches(text, completion_generator);
-}
-
-} // namespace
-
 Readline &Readline::instance() {
-  static Readline rl{completer};
+  static Readline rl{
+      +[](const char *text, int /*start*/, int /*end*/) {
+        rl_attempted_completion_over = 1;
+        return rl_completion_matches(
+            text, +[](const char *text, int state) {
+              static suggestions_t matches;
+              static size_t match_idx = 0;
+              if (0 == state) {
+                matches.clear();
+                match_idx = 0;
+                std::ranges::copy_if(Readline::instance().suggestions(),
+                                     std::back_inserter(matches),
+                                     [text](auto const &pattern) {
+                                       return pattern.starts_with(text);
+                                     });
+              }
+              return match_idx < matches.size()
+                         ? ::strdup(matches[match_idx++].c_str())
+                         : nullptr;
+            });
+      },
+  };
   return rl;
 }
 
