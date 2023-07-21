@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
 
 #include <iostream>
 #include <memory>
 #include <utility>
 
+#include <boost/lexical_cast.hpp>
 #include <fmt/format.h>
 
 #include "cmd.hpp"
@@ -30,6 +32,13 @@ public:
     param.bdev_suffix = args_.pop().value_or(std::string{});
     if (param.bdev_suffix.empty()) {
       std::cerr << "bdev_suffix cannot be empty\n";
+      return;
+    }
+
+    param.capacity_sectors =
+        boost::lexical_cast<uint64_t>(args_.pop().value_or(std::string{"0"}));
+    if (!param.capacity_sectors) {
+      std::cerr << "capacity cannot be 0\n";
       return;
     }
 

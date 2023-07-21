@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <netlink/attr.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -43,8 +44,11 @@ void Master::create(cli::bdev_create_param const &param) {
 
   genlmsg_put(msg.get(), 0, 0, genl::resolve(*nl_sock), 0, 0,
               UBLK_GENL_BDEV_CMD_CREATE, 1);
+
   nla_put_string(msg.get(), UBLK_GENL_BDEV_ATTR_NAME_SUFFIX,
                  param.bdev_suffix.c_str());
+  nla_put_u64(msg.get(), UBLK_GENL_BDEV_ATTR_CAPACITY_SECTORS,
+              param.capacity_sectors);
 
   genl::auto_send(*nl_sock, *msg);
 
