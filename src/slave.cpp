@@ -17,7 +17,6 @@
 #include <linux/ublk/mapping.h>
 #include <linux/ublk/ublk.h>
 
-#include <boost/interprocess/mapped_region.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "qublkcmd.hpp"
@@ -25,21 +24,10 @@
 #include "file.hpp"
 #include "handler.hpp"
 #include "mem.hpp"
-#include "sysfs_attr.hpp"
 
 #include "cmd_acknowledger.hpp"
 #include "cmd_handler_factory.hpp"
-#include "discard_handler_interface.hpp"
-#include "dummy_discard_handler.hpp"
-#include "dummy_flush_handler.hpp"
-#include "dummy_read_handler.hpp"
-#include "dummy_write_handler.hpp"
-#include "flush_handler.hpp"
-#include "flush_handler_interface.hpp"
-#include "read_handler.hpp"
-#include "read_handler_interface.hpp"
-#include "write_handler.hpp"
-#include "write_handler_interface.hpp"
+#include "page.hpp"
 
 namespace {
 
@@ -52,9 +40,7 @@ using mem_bytes_t = cfq::mem_t<std::byte>;
 
 namespace cfq::slave {
 
-void run(cli::bdev_create_param const &param) {
-  auto const page_size = boost::interprocess::mapped_region::get_page_size();
-
+void run(slave_param const &param) {
   auto maps_rng =
       std::views::filter(
           std::filesystem::directory_iterator("/sys/block/" UBLK_PREFIX +
@@ -64,7 +50,7 @@ void run(cli::bdev_create_param const &param) {
                    dir_e.path().filename().string().starts_with("uio");
           }) |
       std::views::filter([](auto const &uio) {
-        auto const uio_name = get_sysfs_attr<std::string>(uio.path() / "name");
+        auto const uio_name = read_from_as<std::string>(uio.path() / "name");
         static std::initializer_list<const char *> dir_list{
             UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX,
             UBLK_UIO_USER_TO_KERNEL_DIR_SUFFIX,
@@ -101,7 +87,7 @@ void run(cli::bdev_create_param const &param) {
     std::ranges::copy(maps_in, std::back_inserter(maps));
 
   auto cellc_map_it = std::ranges::find_if(maps, [](auto const &map) {
-    return UBLK_UIO_MEM_CELLC_NAME == get_sysfs_attr<std::string>(map / "name");
+    return UBLK_UIO_MEM_CELLC_NAME == read_from_as<std::string>(map / "name");
   });
   if (std::ranges::end(maps) == cellc_map_it)
     throw std::runtime_error("no map with cell configuration");
@@ -114,15 +100,15 @@ void run(cli::bdev_create_param const &param) {
     auto const &sz_path = map / "size";
     auto const off_factor =
         boost::lexical_cast<unsigned>(map.filename().string().substr(3));
-    auto const map_name = get_sysfs_attr<std::string>(map / "name");
+    auto const map_name = read_from_as<std::string>(map / "name");
     auto const uio_sys_path = map.parent_path().parent_path();
     auto const uio_dev_path = "/dev" / uio_sys_path.filename();
-    auto const uio_name = get_sysfs_attr<std::string>(uio_sys_path / "name");
+    auto const uio_name = read_from_as<std::string>(uio_sys_path / "name");
     if (uio_name.ends_with(UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX)) {
       if (UBLK_UIO_MEM_CMDB_NAME == map_name) {
         auto cmdb = std::shared_ptr<ublk_cmdb const>{map_shared<ublk_cmdb>(
-            get_sysfs_attr<size_t>(sz_path, std::hex), PROT_READ,
-            off_factor * page_size, uio_dev_path)};
+            read_from_as<size_t>(sz_path, std::hex), PROT_READ,
+            off_factor * get_page_size(), uio_dev_path)};
         auto *p_cmdb_raw = cmdb.get();
 
         using TH = decltype(req.p_cellc->cmdb_head);
@@ -136,20 +122,20 @@ void run(cli::bdev_create_param const &param) {
         }};
       } else if (UBLK_UIO_MEM_CELLC_NAME == map_name) {
         req.p_cellc = map_shared<ublk_cellc const>(
-            get_sysfs_attr<size_t>(sz_path, std::hex), PROT_READ,
-            off_factor * page_size, uio_dev_path);
+            read_from_as<size_t>(sz_path, std::hex), PROT_READ,
+            off_factor * get_page_size(), uio_dev_path);
       } else if (UBLK_UIO_MEM_CELLS_NAME == map_name) {
-        req.cells_sz = get_sysfs_attr<size_t>(sz_path, std::hex);
+        req.cells_sz = read_from_as<size_t>(sz_path, std::hex);
         req.p_cells =
             map_shared<std::byte>(req.cells_sz, PROT_READ | PROT_WRITE,
-                                  off_factor * page_size, uio_dev_path);
+                                  off_factor * get_page_size(), uio_dev_path);
       }
       uio_devs[UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX] = uio_dev_path;
     } else {
       if (UBLK_UIO_MEM_CMDB_NAME == map_name) {
         auto cmdb = std::shared_ptr<ublk_cmdb_ack>{map_shared<ublk_cmdb_ack>(
-            get_sysfs_attr<size_t>(sz_path, std::hex), PROT_READ | PROT_WRITE,
-            off_factor * page_size, uio_dev_path)};
+            read_from_as<size_t>(sz_path, std::hex), PROT_READ | PROT_WRITE,
+            off_factor * get_page_size(), uio_dev_path)};
         auto *p_cmdb_raw = cmdb.get();
         auto *p_cellc_raw = req.p_cellc.get();
 
@@ -170,45 +156,19 @@ void run(cli::bdev_create_param const &param) {
   if (!req.p_qcmd || !req.p_cellc || !req.p_cells || !rsp.p_qcmd)
     _exit(EXIT_FAILURE);
 
-  auto reader = std::shared_ptr<IReadHandler>{};
-  auto writer = std::shared_ptr<IWriteHandler>{};
-  auto flusher = std::shared_ptr<IFlushHandler>{};
-  auto discarder = std::shared_ptr<IDiscardHandler>{};
-
-  if (param.target != "dummy") {
-    auto fd_target = std::shared_ptr{open(param.target, O_RDWR | O_CREAT)};
-    if (!fd_target)
-      _exit(EXIT_FAILURE);
-
-    reader = std::make_shared<ReadHandler>(fd_target);
-    writer = std::make_shared<WriteHandler>(fd_target);
-    flusher = std::make_shared<FlushHandler>(fd_target);
-  } else {
-    reader = std::make_shared<DummyReadHandler>();
-    writer = std::make_shared<DummyWriteHandler>();
-    flusher = std::make_shared<DummyFlushHandler>();
-    discarder = std::make_shared<DummyDiscardHandler>();
-  }
-
   auto fd_notify = uptrwd<const int>{};
 
   if (auto it = uio_devs.find(UBLK_UIO_USER_TO_KERNEL_DIR_SUFFIX);
       it != uio_devs.end()) {
 
     fd_notify = open(it->second, O_WRONLY);
-    if (!fd_notify)
-      _exit(EXIT_FAILURE);
-  } else {
-    _exit(EXIT_FAILURE);
   }
 
-  spdlog::set_pattern("[handler %P] [%^%l%$]: %v");
-  spdlog::info("started: {}", param.target.string());
+  if (!fd_notify)
+    _exit(EXIT_FAILURE);
 
   auto handler = CmdHandlerFactory{}.create_unique(
-      std::move(req.p_cellc), {req.p_cells.get(), req.cells_sz},
-      std::move(reader), std::move(writer), std::move(flusher),
-      std::move(discarder),
+      param.handler, std::move(req.p_cellc), {req.p_cells.get(), req.cells_sz},
       std::make_unique<CmdAcknowledger>(std::move(rsp.p_qcmd),
                                         std::move(fd_notify)));
 

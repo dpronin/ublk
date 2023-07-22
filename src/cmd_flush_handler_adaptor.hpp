@@ -13,6 +13,8 @@
 #include <linux/ublk/cmd.h>
 
 #include "handler_interface.hpp"
+#include "ublk_req.hpp"
+#include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublk_cmd_flush cmd) {
@@ -35,7 +37,7 @@ struct fmt::formatter<ublk_cmd_flush> : fmt::formatter<std::string> {
 
 namespace cfq {
 
-class CmdFlushHandlerAdaptor : public IHandler<int(ublk_cmd) noexcept> {
+class CmdFlushHandlerAdaptor : public IUblkReqHandler {
 public:
   explicit CmdFlushHandlerAdaptor(
       std::shared_ptr<IHandler<int(ublk_cmd_flush) noexcept>> handler)
@@ -50,10 +52,10 @@ public:
   CmdFlushHandlerAdaptor(CmdFlushHandlerAdaptor &&) = default;
   CmdFlushHandlerAdaptor &operator=(CmdFlushHandlerAdaptor &&) = default;
 
-  int handle(ublk_cmd cmd) noexcept override {
-    assert(UBLK_CMD_OP_FLUSH == ublk_cmd_get_op(&cmd));
-    spdlog::debug("process {}", cmd.u.f);
-    return handler_->handle(cmd.u.f);
+  int handle(std::shared_ptr<ublk_req> req) noexcept override {
+    assert(UBLK_CMD_OP_FLUSH == ublk_cmd_get_op(&req->cmd()));
+    spdlog::debug("process {}", req->cmd().u.f);
+    return handler_->handle(req->cmd().u.f);
   }
 
 private:

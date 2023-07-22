@@ -10,9 +10,12 @@
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
+#include <linux/ublk/cellc.h>
 #include <linux/ublk/cmd.h>
 
 #include "handler_interface.hpp"
+#include "ublk_req.hpp"
+#include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublk_cmd_read cmd) {
@@ -36,10 +39,12 @@ template <> struct fmt::formatter<ublk_cmd_read> : fmt::formatter<std::string> {
 
 namespace cfq {
 
-class CmdReadHandlerAdaptor : public IHandler<int(ublk_cmd) noexcept> {
+class CmdReadHandlerAdaptor : public IUblkReqHandler {
 public:
   explicit CmdReadHandlerAdaptor(
-      std::shared_ptr<IHandler<int(ublk_cmd_read) noexcept>> handler)
+      std::shared_ptr<IHandler<int(ublk_cmd_read, ublk_cellc const &,
+                                   std::span<std::byte>) noexcept>>
+          handler)
       : handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -51,14 +56,17 @@ public:
   CmdReadHandlerAdaptor(CmdReadHandlerAdaptor &&) = default;
   CmdReadHandlerAdaptor &operator=(CmdReadHandlerAdaptor &&) = default;
 
-  int handle(ublk_cmd cmd) noexcept override {
-    assert(UBLK_CMD_OP_READ == ublk_cmd_get_op(&cmd));
-    spdlog::debug("process {}", cmd.u.r);
-    return handler_->handle(cmd.u.r);
+  int handle(std::shared_ptr<ublk_req> req) noexcept override {
+    assert(UBLK_CMD_OP_READ == ublk_cmd_get_op(&req->cmd()));
+    spdlog::debug("process {}", req->cmd().u.r);
+    handler_->handle(req->cmd().u.r, req->cellc(), req->cells());
+    return 0;
   }
 
 private:
-  std::shared_ptr<IHandler<int(ublk_cmd_read) noexcept>> handler_;
+  std::shared_ptr<IHandler<int(ublk_cmd_read, ublk_cellc const &,
+                               std::span<std::byte>) noexcept>>
+      handler_;
 };
 
 } // namespace cfq

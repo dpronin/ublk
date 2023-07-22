@@ -2,62 +2,38 @@
 
 #include <linux/types.h>
 
-#include <linux/ublk/cmd.h>
-
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
 
-#include <algorithm>
-#include <ostream>
-#include <ranges>
-#include <sstream>
+#include <memory>
 #include <utility>
 
-#include <fmt/format.h>
-#include <spdlog/spdlog.h>
-
-#include "cmd_handler_not_supp.hpp"
+#include "cache_line_aligned_allocator.hpp"
+#include "ublk_req.hpp"
 
 namespace cfq {
 
 CmdHandler::CmdHandler(
-    std::map<ublk_cmd_op, std::shared_ptr<IHandler<int(ublk_cmd) noexcept>>>
-        maphs,
+    std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>> handler,
+    std::shared_ptr<ublk_cellc const> cellc, std::span<std::byte> cells,
     std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger)
-    : acknowledger_(std::move(acknowledger)) {
+    : handler_(std::move(handler)), cellc_(std::move(cellc)), cells_(cells),
+      acknowledger_(std::move(acknowledger)) {
 
+  assert(handler_);
+  assert(cellc_);
   assert(acknowledger_);
-
-  for (auto &[op, h] : maphs) {
-    assert(op < std::size(hs_));
-    hs_[op] = std::move(h);
-  }
-
-  /* clang-format off */
-  static auto cmdh_not_supp = CmdHandlerNotSupp{};
-  static auto const sp_cmdh_not_supp =
-      std::shared_ptr<IHandler<int(ublk_cmd) noexcept>>{&cmdh_not_supp, [](auto *p) {}};
-  /* clang-format on */
-
-  std::ranges::transform(hs_, std::begin(hs_),
-                         [](auto &&h) { return h ?: sp_cmdh_not_supp; });
 }
 
 int CmdHandler::handle(ublk_cmd cmd) noexcept {
-  auto const op = ublk_cmd_get_op(&cmd);
-  auto const hid = std::min(static_cast<size_t>(op), std::size(hs_) - 1);
-
-  assert(hs_[hid]);
-
-  auto const r = hs_[hid]->handle(cmd);
-
-  ublk_cmd_ack cmd_ack;
-  ublk_cmd_ack_set_id(&cmd_ack, ublk_cmd_get_id(&cmd));
-  ublk_cmd_ack_set_err(&cmd_ack, static_cast<__u16>(r));
-
-  return acknowledger_->handle(cmd_ack);
+  auto req = std::allocate_shared<ublk_req>(
+      cache_line_aligned_allocator<ublk_req>{}, cmd, cellc_, cells_,
+      [a = acknowledger_](ublk_cmd const &cmd, int err) {
+        ublk_cmd_ack cmd_ack;
+        ublk_cmd_ack_set_id(&cmd_ack, ublk_cmd_get_id(&cmd));
+        ublk_cmd_ack_set_err(&cmd_ack, static_cast<__u16>(err));
+        a->handle(cmd_ack);
+      });
+  return handler_->handle(std::move(req));
 }
 
 } // namespace cfq

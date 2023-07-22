@@ -13,6 +13,8 @@
 #include <linux/ublk/cmd.h>
 
 #include "handler_interface.hpp"
+#include "ublk_req.hpp"
+#include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublk_cmd_discard cmd) {
@@ -36,7 +38,7 @@ struct fmt::formatter<ublk_cmd_discard> : fmt::formatter<std::string> {
 
 namespace cfq {
 
-class CmdDiscardHandlerAdaptor : public IHandler<int(ublk_cmd) noexcept> {
+class CmdDiscardHandlerAdaptor : public IUblkReqHandler {
 public:
   explicit CmdDiscardHandlerAdaptor(
       std::shared_ptr<IHandler<int(ublk_cmd_discard) noexcept>> handler)
@@ -52,10 +54,10 @@ public:
   CmdDiscardHandlerAdaptor(CmdDiscardHandlerAdaptor &&) = default;
   CmdDiscardHandlerAdaptor &operator=(CmdDiscardHandlerAdaptor &&) = default;
 
-  int handle(ublk_cmd cmd) noexcept override {
-    assert(UBLK_CMD_OP_DISCARD == ublk_cmd_get_op(&cmd));
-    spdlog::debug("process {}", cmd.u.d);
-    return handler_->handle(cmd.u.d);
+  int handle(std::shared_ptr<ublk_req> req) noexcept override {
+    assert(UBLK_CMD_OP_DISCARD == ublk_cmd_get_op(&req->cmd()));
+    spdlog::debug("process {}", req->cmd().u.d);
+    return handler_->handle(req->cmd().u.d);
   }
 
 private:

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "cli/bdev_create_param.hpp"
+#include "slave_param.hpp"
 
 namespace cfq::slave {
-void run(cli::bdev_create_param const &param);
+void run(slave_param const &param);
 } // namespace cfq::slave

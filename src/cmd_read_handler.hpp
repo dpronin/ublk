@@ -13,11 +13,10 @@
 
 namespace cfq {
 
-class CmdReadHandler : public IHandler<int(ublk_cmd_read) noexcept> {
+class CmdReadHandler : public IHandler<int(ublk_cmd_read, ublk_cellc const &,
+                                           std::span<std::byte>) noexcept> {
 public:
-  explicit CmdReadHandler(std::shared_ptr<ublk_cellc const> cellc,
-                          std::span<std::byte> cells,
-                          std::shared_ptr<IReadHandler> reader);
+  explicit CmdReadHandler(std::shared_ptr<IReadHandler> reader);
   ~CmdReadHandler() override = default;
 
   CmdReadHandler(CmdReadHandler const &) = default;
@@ -26,11 +25,10 @@ public:
   CmdReadHandler(CmdReadHandler &&) = default;
   CmdReadHandler &operator=(CmdReadHandler &&) = default;
 
-  int handle(ublk_cmd_read cmd) noexcept override;
+  int handle(ublk_cmd_read cmd, ublk_cellc const &cellc,
+             std::span<std::byte> cells) noexcept override;
 
 private:
-  std::shared_ptr<ublk_cellc const> cellc_;
-  std::span<std::byte> cells_;
   std::shared_ptr<IReadHandler> reader_;
 };
 

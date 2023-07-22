@@ -1,0 +1,42 @@
+#include "req_handler.hpp"
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+
+#include <algorithm>
+#include <ranges>
+#include <utility>
+
+#include "req_handler_not_supp.hpp"
+
+namespace cfq {
+
+ReqHandler::ReqHandler(
+    std::map<ublk_cmd_op,
+             std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>>
+        maphs) {
+
+  for (auto &[op, h] : maphs) {
+    assert(op < std::size(hs_));
+    hs_[op] = std::move(h);
+  }
+
+  /* clang-format off */
+  static auto reqh_not_supp = ReqHandlerNotSupp{};
+  static auto const sp_reqh_not_supp =
+      std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>{&reqh_not_supp, [](auto *p) {}};
+  /* clang-format on */
+
+  std::ranges::transform(hs_, std::begin(hs_),
+                         [](auto &&h) { return h ?: sp_reqh_not_supp; });
+}
+
+int ReqHandler::handle(std::shared_ptr<ublk_req> req) noexcept {
+  auto const op = ublk_cmd_get_op(&req->cmd());
+  auto const hid = std::min(static_cast<size_t>(op), std::size(hs_) - 1);
+  assert(hs_[hid]);
+  return hs_[hid]->handle(std::move(req));
+}
+
+} // namespace cfq

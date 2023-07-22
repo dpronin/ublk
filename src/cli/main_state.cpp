@@ -6,25 +6,33 @@
 #include "color.hpp"
 #include "types.hpp"
 
-#include "cmd_bdev_create.hpp"
-#include "cmd_bdev_destroy.hpp"
+#include "cmd_bdev_map.hpp"
+#include "cmd_bdev_unmap.hpp"
 #include "cmd_quit.hpp"
+#include "cmd_target_create.hpp"
+#include "cmd_target_destroy.hpp"
 
 using namespace cfq::cli;
 
-// clang-format off
-MainState::MainState(std::shared_ptr<IBdevCreator> bdev_creator,
-                     std::shared_ptr<IBdevDestroyer> bdev_destroyer,
+/* clang-format off */
+MainState::MainState(std::shared_ptr<ITargetCreator> target_creator,
+                     std::shared_ptr<ITargetDestroyer> target_destroyer,
+                     std::shared_ptr<IBdevMapper> bdev_mapper,
+                     std::shared_ptr<IBdevUnmapper> bdev_unmapper,
                      std::shared_ptr<bool> finish_token)
     : CmdState({
-        { "create",  { "bdev_suffix", "capacity_sectors", "target", "[read_only]" }, "Creates a new block device mapped to a target", [bdev_creator]   (args_t args)                  { return std::make_unique<CmdBdevCreate>(std::move(args), bdev_creator); } },
-        { "destroy", { "bdev_suffix"                                              }, "Destroys an exising block device",              [bdev_destroyer] (args_t args)                  { return std::make_unique<CmdBdevDestroy>(std::move(args), bdev_destroyer); } },
-        { "quit",    {                                                            }, "Quits the application",                         [finish_token]   (args_t args [[maybe_unused]]) { return std::make_unique<CmdQuit>(finish_token); }}
+        { "target-create",  { "name", "path", "capacity-sectors"          }, "Creates a new target specified by the type",     [target_creator]   (args_t args)                  { return std::make_unique<CmdTargetCreate>(std::move(args), target_creator); } },
+        { "target-destroy", { "name"                                      }, "Destroys an exising block device",               [target_destroyer] (args_t args)                  { return std::make_unique<CmdTargetDestroy>(std::move(args), target_destroyer); } },
+        { "map",            { "bdev-suffix", "target-name", "[read_only]" }, "Maps a new block device to a target",            [bdev_mapper]      (args_t args)                  { return std::make_unique<CmdBdevMap>(std::move(args), bdev_mapper); } },
+        { "unmap",          { "bdev-suffix"                               }, "Unmaps an exising block device from the target", [bdev_unmapper]    (args_t args)                  { return std::make_unique<CmdBdevUnmap>(std::move(args), bdev_unmapper); } },
+        { "quit",           {                                             }, "Quits the application",                          [finish_token]     (args_t args [[maybe_unused]]) { return std::make_unique<CmdQuit>(finish_token); }}
     })
-// clang-format on
+/* clang-format on */
 {
-  assert(bdev_creator);
-  assert(bdev_destroyer);
+  assert(target_creator);
+  assert(target_destroyer);
+  assert(bdev_mapper);
+  assert(bdev_mapper);
   assert(finish_token);
 }
 

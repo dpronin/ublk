@@ -13,7 +13,10 @@ find_package(Boost REQUIRED COMPONENT headers)
 
 add_library(headers INTERFACE
     include/align.hpp
+    include/aligned_allocator.hpp
+    include/cache_line_aligned_allocator.hpp
     include/concepts.hpp
+    include/epoll.hpp
     include/factory_interface.hpp
     include/factory_shared_interface.hpp
     include/factory_unique_interface.hpp
@@ -21,6 +24,8 @@ add_library(headers INTERFACE
     include/handler_interface.hpp
     include/mapping.hpp
     include/mem.hpp
+    include/page.hpp
+    include/page_aligned_allocator.hpp
     include/rvwrap.hpp
     include/uread.hpp
     include/utility.hpp

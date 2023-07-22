@@ -7,11 +7,10 @@
 
 namespace cfq::cli {
 
-struct bdev_create_param {
-  std::string bdev_suffix;
+struct target_create_param {
+  std::string name;
   uint64_t capacity_sectors;
-  std::filesystem::path target;
-  bool read_only;
+  std::filesystem::path path;
 };
 
 } // namespace cfq::cli

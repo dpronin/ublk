@@ -6,6 +6,7 @@
 
 #include <fcntl.h>
 #include <functional>
+#include <stdexcept>
 #include <type_traits>
 #include <unistd.h>
 
@@ -23,66 +24,73 @@
 #include <limits>
 #include <thread>
 #include <utility>
-#include <vector>
 
 #include <spdlog/spdlog.h>
 
+#include "epoll.hpp"
 #include "file.hpp"
 #include "mem.hpp"
+
+namespace {
+
+enum {
+  EV_FD_EPOLL,
+  EV_FD_LISTEN,
+  EV_FD_NOTIFY_REQ = EV_FD_LISTEN,
+  EV_FDS_QTY,
+};
+
+auto fds_open(cfq::evpaths_t const &evpaths) {
+  std::array<cfq::uptrwd<int const>, EV_FDS_QTY> fds;
+
+  if (auto it = evpaths.find(UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX);
+      it != evpaths.end()) {
+
+    fds[EV_FD_LISTEN] = cfq::open(it->second, O_RDWR);
+
+    struct epoll_event ev {
+      .events = EPOLLIN, .data = {.fd = *fds[EV_FD_LISTEN]},
+    };
+
+    fds[EV_FD_EPOLL] = cfq::epoll_create1(0);
+
+    if (epoll_ctl(*fds[EV_FD_EPOLL], EPOLL_CTL_ADD, *fds[EV_FD_LISTEN], &ev) <
+        0) {
+      throw std::runtime_error(fmt::format(
+          "couldn't add FD of {} for listening to poll", it->second.string()));
+    }
+  } else {
+    throw std::invalid_argument(fmt::format(
+        "no {} given as event path", UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX));
+  }
+
+  return fds;
+}
+
+} // namespace
 
 namespace cfq {
 
 int handler(qublkcmd_t &qcmd, evpaths_t const &evpaths,
             IHandler<int(ublk_cmd) noexcept> &handler) {
-  enum {
-    EV_FD_EPOLL,
-    EV_FD_LISTEN,
-    EV_FD_NOTIFY_REQ = EV_FD_LISTEN,
-    EV_FDS_QTY,
-  };
 
-  using pfd_t = std::unique_ptr<int const, decltype(pfdcloser)>;
-
-  std::array<int, EV_FDS_QTY> fds;
-  std::vector<pfd_t> pfds_guards;
-
-  fds[EV_FD_EPOLL] = ::epoll_create1(0);
-  if (fds[EV_FD_EPOLL] < 0)
-    return EXIT_FAILURE;
-  pfds_guards.push_back({&fds[EV_FD_EPOLL], pfdcloser});
-
-  if (auto it = evpaths.find(UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX);
-      it != evpaths.end()) {
-    fds[EV_FD_LISTEN] = ::open(it->second.c_str(), O_RDWR);
-    if (fds[EV_FD_LISTEN] < 0)
-      return EXIT_FAILURE;
-    pfds_guards.push_back({&fds[EV_FD_LISTEN], pfdcloser});
-
-    struct epoll_event ev {
-      .events = EPOLLIN, .data = {.fd = fds[EV_FD_LISTEN]},
-    };
-
-    if (epoll_ctl(fds[EV_FD_EPOLL], EPOLL_CTL_ADD, fds[EV_FD_LISTEN], &ev) < 0)
-      return EXIT_FAILURE;
-  } else {
-    return EXIT_FAILURE;
-  }
+  auto const fds = fds_open(evpaths);
 
   uint32_t last_cmds{0};
 
   for (struct epoll_event event;;) {
     spdlog::debug("is working");
 
-    auto const nfds = epoll_wait(fds[EV_FD_EPOLL], &event, 1, -1);
+    auto const nfds = epoll_wait(*fds[EV_FD_EPOLL], &event, 1, -1);
     if (nfds == -1) [[unlikely]]
       return EXIT_FAILURE;
 
     for (int i = 0; i < std::min(1, nfds); ++i) {
-      if (event.data.fd != fds[EV_FD_LISTEN]) [[unlikely]]
+      if (event.data.fd != *fds[EV_FD_LISTEN]) [[unlikely]]
         continue;
 
       uint32_t cmds;
-      if (auto const r = read(fds[EV_FD_LISTEN], &cmds, sizeof(cmds)); r != 4)
+      if (auto const r = read(*fds[EV_FD_LISTEN], &cmds, sizeof(cmds)); r != 4)
           [[unlikely]]
         return EXIT_FAILURE;
 
@@ -92,7 +100,7 @@ int handler(qublkcmd_t &qcmd, evpaths_t const &evpaths,
           std::this_thread::yield();
 
         if (uint32_t processed_cmds = 1;
-            4 != write(fds[EV_FD_NOTIFY_REQ], &processed_cmds,
+            4 != write(*fds[EV_FD_NOTIFY_REQ], &processed_cmds,
                        sizeof(processed_cmds))) [[unlikely]] {
 
           return EXIT_FAILURE;
