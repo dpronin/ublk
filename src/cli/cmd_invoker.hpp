@@ -28,8 +28,6 @@ public:
       cmd->exec();
   }
 
-  explicit operator bool() const noexcept { return static_cast<bool>(*ctx_); }
-
 private:
   std::shared_ptr<CliCtx> ctx_;
 };
