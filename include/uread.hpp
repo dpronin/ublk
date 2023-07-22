@@ -8,17 +8,15 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "types.hpp"
-
 namespace cfq {
 
-inline auto uread(user_input_t &user_input, std::string_view prompt = {}) {
+inline auto uread(std::string &user_input, std::string_view prompt = {}) {
   std::cout << prompt;
   std::cin.clear();
   return static_cast<bool>(std::getline(std::cin, user_input));
 }
 
-inline auto uread_hidden(user_input_t &user_input,
+inline auto uread_hidden(std::string &user_input,
                          std::string_view prompt = {}) {
   termios ts{};
 
@@ -29,14 +27,16 @@ inline auto uread_hidden(user_input_t &user_input,
   ts.c_lflag |= ECHONL;
   tcsetattr(STDIN_FILENO, TCSANOW, &ts);
 
-  auto const res = uread(user_input, prompt);
+  auto deleter = [old_flags](termios *pts) {
+    // restoring flags on STDIN
+    tcgetattr(STDIN_FILENO, pts);
+    pts->c_lflag = old_flags;
+    tcsetattr(STDIN_FILENO, TCSANOW, pts);
+  };
 
-  // restoring flags on STDIN
-  tcgetattr(STDIN_FILENO, &ts);
-  ts.c_lflag = old_flags;
-  tcsetattr(STDIN_FILENO, TCSANOW, &ts);
+  std::unique_ptr<termios, decltype(deleter)> guard{&ts, deleter};
 
-  return res;
+  return uread(user_input, prompt);
 }
 
 } // namespace cfq
