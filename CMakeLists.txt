@@ -74,3 +74,7 @@ endif ()
 
 add_subdirectory(etc)
 add_subdirectory(src)
+
+if (BUILD_RPM)
+    add_subdirectory(rpm)
+endif (BUILD_RPM)
