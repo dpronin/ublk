@@ -1,13 +1,13 @@
 #include "cmd_parser_default.hpp"
 
-#include <iostream>
+#include <algorithm>
 #include <memory>
 #include <ostream>
 #include <ranges>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 
-#include "color.hpp"
 #include "types.hpp"
 #include "utility.hpp"
 
@@ -39,7 +39,7 @@ std::unique_ptr<ICmd> CmdParserDefault::parse(args_t args) {
       oss << '\b';
     }
     oss << '\'';
-    std::cerr << cred(oss.str()) << '\n';
+    throw std::invalid_argument(oss.str());
   }
 
   return cmd;
