@@ -1,0 +1,39 @@
+{
+    // formats used in this file:
+    //  1. time/duration
+    //     possible suffixes:
+    //         h   (hours)
+    //         min (minutes)
+    //         s   (seconds)
+    //         ms  (milliseconds)
+    //         us  (microseconds)
+    //         ns  (nanoseconds)
+    //  2. size/length
+    //     possible suffixes:
+    //         no suffix              (treated as bytes)
+    //         B                      (bytes)
+    //         k  or K  or kB  or KB  (kilobytes)
+    //         m  or M  or mB  or MB  (megabytes)
+    //         g  or G  or gB  or GB  (gigabytes)
+    //         t  or T  or tB  or TB  (terabytes)
+    //         p  or P  or pB  or PB  (petabytes)
+    //         ki or Ki or kiB or KiB (kibibytes)
+    //         mi or Mi or miB or MiB (mebibytes)
+    //         gi or Gi or giB or GiB (gibibytes)
+    //         ti or Ti or tiB or TiB (tebibytes)
+    //         pi or Pi or piB or PiB (pebibytes)
+
+    // log level used in the application
+    // messages with this log level and stricter will be printed out into log files
+    // possible values: trace, debug, info, warning, error, critical, off
+    // if value is not set then '@UBLK_LOG_LEVEL_DEFAULT@' level will be used
+    // if value provided is unknown then 'off' level will be used
+    "loglevel": "@UBLK_LOG_LEVEL_DEFAULT@",
+
+    // log level for instant logging (by means of instant flushing to output) used in the application
+    // messages with this log level and stricter will be printed out into log files immediately
+    // possible values: trace, debug, info, warning, error, critical, off
+    // if value is not set then '@UBLK_LOG_LEVEL_FLUSH_DEFAULT@' level will be used
+    // if value provided is unknown then 'off' level will be used
+    "loglevel_flush": "@UBLK_LOG_LEVEL_FLUSH_DEFAULT@",
+}

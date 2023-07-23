@@ -72,4 +72,5 @@ if (BUILD_TESTING)
     endif ()
 endif ()
 
+add_subdirectory(etc)
 add_subdirectory(src)
