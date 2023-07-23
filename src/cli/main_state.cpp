@@ -32,7 +32,7 @@ MainState::MainState(std::shared_ptr<ITargetCreator> target_creator,
   assert(target_creator);
   assert(target_destroyer);
   assert(bdev_mapper);
-  assert(bdev_mapper);
+  assert(bdev_unmapper);
   assert(finish_token);
 }
 
