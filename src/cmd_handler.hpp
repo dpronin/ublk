@@ -12,7 +12,7 @@
 #include "handler_interface.hpp"
 #include "ublk_req.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class CmdHandler : public IHandler<int(ublk_cmd) noexcept> {
 public:
@@ -38,4 +38,4 @@ private:
   std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger_;
 };
 
-} // namespace cfq
+} // namespace ublk

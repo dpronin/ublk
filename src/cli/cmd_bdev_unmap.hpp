@@ -13,7 +13,7 @@
 #include "bdev_unmap_param.hpp"
 #include "bdev_unmapper_interface.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class CmdBdevUnmap final : public Cmd {
 public:
@@ -36,4 +36,4 @@ private:
   std::shared_ptr<IBdevUnmapper> handler_;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

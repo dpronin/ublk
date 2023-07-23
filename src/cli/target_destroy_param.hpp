@@ -2,8 +2,8 @@
 
 #include <string>
 
-namespace cfq::cli {
+namespace ublk::cli {
 struct target_destroy_param {
   std::string name;
 };
-} // namespace cfq::cli
+} // namespace ublk::cli

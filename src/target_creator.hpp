@@ -9,7 +9,7 @@
 
 #include "master.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class TargetCreator : public cli::ITargetCreator {
 public:
@@ -33,4 +33,4 @@ private:
   std::shared_ptr<Master> master_;
 };
 
-} // namespace cfq
+} // namespace ublk

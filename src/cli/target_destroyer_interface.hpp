@@ -3,6 +3,6 @@
 #include "handler_interface.hpp"
 #include "target_destroy_param.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 using ITargetDestroyer = IHandler<void(target_destroy_param const &)>;
-} // namespace cfq::cli
+} // namespace ublk::cli

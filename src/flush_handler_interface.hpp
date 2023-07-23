@@ -2,6 +2,6 @@
 
 #include "handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 using IFlushHandler = IHandler<int() noexcept>;
-} // namespace cfq
+} // namespace ublk

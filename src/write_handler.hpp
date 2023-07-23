@@ -9,7 +9,7 @@
 
 #include "write_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class WriteHandler : public IWriteHandler {
 public:
@@ -39,4 +39,4 @@ private:
   std::shared_ptr<const int> fd_;
 };
 
-} // namespace cfq
+} // namespace ublk

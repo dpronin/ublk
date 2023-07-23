@@ -4,7 +4,7 @@
 
 #include "rvwrap.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <typename> class IFactoryShared;
 
@@ -67,4 +67,4 @@ public:
   virtual std::shared_ptr<R> create_shared(Args...) noexcept = 0;
 };
 
-} // namespace cfq
+} // namespace ublk

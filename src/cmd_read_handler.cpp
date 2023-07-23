@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace cfq {
+namespace ublk {
 
 CmdReadHandler::CmdReadHandler(std::shared_ptr<IReadHandler> reader)
     : reader_(std::move(reader)) {
@@ -48,4 +48,4 @@ int CmdReadHandler::handle(ublk_cmd_read cmd, ublk_cellc const &cellc,
   return 0;
 }
 
-} // namespace cfq
+} // namespace ublk

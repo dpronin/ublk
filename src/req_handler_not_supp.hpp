@@ -4,6 +4,6 @@
 
 #include "req_op_err_handler.hpp"
 
-namespace cfq {
+namespace ublk {
 using ReqHandlerNotSupp = ReqOpErrHandler<ENOTSUP>;
-} // namespace cfq
+} // namespace ublk

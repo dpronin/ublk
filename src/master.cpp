@@ -48,7 +48,7 @@
 #include "write_handler.hpp"
 #include "write_handler_interface.hpp"
 
-using namespace cfq;
+using namespace ublk;
 
 Master::~Master() {
   /* While there are children_ we would wait for them all to exit */

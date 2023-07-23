@@ -10,7 +10,7 @@
 #include <linux/ublk/cellc.h>
 #include <linux/ublk/cmd.h>
 
-namespace cfq {
+namespace ublk {
 
 class ublk_req {
 public:
@@ -59,4 +59,4 @@ private:
   std::function<void(ublk_cmd const &, int)> completer_;
 };
 
-} // namespace cfq
+} // namespace ublk

@@ -40,19 +40,19 @@ enum {
   EV_FDS_QTY,
 };
 
-auto fds_open(cfq::evpaths_t const &evpaths) {
-  std::array<cfq::uptrwd<int const>, EV_FDS_QTY> fds;
+auto fds_open(ublk::evpaths_t const &evpaths) {
+  std::array<ublk::uptrwd<int const>, EV_FDS_QTY> fds;
 
   if (auto it = evpaths.find(UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX);
       it != evpaths.end()) {
 
-    fds[EV_FD_LISTEN] = cfq::open(it->second, O_RDWR);
+    fds[EV_FD_LISTEN] = ublk::open(it->second, O_RDWR);
 
     struct epoll_event ev {
       .events = EPOLLIN, .data = {.fd = *fds[EV_FD_LISTEN]},
     };
 
-    fds[EV_FD_EPOLL] = cfq::epoll_create1(0);
+    fds[EV_FD_EPOLL] = ublk::epoll_create1(0);
 
     if (epoll_ctl(*fds[EV_FD_EPOLL], EPOLL_CTL_ADD, *fds[EV_FD_LISTEN], &ev) <
         0) {
@@ -69,7 +69,7 @@ auto fds_open(cfq::evpaths_t const &evpaths) {
 
 } // namespace
 
-namespace cfq {
+namespace ublk {
 
 int handler(qublkcmd_t &qcmd, evpaths_t const &evpaths,
             IHandler<int(ublk_cmd) noexcept> &handler) {
@@ -116,4 +116,4 @@ int handler(qublkcmd_t &qcmd, evpaths_t const &evpaths,
   return EXIT_SUCCESS;
 }
 
-} // namespace cfq
+} // namespace ublk

@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 enum class color_e {
   kRed = 31,
@@ -57,4 +57,4 @@ inline auto cgrey(std::string_view input) {
 
 } // namespace colorize
 
-} // namespace cfq::cli
+} // namespace ublk::cli

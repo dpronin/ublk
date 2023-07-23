@@ -6,7 +6,7 @@
 
 #include "types.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class ICmdParser {
 public:
@@ -22,4 +22,4 @@ public:
   [[nodiscard]] virtual std::unique_ptr<ICmd> parse(args_t args) = 0;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

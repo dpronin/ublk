@@ -8,7 +8,7 @@
 #include "mem.hpp"
 #include "qublkcmd.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class CmdAcknowledger : public IHandler<int(ublk_cmd_ack) noexcept> {
 public:
@@ -29,4 +29,4 @@ private:
   uptrwd<const int> fd_notify_;
 };
 
-} // namespace cfq
+} // namespace ublk

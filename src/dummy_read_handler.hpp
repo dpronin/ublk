@@ -2,7 +2,7 @@
 
 #include "read_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class DummyReadHandler : public IReadHandler {
 public:
@@ -21,4 +21,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace ublk

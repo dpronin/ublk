@@ -13,7 +13,7 @@
 
 #include "types.hpp"
 
-using namespace cfq::cli;
+using namespace ublk::cli;
 
 Readline &Readline::instance() {
   static Readline rl{

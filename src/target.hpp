@@ -7,7 +7,7 @@
 #include "target_properties.hpp"
 #include "ublk_req_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class Target {
 public:
@@ -32,4 +32,4 @@ private:
   target_properties props_;
 };
 
-} // namespace cfq
+} // namespace ublk

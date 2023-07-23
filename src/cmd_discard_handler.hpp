@@ -11,7 +11,7 @@
 #include "discard_handler_interface.hpp"
 #include "handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class CmdDiscardHandler : public IHandler<int(ublk_cmd_discard) noexcept> {
 public:
@@ -36,4 +36,4 @@ private:
   std::shared_ptr<IDiscardHandler> discarder_;
 };
 
-} // namespace cfq
+} // namespace ublk

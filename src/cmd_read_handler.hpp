@@ -11,7 +11,7 @@
 #include "handler_interface.hpp"
 #include "read_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class CmdReadHandler : public IHandler<int(ublk_cmd_read, ublk_cellc const &,
                                            std::span<std::byte>) noexcept> {
@@ -32,4 +32,4 @@ private:
   std::shared_ptr<IReadHandler> reader_;
 };
 
-} // namespace cfq
+} // namespace ublk

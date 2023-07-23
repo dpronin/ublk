@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace cfq {
+namespace ublk {
 
 CmdWriteHandler::CmdWriteHandler(std::shared_ptr<IWriteHandler> writer)
     : writer_(std::move(writer)) {
@@ -45,4 +45,4 @@ int CmdWriteHandler::handle(ublk_cmd_write cmd, ublk_cellc const &cellc,
   return 0;
 }
 
-} // namespace cfq
+} // namespace ublk

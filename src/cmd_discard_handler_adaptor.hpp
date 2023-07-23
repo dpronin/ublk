@@ -18,8 +18,8 @@
 #include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublk_cmd_discard cmd) {
-  auto const &base = *cfq::container_of(
-      cfq::container_of(&cmd, &decltype(ublk_cmd::u)::d), &ublk_cmd::u);
+  auto const &base = *ublk::container_of(
+      ublk::container_of(&cmd, &decltype(ublk_cmd::u)::d), &ublk_cmd::u);
   out << fmt::format("cmd: DISCARD [ id={}, op={}, fl={} off={} sz={} ]",
                      ublk_cmd_get_id(&base), ublk_cmd_get_op(&base),
                      ublk_cmd_get_fl(&base), ublk_cmd_discard_get_offset(&cmd),
@@ -36,7 +36,7 @@ struct fmt::formatter<ublk_cmd_discard> : fmt::formatter<std::string> {
   }
 };
 
-namespace cfq {
+namespace ublk {
 
 class CmdDiscardHandlerAdaptor : public IUblkReqHandler {
 public:
@@ -64,4 +64,4 @@ private:
   std::shared_ptr<IHandler<int(ublk_cmd_discard) noexcept>> handler_;
 };
 
-} // namespace cfq
+} // namespace ublk

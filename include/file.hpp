@@ -9,7 +9,7 @@
 
 #include "mem.hpp"
 
-namespace cfq {
+namespace ublk {
 
 namespace detail {
 
@@ -38,4 +38,4 @@ Target read_from_as(std::filesystem::path const &attr_path,
   return v;
 }
 
-} // namespace cfq
+} // namespace ublk

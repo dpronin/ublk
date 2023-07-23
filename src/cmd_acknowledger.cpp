@@ -30,7 +30,7 @@ template <> struct fmt::formatter<ublk_cmd_ack> : fmt::formatter<std::string> {
   }
 };
 
-namespace cfq {
+namespace ublk {
 
 CmdAcknowledger::CmdAcknowledger(std::unique_ptr<qublkcmd_ack_t> qcmd_ack,
                                  uptrwd<const int> fd_notify)
@@ -55,4 +55,4 @@ int CmdAcknowledger::handle(ublk_cmd_ack cmd) noexcept {
   return 0;
 }
 
-} // namespace cfq
+} // namespace ublk

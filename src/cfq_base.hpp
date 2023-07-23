@@ -8,7 +8,7 @@
 #include "cfq_pos.hpp"
 #include "concepts.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <cfq_suitable T, std::integral I1, std::integral I2> class cfq_base {
 public:
@@ -44,4 +44,4 @@ protected:
   std::span<T> items_;
 };
 
-} // namespace cfq
+} // namespace ublk

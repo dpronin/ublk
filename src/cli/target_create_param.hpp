@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <string>
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 struct target_create_param {
   std::string name;
@@ -13,4 +13,4 @@ struct target_create_param {
   std::filesystem::path path;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

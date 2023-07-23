@@ -2,6 +2,6 @@
 
 #include "slave_param.hpp"
 
-namespace cfq::slave {
+namespace ublk::slave {
 void run(slave_param const &param);
-} // namespace cfq::slave
+} // namespace ublk::slave

@@ -13,7 +13,7 @@
 #include "readline.hpp"
 #include "utility.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class CliCtx final {
 public:
@@ -45,4 +45,4 @@ private:
   std::shared_ptr<CmdState> state_;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

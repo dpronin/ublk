@@ -17,7 +17,7 @@
 #include "target_create_param.hpp"
 #include "target_creator_interface.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class CmdTargetCreate final : public Cmd {
 public:
@@ -52,4 +52,4 @@ private:
   std::shared_ptr<ITargetCreator> handler_;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

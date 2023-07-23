@@ -19,8 +19,8 @@
 #include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublk_cmd_read cmd) {
-  auto const &base = *cfq::container_of(
-      cfq::container_of(&cmd, &decltype(ublk_cmd::u)::r), &ublk_cmd::u);
+  auto const &base = *ublk::container_of(
+      ublk::container_of(&cmd, &decltype(ublk_cmd::u)::r), &ublk_cmd::u);
   out << fmt::format(
       "cmd: READ [ id={}, op={}, fl={} fcdn={}, cds_nr={} off={} ]",
       ublk_cmd_get_id(&base), ublk_cmd_get_op(&base), ublk_cmd_get_fl(&base),
@@ -37,7 +37,7 @@ template <> struct fmt::formatter<ublk_cmd_read> : fmt::formatter<std::string> {
   }
 };
 
-namespace cfq {
+namespace ublk {
 
 class CmdReadHandlerAdaptor : public IUblkReqHandler {
 public:
@@ -69,4 +69,4 @@ private:
       handler_;
 };
 
-} // namespace cfq
+} // namespace ublk

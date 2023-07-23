@@ -9,7 +9,7 @@
 
 #include "mapper_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class BdevMapper : public cli::IBdevMapper {
 public:
@@ -34,4 +34,4 @@ private:
   std::shared_ptr<IMapper<cli::bdev_map_param const &>> mapper_;
 };
 
-} // namespace cfq
+} // namespace ublk

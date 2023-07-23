@@ -9,7 +9,7 @@
 #include "target_destroyer_interface.hpp"
 #include "types.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class MainState : public CmdState {
 public:
@@ -32,4 +32,4 @@ protected:
   [[nodiscard]] std::string default_colored(std::string_view input) const;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

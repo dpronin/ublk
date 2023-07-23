@@ -8,7 +8,7 @@
 
 #include "page.hpp"
 
-namespace cfq {
+namespace ublk {
 template <typename T = void> class page_aligned_allocator {
 public:
   template <typename U> struct rebind {
@@ -43,4 +43,4 @@ public:
 
   void deallocate(T *p, size_t n) noexcept { std::free(p); }
 };
-} // namespace cfq
+} // namespace ublk

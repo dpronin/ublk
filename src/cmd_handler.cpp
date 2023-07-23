@@ -10,7 +10,7 @@
 #include "cache_line_aligned_allocator.hpp"
 #include "ublk_req.hpp"
 
-namespace cfq {
+namespace ublk {
 
 CmdHandler::CmdHandler(
     std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>> handler,
@@ -36,4 +36,4 @@ int CmdHandler::handle(ublk_cmd cmd) noexcept {
   return handler_->handle(std::move(req));
 }
 
-} // namespace cfq
+} // namespace ublk

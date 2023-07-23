@@ -9,11 +9,11 @@
 #include "handler_interface.hpp"
 #include "qublkcmd.hpp"
 
-namespace cfq {
+namespace ublk {
 
 using evpaths_t = std::unordered_map<std::string, std::filesystem::path>;
 
 int handler(qublkcmd_t &qcmd, evpaths_t const &evpaths,
             IHandler<int(ublk_cmd) noexcept> &handler);
 
-} // namespace cfq
+} // namespace ublk

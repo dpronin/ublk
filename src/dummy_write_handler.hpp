@@ -2,7 +2,7 @@
 
 #include "write_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class DummyWriteHandler : public IWriteHandler {
 public:
@@ -21,4 +21,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace ublk

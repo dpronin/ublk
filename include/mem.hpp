@@ -6,7 +6,7 @@
 
 #include "align.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <typename T> using memd_t = std::function<void(T *p)>;
 template <typename T> using mem_t = std::unique_ptr<T, memd_t<T>>;
@@ -21,4 +21,4 @@ uptrwd<T> make_unique_aligned(size_t align, Args &&...args) {
                    }};
 }
 
-} // namespace cfq
+} // namespace ublk

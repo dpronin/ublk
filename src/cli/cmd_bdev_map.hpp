@@ -17,7 +17,7 @@
 #include "bdev_map_param.hpp"
 #include "bdev_mapper_interface.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class CmdBdevMap final : public Cmd {
 public:
@@ -48,4 +48,4 @@ private:
   std::shared_ptr<IBdevMapper> handler_;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

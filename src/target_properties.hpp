@@ -2,8 +2,8 @@
 
 #include <cstddef>
 
-namespace cfq {
+namespace ublk {
 struct target_properties {
   size_t capacity_sectors;
 };
-} // namespace cfq
+} // namespace ublk

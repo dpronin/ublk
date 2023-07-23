@@ -1,6 +1,6 @@
 #pragma once
 
-namespace cfq {
+namespace ublk {
 
 template <typename T> class IMapper {
 public:
@@ -16,4 +16,4 @@ public:
   virtual void map(T param) = 0;
 };
 
-} // namespace cfq
+} // namespace ublk

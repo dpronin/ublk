@@ -4,7 +4,7 @@
 
 #include "rvwrap.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <typename> class IFactoryUnique;
 
@@ -67,4 +67,4 @@ public:
   virtual std::unique_ptr<R> create_unique(Args...) noexcept = 0;
 };
 
-} // namespace cfq
+} // namespace ublk

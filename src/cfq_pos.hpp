@@ -4,6 +4,6 @@
 
 #include "mapping.hpp"
 
-namespace cfq {
-template <std::integral T> using pos_t = cfq::uptrwd<T>;
-} // namespace cfq
+namespace ublk {
+template <std::integral T> using pos_t = uptrwd<T>;
+} // namespace ublk

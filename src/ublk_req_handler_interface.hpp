@@ -5,6 +5,6 @@
 #include "handler_interface.hpp"
 #include "ublk_req.hpp"
 
-namespace cfq {
+namespace ublk {
 using IUblkReqHandler = IHandler<int(std::shared_ptr<ublk_req>) noexcept>;
-} // namespace cfq
+} // namespace ublk

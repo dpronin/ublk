@@ -3,7 +3,7 @@
 #include "cmd_parser_interface.hpp"
 #include "types.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class CmdParserDefault : public ICmdParser {
 protected:
@@ -22,4 +22,4 @@ public:
   [[nodiscard]] std::unique_ptr<ICmd> parse(args_t args) override;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

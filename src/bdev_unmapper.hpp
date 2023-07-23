@@ -9,7 +9,7 @@
 
 #include "unmapper_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class BdevUnmapper : public cli::IBdevUnmapper {
 public:
@@ -34,4 +34,4 @@ private:
   std::shared_ptr<IUnmapper<cli::bdev_unmap_param const &>> unmapper_;
 };
 
-} // namespace cfq
+} // namespace ublk

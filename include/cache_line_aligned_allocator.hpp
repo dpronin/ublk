@@ -3,8 +3,8 @@
 #include "align.hpp"
 #include "aligned_allocator.hpp"
 
-namespace cfq {
+namespace ublk {
 template <typename T>
 using cache_line_aligned_allocator =
     class aligned_allocator<T, hardware_destructive_interference_size>;
-} // namespace cfq
+} // namespace ublk

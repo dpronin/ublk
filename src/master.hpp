@@ -14,7 +14,7 @@
 #include "target.hpp"
 #include "unmapper_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class Master : public IMapper<cli::bdev_map_param const &>,
                public IUnmapper<cli::bdev_unmap_param const &> {
@@ -38,4 +38,4 @@ private:
   std::unordered_map<std::string, std::shared_ptr<Target>> targets_;
 };
 
-} // namespace cfq
+} // namespace ublk

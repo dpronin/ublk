@@ -13,7 +13,7 @@
 #include "target_destroy_param.hpp"
 #include "target_destroyer_interface.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class CmdTargetDestroy final : public Cmd {
 public:
@@ -37,4 +37,4 @@ private:
   std::shared_ptr<ITargetDestroyer> handler_;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

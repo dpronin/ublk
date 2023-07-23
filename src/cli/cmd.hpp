@@ -6,7 +6,7 @@
 #include "cmd_interface.hpp"
 #include "types.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class Cmd : public ICmd {
 protected:
@@ -24,4 +24,4 @@ public:
   Cmd &operator=(Cmd &&) = delete;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

@@ -9,7 +9,7 @@
 
 #include "read_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class ReadHandler : public IReadHandler {
 public:
@@ -39,4 +39,4 @@ private:
   std::shared_ptr<const int> fd_;
 };
 
-} // namespace cfq
+} // namespace ublk

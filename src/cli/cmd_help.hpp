@@ -17,7 +17,7 @@
 #include "color.hpp"
 #include "types.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class CmdHelp final : public ICmd {
   std::ostream &out_;
@@ -74,4 +74,4 @@ inline cmds_t cmds_with_help(cmds_t cmds) {
   return cmds;
 }
 
-} // namespace cfq::cli
+} // namespace ublk::cli

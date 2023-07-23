@@ -19,7 +19,7 @@
 #include "target_creator.hpp"
 #include "target_destroyer.hpp"
 
-using namespace cfq;
+using namespace ublk;
 
 int main(int argc, char const *argv[]) {
   auto master = std::make_shared<Master>();

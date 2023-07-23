@@ -12,7 +12,7 @@
 #include "cmd_target_create.hpp"
 #include "cmd_target_destroy.hpp"
 
-using namespace cfq::cli;
+using namespace ublk::cli;
 
 /* clang-format off */
 MainState::MainState(std::shared_ptr<ITargetCreator> target_creator,

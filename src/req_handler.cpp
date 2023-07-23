@@ -10,7 +10,7 @@
 
 #include "req_handler_not_supp.hpp"
 
-namespace cfq {
+namespace ublk {
 
 ReqHandler::ReqHandler(
     std::map<ublk_cmd_op,
@@ -39,4 +39,4 @@ int ReqHandler::handle(std::shared_ptr<ublk_req> req) noexcept {
   return hs_[hid]->handle(std::move(req));
 }
 
-} // namespace cfq
+} // namespace ublk

@@ -12,7 +12,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim_all.hpp>
 
-namespace cfq {
+namespace ublk {
 
 inline auto normalize(std::ranges::range auto range) {
   // trim all the possible whitespace symbols in arguments
@@ -42,4 +42,4 @@ auto split_as(auto &&range, std::string_view separators = " ") {
   return r;
 };
 
-} // namespace cfq
+} // namespace ublk

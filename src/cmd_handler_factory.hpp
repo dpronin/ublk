@@ -13,7 +13,7 @@
 #include "rvwrap.hpp"
 #include "ublk_req.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class CmdHandlerFactory
     : public IFactoryUnique<rvwrap<IHandler<int(ublk_cmd) noexcept>>(
@@ -42,4 +42,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace ublk

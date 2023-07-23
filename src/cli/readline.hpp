@@ -14,7 +14,7 @@
 
 #include "types.hpp"
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class Readline {
   std::shared_ptr<ISuggestionsLister> suggester_;
@@ -37,4 +37,4 @@ private:
   }
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

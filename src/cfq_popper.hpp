@@ -9,7 +9,7 @@
 #include "cfq_pos.hpp"
 #include "concepts.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <cfq_suitable T, std::integral I1, std::integral I2>
 class alignas(hardware_destructive_interference_size) cfq_popper
@@ -50,4 +50,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace ublk

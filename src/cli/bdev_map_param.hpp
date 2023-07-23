@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 struct bdev_map_param {
   std::string bdev_suffix;
@@ -10,4 +10,4 @@ struct bdev_map_param {
   bool read_only;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

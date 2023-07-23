@@ -2,7 +2,7 @@
 
 #include "discard_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class DummyDiscardHandler : public IDiscardHandler {
 public:
@@ -20,4 +20,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace ublk

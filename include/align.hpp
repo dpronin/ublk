@@ -7,7 +7,7 @@
 #include "boost/lockfree/detail/prefix.hpp"
 #endif
 
-namespace cfq {
+namespace ublk {
 
 #ifdef __cpp_lib_hardware_interference_size
 using std::hardware_constructive_interference_size;
@@ -19,4 +19,4 @@ constexpr std::size_t hardware_destructive_interference_size =
     BOOST_LOCKFREE_CACHELINE_BYTES;
 #endif
 
-} // namespace cfq
+} // namespace ublk

@@ -18,8 +18,8 @@
 #include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublk_cmd_flush cmd) {
-  auto const &base = *cfq::container_of(
-      cfq::container_of(&cmd, &decltype(ublk_cmd::u)::f), &ublk_cmd::u);
+  auto const &base = *ublk::container_of(
+      ublk::container_of(&cmd, &decltype(ublk_cmd::u)::f), &ublk_cmd::u);
   out << fmt::format("cmd: FLUSH [ id={}, op={}, fl={} ]",
                      ublk_cmd_get_id(&base), ublk_cmd_get_op(&base),
                      ublk_cmd_get_fl(&base));
@@ -35,7 +35,7 @@ struct fmt::formatter<ublk_cmd_flush> : fmt::formatter<std::string> {
   }
 };
 
-namespace cfq {
+namespace ublk {
 
 class CmdFlushHandlerAdaptor : public IUblkReqHandler {
 public:
@@ -62,4 +62,4 @@ private:
   std::shared_ptr<IHandler<int(ublk_cmd_flush) noexcept>> handler_;
 };
 
-} // namespace cfq
+} // namespace ublk

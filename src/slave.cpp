@@ -31,14 +31,14 @@
 
 namespace {
 
-using pcmdb_t = cfq::uptrwd<ublk_cmdb>;
-using pcmdb_ack_t = cfq::uptrwd<ublk_cmdb_ack>;
+using pcmdb_t = ublk::uptrwd<ublk_cmdb>;
+using pcmdb_ack_t = ublk::uptrwd<ublk_cmdb_ack>;
 using pcellc_t = std::shared_ptr<ublk_cellc const>;
-using mem_bytes_t = cfq::mem_t<std::byte>;
+using mem_bytes_t = ublk::mem_t<std::byte>;
 
 } // namespace
 
-namespace cfq::slave {
+namespace ublk::slave {
 
 void run(slave_param const &param) {
   auto maps_rng =
@@ -172,11 +172,11 @@ void run(slave_param const &param) {
       std::make_unique<CmdAcknowledger>(std::move(rsp.p_qcmd),
                                         std::move(fd_notify)));
 
-  auto r = cfq::handler(*req.p_qcmd, uio_devs, *handler);
+  auto r = ublk::handler(*req.p_qcmd, uio_devs, *handler);
 
   spdlog::info("finished, err {}", r);
 
   _exit(r);
 }
 
-} // namespace cfq::slave
+} // namespace ublk::slave

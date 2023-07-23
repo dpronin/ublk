@@ -3,7 +3,7 @@
 #include "handler_interface.hpp"
 #include "ublk_req.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <int eVal>
 class ReqOpErrHandler
@@ -25,4 +25,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace ublk

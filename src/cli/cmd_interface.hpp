@@ -1,6 +1,6 @@
 #pragma once
 
-namespace cfq::cli {
+namespace ublk::cli {
 
 class ICmd {
 public:
@@ -16,4 +16,4 @@ public:
   virtual void exec() = 0;
 };
 
-} // namespace cfq::cli
+} // namespace ublk::cli

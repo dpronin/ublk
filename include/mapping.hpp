@@ -17,7 +17,7 @@
 #include "file.hpp"
 #include "mem.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <typename Target = void>
 mem_t<Target> map_shared(size_t sz, int prot = PROT_READ | PROT_WRITE,
@@ -58,4 +58,4 @@ auto map_shared(size_t sz, int prot, long offset,
   return map_shared<Target>(sz, prot, *open(path, oflag, args...), offset);
 }
 
-} // namespace cfq
+} // namespace ublk

@@ -10,7 +10,7 @@
 
 #include "align.hpp"
 
-namespace cfq {
+namespace ublk {
 
 template <typename T, size_t Alignment = alignof(T)> class aligned_allocator {
 public:
@@ -59,4 +59,4 @@ public:
   }
 };
 
-} // namespace cfq
+} // namespace ublk

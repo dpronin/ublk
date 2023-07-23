@@ -2,7 +2,7 @@
 
 #include "flush_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class DummyFlushHandler : public IFlushHandler {
 public:
@@ -18,4 +18,4 @@ public:
   int handle() noexcept override { return 0; }
 };
 
-} // namespace cfq
+} // namespace ublk

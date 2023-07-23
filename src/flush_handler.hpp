@@ -9,7 +9,7 @@
 
 #include "flush_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class FlushHandler : public IFlushHandler {
 public:
@@ -30,4 +30,4 @@ private:
   std::shared_ptr<const int> fd_;
 };
 
-} // namespace cfq
+} // namespace ublk

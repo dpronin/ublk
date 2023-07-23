@@ -9,7 +9,7 @@
 #include "cfq_popper.hpp"
 #include "cfq_pusher.hpp"
 
-namespace cfq {
+namespace ublk {
 
 /* clang-format off */
 using qublkcmd_t =
@@ -18,4 +18,4 @@ using qublkcmd_ack_t =
     cfq_pusher<ublk_cmd_ack, decltype(std::declval<ublk_cellc>().cmdb_ack_head), decltype(std::declval<ublk_cmdb_ack>().tail)>;
 /* clang-format on */
 
-} // namespace cfq
+} // namespace ublk

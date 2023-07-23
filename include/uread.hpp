@@ -8,7 +8,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-namespace cfq {
+namespace ublk {
 
 inline auto uread(std::string &user_input, std::string_view prompt = {}) {
   std::cout << prompt;
@@ -39,4 +39,4 @@ inline auto uread_hidden(std::string &user_input,
   return uread(user_input, prompt);
 }
 
-} // namespace cfq
+} // namespace ublk

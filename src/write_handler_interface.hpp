@@ -9,7 +9,7 @@
 
 #include "handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 using IWriteHandler =
     IHandler<ssize_t(std::span<std::byte const>, __off64_t) noexcept>;
-} // namespace cfq
+} // namespace ublk

@@ -11,7 +11,7 @@
 #include "flush_handler_interface.hpp"
 #include "handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class CmdFlushHandler : public IHandler<int(ublk_cmd_flush) noexcept> {
 public:
@@ -35,4 +35,4 @@ private:
   std::shared_ptr<IFlushHandler> flusher_;
 };
 
-} // namespace cfq
+} // namespace ublk

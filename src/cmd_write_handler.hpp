@@ -11,7 +11,7 @@
 #include "handler_interface.hpp"
 #include "write_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class CmdWriteHandler
     : public IHandler<int(ublk_cmd_write, ublk_cellc const &,
@@ -33,4 +33,4 @@ private:
   std::shared_ptr<IWriteHandler> writer_;
 };
 
-} // namespace cfq
+} // namespace ublk

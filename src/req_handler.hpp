@@ -13,7 +13,7 @@
 #include "ublk_req.hpp"
 #include "ublk_req_handler_interface.hpp"
 
-namespace cfq {
+namespace ublk {
 
 class ReqHandler : public IUblkReqHandler {
 public:
@@ -33,4 +33,4 @@ private:
   std::array<std::shared_ptr<IUblkReqHandler>, UBLK_CMD_OP_MAX + 2> hs_;
 };
 
-} // namespace cfq
+} // namespace ublk
