@@ -30,7 +30,7 @@ public:
 
   template <typename U, size_t A>
   constexpr explicit aligned_allocator(
-      aligned_allocator<U, A> const &other) noexcept {}
+      [[maybe_unused]] aligned_allocator<U, A> const &other) noexcept {}
 
   aligned_allocator(aligned_allocator<T, Alignment> const &other) = default;
   aligned_allocator(aligned_allocator<T, Alignment> &&other) = default;
@@ -46,10 +46,11 @@ public:
     throw std::bad_alloc();
   }
 
-  void deallocate(T *p, size_t n) noexcept { std::free(p); }
+  void deallocate(T *p, [[maybe_unused]] size_t n) noexcept { std::free(p); }
 
   template <typename U, size_t A>
-  bool operator==(aligned_allocator<U, A> const &other) const noexcept {
+  bool operator==(
+      [[maybe_unused]] aligned_allocator<U, A> const &other) const noexcept {
     return !(A < Alignment);
   }
 

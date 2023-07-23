@@ -21,7 +21,7 @@
 
 using namespace ublk;
 
-int main(int argc, char const *argv[]) {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[]) {
   auto master = std::make_shared<Master>();
   auto finish_token = std::make_shared<bool>(false);
   auto ctx = std::make_shared<cli::CliCtx>(

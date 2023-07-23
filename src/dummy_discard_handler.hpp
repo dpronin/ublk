@@ -15,7 +15,8 @@ public:
   DummyDiscardHandler(DummyDiscardHandler &&) = default;
   DummyDiscardHandler &operator=(DummyDiscardHandler &&) = default;
 
-  ssize_t handle(__off64_t offset, size_t size) noexcept override {
+  ssize_t handle([[maybe_unused]] __off64_t offset,
+                 size_t size) noexcept override {
     return size;
   }
 };

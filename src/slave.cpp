@@ -117,7 +117,8 @@ void run(slave_param const &param) {
         req.p_qcmd = std::unique_ptr<qublkcmd_t>{new qublkcmd_t{
             pos_t<TH>{new TH{req.p_cellc->cmdb_head},
                       std::default_delete<TH>{}},
-            pos_t<TT const>{&p_cmdb_raw->tail, [cmdb](auto *p) {}},
+            pos_t<TT const>{&p_cmdb_raw->tail,
+                            [cmdb]([[maybe_unused]] auto *p) {}},
             std::span{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
         }};
       } else if (UBLK_UIO_MEM_CELLC_NAME == map_name) {
@@ -144,8 +145,8 @@ void run(slave_param const &param) {
 
         rsp.p_qcmd = std::unique_ptr<qublkcmd_ack_t>{new qublkcmd_ack_t{
             pos_t<TH const>{&p_cellc_raw->cmdb_ack_head,
-                            [cellc = req.p_cellc](auto *p) {}},
-            pos_t<TT>{&p_cmdb_raw->tail, [cmdb](auto *p) {}},
+                            [cellc = req.p_cellc]([[maybe_unused]] auto *p) {}},
+            pos_t<TT>{&p_cmdb_raw->tail, [cmdb]([[maybe_unused]] auto *p) {}},
             std::span<ublk_cmd_ack>{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
         }};
       }

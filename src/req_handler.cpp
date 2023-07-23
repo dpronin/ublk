@@ -25,7 +25,7 @@ ReqHandler::ReqHandler(
   /* clang-format off */
   static auto reqh_not_supp = ReqHandlerNotSupp{};
   static auto const sp_reqh_not_supp =
-      std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>{&reqh_not_supp, [](auto *p) {}};
+      std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>{&reqh_not_supp, []([[maybe_unused]] auto *p) {}};
   /* clang-format on */
 
   std::ranges::transform(hs_, std::begin(hs_),
