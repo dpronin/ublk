@@ -10,14 +10,17 @@
 #include "cli/target_create_param.hpp"
 #include "cli/target_destroy_param.hpp"
 
+#include "mapper_interface.hpp"
 #include "target.hpp"
+#include "unmapper_interface.hpp"
 
 namespace cfq {
 
-class Master {
+class Master : public IMapper<cli::bdev_map_param const &>,
+               public IUnmapper<cli::bdev_unmap_param const &> {
 public:
   Master() = default;
-  ~Master();
+  ~Master() override;
 
   Master(Master const &) = delete;
   Master &operator=(Master const &) = delete;
@@ -25,8 +28,8 @@ public:
   Master(Master &&) = delete;
   Master &operator=(Master &&) = delete;
 
-  void map(cli::bdev_map_param const &param);
-  void unmap(cli::bdev_unmap_param const &param);
+  void map(cli::bdev_map_param const &param) override;
+  void unmap(cli::bdev_unmap_param const &param) override;
   void create(cli::target_create_param const &param);
   void destroy(cli::target_destroy_param const &param);
 

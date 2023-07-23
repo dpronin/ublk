@@ -7,15 +7,16 @@
 
 #include "cli/bdev_mapper_interface.hpp"
 
-#include "master.hpp"
+#include "mapper_interface.hpp"
 
 namespace cfq {
 
 class BdevMapper : public cli::IBdevMapper {
 public:
-  explicit BdevMapper(std::shared_ptr<Master> master)
-      : master_(std::move(master)) {
-    assert(master_);
+  explicit BdevMapper(
+      std::shared_ptr<IMapper<cli::bdev_map_param const &>> mapper)
+      : mapper_(std::move(mapper)) {
+    assert(mapper_);
   }
   ~BdevMapper() override = default;
 
@@ -26,11 +27,11 @@ public:
   BdevMapper &operator=(BdevMapper &&) = default;
 
   void handle(cli::bdev_map_param const &param) override {
-    master_->map(param);
+    mapper_->map(param);
   }
 
 private:
-  std::shared_ptr<Master> master_;
+  std::shared_ptr<IMapper<cli::bdev_map_param const &>> mapper_;
 };
 
 } // namespace cfq

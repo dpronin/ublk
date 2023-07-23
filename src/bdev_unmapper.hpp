@@ -7,15 +7,16 @@
 
 #include "cli/bdev_unmapper_interface.hpp"
 
-#include "master.hpp"
+#include "unmapper_interface.hpp"
 
 namespace cfq {
 
 class BdevUnmapper : public cli::IBdevUnmapper {
 public:
-  explicit BdevUnmapper(std::shared_ptr<Master> master)
-      : master_(std::move(master)) {
-    assert(master_);
+  explicit BdevUnmapper(
+      std::shared_ptr<IUnmapper<cli::bdev_unmap_param const &>> unmapper)
+      : unmapper_(std::move(unmapper)) {
+    assert(unmapper_);
   }
   ~BdevUnmapper() override = default;
 
@@ -26,11 +27,11 @@ public:
   BdevUnmapper &operator=(BdevUnmapper &&) = default;
 
   void handle(cli::bdev_unmap_param const &param) override {
-    master_->unmap(param);
+    unmapper_->unmap(param);
   }
 
 private:
-  std::shared_ptr<Master> master_;
+  std::shared_ptr<IUnmapper<cli::bdev_unmap_param const &>> unmapper_;
 };
 
 } // namespace cfq

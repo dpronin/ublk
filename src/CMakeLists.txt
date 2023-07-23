@@ -68,6 +68,7 @@ add_executable(${PROJECT_NAME}
     handler.cpp
     handler.hpp
     main.cpp
+    mapper_interface.hpp
     master.cpp
     master.hpp
     qublkcmd.hpp
@@ -86,6 +87,7 @@ add_executable(${PROJECT_NAME}
     target_properties.hpp
     ublk_req.hpp
     ublk_req_handler_interface.hpp
+    unmapper_interface.hpp
     write_handler.hpp
     write_handler_interface.hpp
 )
