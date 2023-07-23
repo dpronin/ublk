@@ -7,15 +7,16 @@
 
 #include "cli/target_destroyer_interface.hpp"
 
-#include "master.hpp"
+#include "destroyer_interface.hpp"
 
 namespace ublk {
 
 class TargetDestroyer : public cli::ITargetDestroyer {
 public:
-  explicit TargetDestroyer(std::shared_ptr<Master> master)
-      : master_(std::move(master)) {
-    assert(master_);
+  explicit TargetDestroyer(
+      std::shared_ptr<IDestroyer<cli::target_destroy_param const &>> destroyer)
+      : destroyer_(std::move(destroyer)) {
+    assert(destroyer_);
   }
   ~TargetDestroyer() override = default;
 
@@ -26,11 +27,11 @@ public:
   TargetDestroyer &operator=(TargetDestroyer &&) = default;
 
   void handle(cli::target_destroy_param const &param) override {
-    master_->destroy(param);
+    destroyer_->destroy(param);
   }
 
 private:
-  std::shared_ptr<Master> master_;
+  std::shared_ptr<IDestroyer<cli::target_destroy_param const &>> destroyer_;
 };
 
 } // namespace ublk

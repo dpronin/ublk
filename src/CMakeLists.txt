@@ -57,6 +57,8 @@ add_executable(${PROJECT_NAME}
     cmd_write_handler.cpp
     cmd_write_handler.hpp
     cmd_write_handler_adaptor.hpp
+    creator_interface.hpp
+    destroyer_interface.hpp
     discard_handler_interface.hpp
     dummy_discard_handler.hpp
     dummy_flush_handler.hpp

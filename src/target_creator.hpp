@@ -7,15 +7,16 @@
 
 #include "cli/target_creator_interface.hpp"
 
-#include "master.hpp"
+#include "creator_interface.hpp"
 
 namespace ublk {
 
 class TargetCreator : public cli::ITargetCreator {
 public:
-  explicit TargetCreator(std::shared_ptr<Master> master)
-      : master_(std::move(master)) {
-    assert(master_);
+  explicit TargetCreator(
+      std::shared_ptr<ICreator<cli::target_create_param const &>> creator)
+      : creator_(std::move(creator)) {
+    assert(creator_);
   }
   ~TargetCreator() override = default;
 
@@ -26,11 +27,11 @@ public:
   TargetCreator &operator=(TargetCreator &&) = default;
 
   void handle(cli::target_create_param const &param) override {
-    master_->create(param);
+    creator_->create(param);
   }
 
 private:
-  std::shared_ptr<Master> master_;
+  std::shared_ptr<ICreator<cli::target_create_param const &>> creator_;
 };
 
 } // namespace ublk

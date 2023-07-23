@@ -10,6 +10,8 @@
 #include "cli/target_create_param.hpp"
 #include "cli/target_destroy_param.hpp"
 
+#include "creator_interface.hpp"
+#include "destroyer_interface.hpp"
 #include "mapper_interface.hpp"
 #include "target.hpp"
 #include "unmapper_interface.hpp"
@@ -17,7 +19,9 @@
 namespace ublk {
 
 class Master : public IMapper<cli::bdev_map_param const &>,
-               public IUnmapper<cli::bdev_unmap_param const &> {
+               public IUnmapper<cli::bdev_unmap_param const &>,
+               public ICreator<cli::target_create_param const &>,
+               public IDestroyer<cli::target_destroy_param const &> {
 public:
   Master() = default;
   ~Master() override;
@@ -30,8 +34,8 @@ public:
 
   void map(cli::bdev_map_param const &param) override;
   void unmap(cli::bdev_unmap_param const &param) override;
-  void create(cli::target_create_param const &param);
-  void destroy(cli::target_destroy_param const &param);
+  void create(cli::target_create_param const &param) override;
+  void destroy(cli::target_destroy_param const &param) override;
 
 private:
   std::unordered_map<pid_t, std::future<void>> children_;
