@@ -25,9 +25,10 @@ ReqHandler::ReqHandler(
 
   std::ranges::fill(hs_, sp_reqh_not_supp);
 
+  auto hs = hs_ | std::views::take(std::size(hs_) - 1);
   for (auto const &[op, h] : maphs) {
-    assert(op < std::size(hs_));
-    hs_[op] = h;
+    assert(op < std::size(hs));
+    hs[op] = h;
   }
 }
 
