@@ -32,7 +32,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[]) {
           std::make_unique<TargetDestroyer>(master),
           std::make_unique<BdevMapper>(master),
           std::make_unique<BdevUnmapper>(master), finish_token));
-  for (cli::cmds::Invoker invoker{ctx}; !*finish_token;) {
+  for (auto invoker = cli::cmds::Invoker{}; !*finish_token;) {
     try {
       invoker(ctx->ureadcmd());
     } catch (std::exception const &ex) {
