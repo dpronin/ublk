@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <iostream>
 #include <iterator>
 #include <ranges>
 #include <string_view>
@@ -46,11 +47,13 @@ user_input_t Readline::operator()(std::string_view prompt /* = {}*/) {
   auto const deleter = [](char *p) noexcept(noexcept(std::free)) {
     std::free(p);
   };
-  if (std::unique_ptr<char, decltype(deleter)> input = {readline(prompt.data()),
-                                                        deleter}) {
+  if (auto const input = std::unique_ptr<char, decltype(deleter)>{
+          readline(prompt.data()), deleter}) {
     user_input = input.get();
     if (!user_input.empty())
       add_history(user_input.c_str());
+  } else {
+    std::cout << '\n';
   }
   return user_input;
 }
