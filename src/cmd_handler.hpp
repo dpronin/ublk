@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-#include <linux/ublk/cellc.h>
+#include <linux/ublk/celld.h>
 #include <linux/ublk/cmd.h>
 #include <linux/ublk/cmd_ack.h>
 
@@ -18,7 +18,7 @@ class CmdHandler : public IHandler<int(ublk_cmd) noexcept> {
 public:
   explicit CmdHandler(
       std::shared_ptr<IUblkReqHandler> handler,
-      std::shared_ptr<ublk_cellc const> cellc, std::span<std::byte> cells,
+      std::span<ublk_celld const> cellds, std::span<std::byte> cells,
       std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger);
   ~CmdHandler() override = default;
 
@@ -32,7 +32,7 @@ public:
 
 private:
   std::shared_ptr<IUblkReqHandler> handler_;
-  std::shared_ptr<ublk_cellc const> cellc_;
+  std::span<ublk_celld const> cellds_;
   std::span<std::byte> cells_;
   std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger_;
 };

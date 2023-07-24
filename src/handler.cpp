@@ -12,9 +12,7 @@
 
 #include <sys/epoll.h>
 
-#include <linux/ublk/cellc.h>
 #include <linux/ublk/cmd.h>
-#include <linux/ublk/cmd_ack.h>
 #include <linux/ublk/mapping.h>
 
 #include <linux/types.h>

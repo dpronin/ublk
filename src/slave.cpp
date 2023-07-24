@@ -175,7 +175,8 @@ void run(slave_param const &param) {
     _exit(EXIT_FAILURE);
 
   auto handler = CmdHandlerFactory{}.create_unique(
-      param.handler, std::move(structured_maps.p_cellc),
+      param.handler,
+      {structured_maps.p_cellc->cellds, structured_maps.p_cellc->cellds_len},
       {structured_maps.p_cells.get(), structured_maps.cells_sz},
       std::make_unique<CmdAcknowledger>(std::move(structured_maps.p_qcmd_ack),
                                         std::move(fd_notify)));

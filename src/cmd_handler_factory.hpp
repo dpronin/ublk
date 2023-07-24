@@ -5,6 +5,7 @@
 #include <memory>
 #include <span>
 
+#include <linux/ublk/celld.h>
 #include <linux/ublk/cmd.h>
 #include <linux/ublk/cmd_ack.h>
 
@@ -18,7 +19,7 @@ namespace ublk {
 
 class CmdHandlerFactory
     : public IFactoryUnique<rvwrap<IHandler<int(ublk_cmd) noexcept>>(
-          std::shared_ptr<IUblkReqHandler>, std::shared_ptr<ublk_cellc const>,
+          std::shared_ptr<IUblkReqHandler>, std::span<ublk_celld const>,
           std::span<std::byte>,
           std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>>)> {
 public:
@@ -31,14 +32,14 @@ public:
   CmdHandlerFactory(CmdHandlerFactory &&) = default;
   CmdHandlerFactory &operator=(CmdHandlerFactory &&) = default;
 
-  std::unique_ptr<IHandler<int(ublk_cmd) noexcept>> create_unique(
-      std::shared_ptr<IUblkReqHandler> handler,
-      std::shared_ptr<ublk_cellc const> cellc, std::span<std::byte> cells,
-      std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger)
-      override {
+  std::unique_ptr<IHandler<int(ublk_cmd) noexcept>>
+  create_unique(std::shared_ptr<IUblkReqHandler> handler,
+                std::span<ublk_celld const> cellds, std::span<std::byte> cells,
+                std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>>
+                    acknowledger) override {
 
-    return std::make_unique<CmdHandler>(std::move(handler), std::move(cellc),
-                                        cells, std::move(acknowledger));
+    return std::make_unique<CmdHandler>(std::move(handler), cellds, cells,
+                                        std::move(acknowledger));
   }
 };
 

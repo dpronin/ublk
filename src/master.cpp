@@ -10,8 +10,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <linux/ublk/cellc.h>
-#include <linux/ublk/celld.h>
 #include <linux/ublk/genl.h>
 
 #include <memory>
