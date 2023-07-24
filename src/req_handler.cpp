@@ -13,14 +13,9 @@
 namespace ublk {
 
 ReqHandler::ReqHandler(
-    std::map<ublk_cmd_op,
-             std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>>
-        maphs) {
-
-  for (auto &[op, h] : maphs) {
-    assert(op < std::size(hs_));
-    hs_[op] = std::move(h);
-  }
+    std::map<ublk_cmd_op, std::shared_ptr<IHandler<
+                              int(std::shared_ptr<ublk_req>) noexcept>>> const
+        &maphs) {
 
   /* clang-format off */
   static auto reqh_not_supp = ReqHandlerNotSupp{};
@@ -28,8 +23,12 @@ ReqHandler::ReqHandler(
       std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>{&reqh_not_supp, []([[maybe_unused]] auto *p) {}};
   /* clang-format on */
 
-  std::ranges::transform(hs_, std::begin(hs_),
-                         [](auto &&h) { return h ?: sp_reqh_not_supp; });
+  std::ranges::fill(hs_, sp_reqh_not_supp);
+
+  for (auto const &[op, h] : maphs) {
+    assert(op < std::size(hs_));
+    hs_[op] = h;
+  }
 }
 
 int ReqHandler::handle(std::shared_ptr<ublk_req> req) noexcept {

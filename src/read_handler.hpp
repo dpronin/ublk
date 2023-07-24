@@ -30,7 +30,7 @@ public:
       return res;
     } else if ((0 == res && ::ftruncate64(*fd_, offset + buf.size()) < 0) ||
                res < 0) {
-      return -(errno < 0 ? errno : EIO);
+      return -(errno ?: EIO);
     }
     return 0;
   }

@@ -31,7 +31,7 @@ public:
 
       return res;
     } else {
-      return -(errno < 0 ? errno : EIO);
+      return -(errno ?: EIO);
     }
   }
 

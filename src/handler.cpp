@@ -82,7 +82,7 @@ int handler(qublkcmd_t &qcmd, evpaths_t const &evpaths,
     spdlog::debug("is working");
 
     auto const nfds = epoll_wait(*fds[EV_FD_EPOLL], &event, 1, -1);
-    if (nfds == -1) [[unlikely]]
+    if (nfds == -1 && EINTR != errno) [[unlikely]]
       return EXIT_FAILURE;
 
     for (int i = 0; i < std::min(1, nfds); ++i) {

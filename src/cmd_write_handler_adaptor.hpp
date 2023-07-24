@@ -60,7 +60,8 @@ public:
   int handle(std::shared_ptr<ublk_req> req) noexcept override {
     assert(UBLK_CMD_OP_WRITE == ublk_cmd_get_op(&req->cmd()));
     spdlog::debug("process {}", req->cmd().u.w);
-    return handler_->handle(req->cmd().u.w, req->cellc(), req->cells());
+    req->set_err(handler_->handle(req->cmd().u.w, req->cellc(), req->cells()));
+    return 0;
   }
 
 private:

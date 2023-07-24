@@ -18,7 +18,7 @@ namespace ublk {
 class ReqHandler : public IUblkReqHandler {
 public:
   explicit ReqHandler(
-      std::map<ublk_cmd_op, std::shared_ptr<IUblkReqHandler>> maphs);
+      std::map<ublk_cmd_op, std::shared_ptr<IUblkReqHandler>> const &maphs);
   ~ReqHandler() override = default;
 
   ReqHandler(ReqHandler const &) = default;
