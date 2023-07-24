@@ -5,13 +5,14 @@
 #include <memory>
 #include <utility>
 
-#include "cli_ctx.hpp"
+#include "cli/cli_ctx.hpp"
+#include "cli/cmds/cmd_interface.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
-class CmdInvoker final {
+class Invoker final {
 public:
-  explicit CmdInvoker(std::shared_ptr<CliCtx> ctx) : ctx_(std::move(ctx)) {
+  explicit Invoker(std::shared_ptr<CliCtx> ctx) : ctx_(std::move(ctx)) {
     assert(ctx_);
   }
 
@@ -24,4 +25,4 @@ private:
   std::shared_ptr<CliCtx> ctx_;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

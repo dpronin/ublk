@@ -18,26 +18,26 @@ add_executable(${PROJECT_NAME}
     cli/cli_ctx.hpp
     cli/cli_error.hpp
     cli/cli_state.hpp
-    cli/cmd.hpp
-    cli/cmd_args.hpp
-    cli/cmd_bdev_map.hpp
-    cli/cmd_bdev_unmap.hpp
-    cli/cmd_help.hpp
-    cli/cmd_interface.hpp
-    cli/cmd_invoker.hpp
-    cli/cmd_null.hpp
-    cli/cmd_parser_default.cpp
-    cli/cmd_parser_default.hpp
-    cli/cmd_parser_interface.hpp
-    cli/cmd_quit.hpp
-    cli/cmd_state.hpp
-    cli/cmd_target_create.hpp
-    cli/cmd_target_destroy.hpp
+    cli/cmds/args.hpp
+    cli/cmds/bdev_map.hpp
+    cli/cmds/bdev_unmap.hpp
+    cli/cmds/cmd.hpp
+    cli/cmds/cmd_interface.hpp
+    cli/cmds/help.hpp
+    cli/cmds/invoker.hpp
+    cli/cmds/null.hpp
+    cli/cmds/parser_default.cpp
+    cli/cmds/parser_default.hpp
+    cli/cmds/parser_interface.hpp
+    cli/cmds/quit.hpp
+    cli/cmds/target_create.hpp
+    cli/cmds/target_destroy.hpp
     cli/color.hpp
     cli/main_state.cpp
     cli/main_state.hpp
     cli/readline.cpp
     cli/readline.hpp
+    cli/shell_state.hpp
     cli/suggestions_lister_interface.hpp
     cli/target_create_param.hpp
     cli/target_creator_interface.hpp
@@ -96,6 +96,8 @@ add_executable(${PROJECT_NAME}
     write_handler.hpp
     write_handler_interface.hpp
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (NOT ${CMAKE_CXX_COMPILER} MATCHES ".*clang.*")
     target_compile_options(${PROJECT_NAME} PRIVATE -Wno-interference-size)

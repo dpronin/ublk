@@ -2,17 +2,17 @@
 
 #include <utility>
 
-#include "cmd_args.hpp"
-#include "cmd_interface.hpp"
-#include "types.hpp"
+#include "cli/cmds/args.hpp"
+#include "cli/cmds/cmd_interface.hpp"
+#include "cli/types.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
 class Cmd : public ICmd {
 protected:
-  CmdArgs args_;
+  Args args_;
 
-  explicit Cmd(CmdArgs args = {}) : args_(std::move(args)) {}
+  explicit Cmd(Args args = {}) : args_(std::move(args)) {}
 
 public:
   ~Cmd() override = default;
@@ -24,4 +24,4 @@ public:
   Cmd &operator=(Cmd &&) = delete;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

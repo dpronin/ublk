@@ -4,15 +4,15 @@
 #include <optional>
 #include <utility>
 
-#include "types.hpp"
+#include "cli/types.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
-class CmdArgs {
+class Args {
   args_t args_;
 
 public:
-  CmdArgs(args_t args = {}) : args_(std::move(args)) {
+  Args(args_t args = {}) : args_(std::move(args)) {
     std::erase_if(args_, std::mem_fn(&arg_t::empty));
   }
 
@@ -34,4 +34,4 @@ public:
   }
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

@@ -7,8 +7,9 @@
 #include <string>
 #include <system_error>
 
+#include "cli/cmds/invoker.hpp"
+
 #include "cli/cli_ctx.hpp"
-#include "cli/cmd_invoker.hpp"
 #include "cli/color.hpp"
 #include "cli/main_state.hpp"
 #include "cli/readline.hpp"
@@ -31,7 +32,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[]) {
           std::make_unique<TargetDestroyer>(master),
           std::make_unique<BdevMapper>(master),
           std::make_unique<BdevUnmapper>(master), finish_token));
-  for (cli::CmdInvoker invoker{ctx}; !*finish_token;) {
+  for (cli::cmds::Invoker invoker{ctx}; !*finish_token;) {
     try {
       invoker(ctx->ureadcmd());
     } catch (std::exception const &ex) {

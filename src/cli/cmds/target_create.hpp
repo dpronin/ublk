@@ -11,18 +11,17 @@
 #include <boost/lexical_cast.hpp>
 #include <fmt/format.h>
 
+#include "args.hpp"
 #include "cmd.hpp"
-#include "cmd_args.hpp"
 
-#include "target_create_param.hpp"
-#include "target_creator_interface.hpp"
+#include "cli/target_create_param.hpp"
+#include "cli/target_creator_interface.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
-class CmdTargetCreate final : public Cmd {
+class TargetCreate final : public Cmd {
 public:
-  explicit CmdTargetCreate(CmdArgs args,
-                           std::shared_ptr<ITargetCreator> handler)
+  explicit TargetCreate(Args args, std::shared_ptr<ITargetCreator> handler)
       : Cmd(std::move(args)), handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -52,4 +51,4 @@ private:
   std::shared_ptr<ITargetCreator> handler_;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

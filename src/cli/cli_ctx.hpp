@@ -7,23 +7,23 @@
 #include <memory>
 #include <utility>
 
-#include "cli_state.hpp"
-#include "cmd_parser_interface.hpp"
-#include "cmd_state.hpp"
+#include "cmds/parser_interface.hpp"
+
 #include "readline.hpp"
+#include "shell_state.hpp"
 #include "utility.hpp"
 
 namespace ublk::cli {
 
 class CliCtx final {
 public:
-  void set_state(std::unique_ptr<CmdState> state) {
+  void set_state(std::unique_ptr<ShellState> state) {
     assert(state);
     state_ = std::move(state);
     rl_.set_suggester(state_);
   }
 
-  explicit CliCtx(Readline &rl, std::unique_ptr<CmdState> init_state)
+  explicit CliCtx(Readline &rl, std::unique_ptr<ShellState> init_state)
       : rl_(rl) {
 
     set_state(std::move(init_state));
@@ -42,7 +42,7 @@ public:
 
 private:
   Readline &rl_;
-  std::shared_ptr<CmdState> state_;
+  std::shared_ptr<ShellState> state_;
 };
 
 } // namespace ublk::cli

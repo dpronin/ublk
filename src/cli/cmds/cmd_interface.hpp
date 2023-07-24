@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
 class ICmd {
 public:
@@ -16,4 +16,4 @@ public:
   virtual void exec() = 0;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

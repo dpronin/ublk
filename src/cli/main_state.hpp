@@ -4,14 +4,14 @@
 
 #include "bdev_mapper_interface.hpp"
 #include "bdev_unmapper_interface.hpp"
-#include "cmd_state.hpp"
+#include "shell_state.hpp"
 #include "target_creator_interface.hpp"
 #include "target_destroyer_interface.hpp"
 #include "types.hpp"
 
 namespace ublk::cli {
 
-class MainState : public CmdState {
+class MainState : public ShellState {
 public:
   explicit MainState(std::shared_ptr<ITargetCreator> target_creator,
                      std::shared_ptr<ITargetDestroyer> target_destroyer,

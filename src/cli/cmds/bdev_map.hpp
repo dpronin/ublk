@@ -10,18 +10,18 @@
 #include <boost/lexical_cast.hpp>
 #include <fmt/format.h>
 
+#include "args.hpp"
 #include "cmd.hpp"
-#include "cmd_args.hpp"
 #include "cmd_interface.hpp"
 
-#include "bdev_map_param.hpp"
-#include "bdev_mapper_interface.hpp"
+#include "cli/bdev_map_param.hpp"
+#include "cli/bdev_mapper_interface.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
-class CmdBdevMap final : public Cmd {
+class BdevMap final : public Cmd {
 public:
-  explicit CmdBdevMap(CmdArgs args, std::shared_ptr<IBdevMapper> handler)
+  explicit BdevMap(Args args, std::shared_ptr<IBdevMapper> handler)
       : Cmd(std::move(args)), handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -48,4 +48,4 @@ private:
   std::shared_ptr<IBdevMapper> handler_;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

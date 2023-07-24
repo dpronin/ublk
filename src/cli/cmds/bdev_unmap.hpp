@@ -7,17 +7,17 @@
 #include <string>
 #include <utility>
 
+#include "args.hpp"
 #include "cmd.hpp"
-#include "cmd_args.hpp"
 
-#include "bdev_unmap_param.hpp"
-#include "bdev_unmapper_interface.hpp"
+#include "cli/bdev_unmap_param.hpp"
+#include "cli/bdev_unmapper_interface.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
-class CmdBdevUnmap final : public Cmd {
+class BdevUnmap final : public Cmd {
 public:
-  explicit CmdBdevUnmap(CmdArgs args, std::shared_ptr<IBdevUnmapper> handler)
+  explicit BdevUnmap(Args args, std::shared_ptr<IBdevUnmapper> handler)
       : Cmd(std::move(args)), handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -36,4 +36,4 @@ private:
   std::shared_ptr<IBdevUnmapper> handler_;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

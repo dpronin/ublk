@@ -1,4 +1,4 @@
-#include "cmd_parser_default.hpp"
+#include "parser_default.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -8,16 +8,16 @@
 
 #include "utility.hpp"
 
-#include "cli_error.hpp"
-#include "cmd_interface.hpp"
-#include "cmd_null.hpp"
+#include "cli/cli_error.hpp"
+#include "cli/cmds/cmd_interface.hpp"
+#include "cli/cmds/null.hpp"
 
 using namespace ublk::cli;
+using namespace ublk::cli::cmds;
 
-CmdParserDefault::CmdParserDefault(cmds_t cmds /* = {}*/)
-    : cmds_(std::move(cmds)) {}
+ParserDefault::ParserDefault(cmds_t cmds /* = {}*/) : cmds_(std::move(cmds)) {}
 
-std::unique_ptr<ICmd> CmdParserDefault::parse(args_t args) {
+std::unique_ptr<ICmd> ParserDefault::parse(args_t args) {
   std::unique_ptr<ICmd> cmd;
 
   if (args = normalize(std::move(args)); !args.empty()) {
@@ -35,7 +35,7 @@ std::unique_ptr<ICmd> CmdParserDefault::parse(args_t args) {
   }
 
   if (!cmd)
-    cmd = std::make_unique<CmdNull>();
+    cmd = std::make_unique<cmds::Null>();
 
   return cmd;
 }

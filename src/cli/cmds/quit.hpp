@@ -7,11 +7,11 @@
 
 #include "cmd_interface.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
-class CmdQuit final : public ICmd {
+class Quit final : public ICmd {
 public:
-  explicit CmdQuit(std::shared_ptr<bool> finish_token)
+  explicit Quit(std::shared_ptr<bool> finish_token)
       : finish_token_(std::move(finish_token)) {
     assert(finish_token_);
   }
@@ -22,4 +22,4 @@ private:
   std::shared_ptr<bool> finish_token_;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds

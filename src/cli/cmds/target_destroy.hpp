@@ -7,18 +7,17 @@
 #include <string>
 #include <utility>
 
+#include "args.hpp"
 #include "cmd.hpp"
-#include "cmd_args.hpp"
 
-#include "target_destroy_param.hpp"
-#include "target_destroyer_interface.hpp"
+#include "cli/target_destroy_param.hpp"
+#include "cli/target_destroyer_interface.hpp"
 
-namespace ublk::cli {
+namespace ublk::cli::cmds {
 
-class CmdTargetDestroy final : public Cmd {
+class TargetDestroy final : public Cmd {
 public:
-  explicit CmdTargetDestroy(CmdArgs args,
-                            std::shared_ptr<ITargetDestroyer> handler)
+  explicit TargetDestroy(Args args, std::shared_ptr<ITargetDestroyer> handler)
       : Cmd(std::move(args)), handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -37,4 +36,4 @@ private:
   std::shared_ptr<ITargetDestroyer> handler_;
 };
 
-} // namespace ublk::cli
+} // namespace ublk::cli::cmds
