@@ -66,6 +66,7 @@ add_executable(${PROJECT_NAME}
     dummy_write_handler.hpp
     flush_handler.hpp
     flush_handler_interface.hpp
+    for_each_celld.hpp
     genl.hpp
     handler.cpp
     handler.hpp
