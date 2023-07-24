@@ -35,9 +35,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[]) {
     try {
       invoker(ctx->ureadcmd());
     } catch (std::filesystem::filesystem_error const &ex) {
-      std::cerr << cli::cred(ex.what()) << '\n';
+      std::cerr << "filesystem: " << cli::cred(ex.what()) << '\n';
     } catch (std::system_error const &ex) {
-      std::cerr << cli::cred(ex.what()) << '\n';
+      std::cerr << "system: " << cli::cred(ex.what()) << '\n';
     } catch (std::exception const &ex) {
       std::cerr << cli::cred(ex.what()) << '\n';
     } catch (...) {

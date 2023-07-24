@@ -24,6 +24,7 @@ add_executable(${PROJECT_NAME}
     cli/cmd_help.hpp
     cli/cmd_interface.hpp
     cli/cmd_invoker.hpp
+    cli/cmd_null.hpp
     cli/cmd_parser_default.cpp
     cli/cmd_parser_default.hpp
     cli/cmd_parser_interface.hpp

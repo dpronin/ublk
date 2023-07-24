@@ -1,19 +1,11 @@
 #pragma once
 
+#include <cassert>
+
 #include <memory>
-#include <ranges>
 #include <utility>
 
 #include "cli_ctx.hpp"
-#include "cmd_help.hpp"
-#include "cmd_interface.hpp"
-#include "cmd_parser_default.hpp"
-#include "cmd_quit.hpp"
-
-#include "color.hpp"
-#include "types.hpp"
-
-#include "cmd_state.hpp"
 
 namespace ublk::cli {
 
@@ -24,8 +16,8 @@ public:
   }
 
   void operator()(std::shared_ptr<ICmd> cmd) {
-    if (cmd)
-      cmd->exec();
+    assert(cmd);
+    cmd->exec();
   }
 
 private:
