@@ -2,9 +2,9 @@
 
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 
 #include <algorithm>
+#include <memory>
 #include <ranges>
 #include <utility>
 
@@ -13,14 +13,12 @@
 namespace ublk {
 
 ReqHandler::ReqHandler(
-    std::map<ublk_cmd_op, std::shared_ptr<IHandler<
-                              int(std::shared_ptr<ublk_req>) noexcept>>> const
-        &maphs) {
+    std::map<ublk_cmd_op, std::shared_ptr<IUblkReqHandler>> const &maphs) {
 
   /* clang-format off */
   static auto reqh_not_supp = ReqHandlerNotSupp{};
   static auto const sp_reqh_not_supp =
-      std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>{&reqh_not_supp, []([[maybe_unused]] auto *p) {}};
+      std::shared_ptr<IUblkReqHandler>{&reqh_not_supp, []([[maybe_unused]] auto *p) {}};
   /* clang-format on */
 
   std::ranges::fill(hs_, sp_reqh_not_supp);

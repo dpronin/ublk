@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include "for_each_celld.hpp"
+
 namespace ublk {
 
 CmdReadHandler::CmdReadHandler(std::shared_ptr<IReadHandler> reader)
@@ -14,37 +16,26 @@ CmdReadHandler::CmdReadHandler(std::shared_ptr<IReadHandler> reader)
   assert(reader_);
 }
 
-int CmdReadHandler::handle(ublk_cmd_read cmd, ublk_cellc const &cellc,
+int CmdReadHandler::handle(ublk_cmd_read cmd,
+                           std::span<ublk_celld const> cellds,
                            std::span<std::byte> cells) noexcept {
 
-  auto celldn = ublk_cmd_read_get_fcdn(&cmd);
-  if (auto cellds_left = ublk_cmd_read_get_cds_nr(&cmd);
-      cellds_left > 0 && celldn < cellc.cellds_len) [[likely]] {
-    auto offset = ublk_cmd_read_get_offset(&cmd);
-    for (auto const *celld = &cellc.cellds[celldn];
-         cellds_left > 0 && celldn < cellc.cellds_len;
-         celldn = celld->ncelld, celld = &cellc.cellds[celldn], --cellds_left) {
+  return for_each_celld(ublk_cmd_read_get_fcdn(&cmd),
+                        ublk_cmd_read_get_cds_nr(&cmd), cellds, cells,
+                        [this, offset = ublk_cmd_read_get_offset(&cmd)](
+                            std::span<std::byte> buf) mutable {
+                          while (!buf.empty()) {
+                            if (auto const res = reader_->handle(buf, offset);
+                                res > 0) [[likely]] {
 
-      if (!(celld->offset + celld->data_sz <= cells.size())) [[unlikely]] {
-        return EINVAL;
-      }
-
-      /* clang-format off */
-      for (decltype(celld->offset) cell_offset = 0; cell_offset < celld->data_sz; ) {
-        if (auto const res = reader_->handle({&cells[celld->offset + cell_offset],
-                                        celld->data_sz - cell_offset}, offset);
-            res > 0) [[likely]] {
-
-          cell_offset += res;
-          offset += res;
-        } else if (res < 0) {
-          return -res;
-        }
-      }
-      /* clang-format on */
-    }
-  }
-
+                              buf = buf.subspan(res);
+                              offset += res;
+                            } else if (res < 0) [[unlikely]] {
+                              return -static_cast<int>(res);
+                            }
+                          }
+                          return 0;
+                        });
   return 0;
 }
 

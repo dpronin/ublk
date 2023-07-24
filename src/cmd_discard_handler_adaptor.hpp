@@ -13,7 +13,6 @@
 #include <linux/ublk/cmd.h>
 
 #include "handler_interface.hpp"
-#include "ublk_req.hpp"
 #include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
 

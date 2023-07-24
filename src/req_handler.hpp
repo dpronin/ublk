@@ -1,13 +1,10 @@
 #pragma once
 
-#include <cstddef>
-
 #include <array>
 #include <map>
 #include <memory>
 #include <utility>
 
-#include <linux/ublk/cellc.h>
 #include <linux/ublk/cmd.h>
 
 #include "ublk_req.hpp"

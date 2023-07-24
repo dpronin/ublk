@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include <memory>
+#include <span>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -10,11 +11,10 @@
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
-#include <linux/ublk/cellc.h>
+#include <linux/ublk/celld.h>
 #include <linux/ublk/cmd.h>
 
 #include "handler_interface.hpp"
-#include "ublk_req.hpp"
 #include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
 
@@ -43,7 +43,7 @@ namespace ublk {
 class CmdWriteHandlerAdaptor : public IUblkReqHandler {
 public:
   explicit CmdWriteHandlerAdaptor(
-      std::shared_ptr<IHandler<int(ublk_cmd_write, ublk_cellc const &,
+      std::shared_ptr<IHandler<int(ublk_cmd_write, std::span<ublk_celld const>,
                                    std::span<std::byte const>) noexcept>>
           handler)
       : handler_(std::move(handler)) {
@@ -60,12 +60,14 @@ public:
   int handle(std::shared_ptr<ublk_req> req) noexcept override {
     assert(UBLK_CMD_OP_WRITE == ublk_cmd_get_op(&req->cmd()));
     spdlog::debug("process {}", req->cmd().u.w);
-    req->set_err(handler_->handle(req->cmd().u.w, req->cellc(), req->cells()));
+    req->set_err(handler_->handle(
+        req->cmd().u.w, {req->cellc().cellds, req->cellc().cellds_len},
+        req->cells()));
     return 0;
   }
 
 private:
-  std::shared_ptr<IHandler<int(ublk_cmd_write, ublk_cellc const &,
+  std::shared_ptr<IHandler<int(ublk_cmd_write, std::span<ublk_celld const>,
                                std::span<std::byte const>) noexcept>>
       handler_;
 };
