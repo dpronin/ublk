@@ -7,6 +7,7 @@
 #include <ranges>
 #include <span>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -31,26 +32,20 @@
 
 namespace {
 
-using pcmdb_t = ublk::uptrwd<ublk_cmdb>;
-using pcmdb_ack_t = ublk::uptrwd<ublk_cmdb_ack>;
-using pcellc_t = std::shared_ptr<ublk_cellc const>;
-using mem_bytes_t = ublk::mem_t<std::byte>;
+auto maps_fetch(std::string_view bdev_name) {
+  std::vector<std::filesystem::path> maps;
 
-} // namespace
-
-namespace ublk::slave {
-
-void run(slave_param const &param) {
   auto maps_rng =
-      std::views::filter(
-          std::filesystem::directory_iterator("/sys/block/" UBLK_PREFIX +
-                                              param.bdev_suffix),
-          [](auto const &dir_e) {
-            return dir_e.is_directory() &&
-                   dir_e.path().filename().string().starts_with("uio");
-          }) |
+      std::views::filter(std::filesystem::directory_iterator(
+                             fmt::format("/sys/block/{}", bdev_name)),
+                         [](auto const &dir_e) {
+                           return dir_e.is_directory() &&
+                                  dir_e.path().filename().string().starts_with(
+                                      "uio");
+                         }) |
       std::views::filter([](auto const &uio) {
-        auto const uio_name = read_from_as<std::string>(uio.path() / "name");
+        auto const uio_name =
+            ublk::read_from_as<std::string>(uio.path() / "name");
         static std::initializer_list<const char *> dir_list{
             UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX,
             UBLK_UIO_USER_TO_KERNEL_DIR_SUFFIX,
@@ -71,24 +66,31 @@ void run(slave_param const &param) {
         return out;
       });
 
-  struct ublk_req_maps {
-    std::unique_ptr<qublkcmd_t> p_qcmd;
-    pcellc_t p_cellc;
-    mem_bytes_t p_cells;
-    size_t cells_sz;
-  } req;
-
-  struct ublk_rsp_maps {
-    std::unique_ptr<qublkcmd_ack_t> p_qcmd;
-  } rsp;
-
-  std::vector<std::filesystem::path> maps;
   for (auto &&maps_in : maps_rng)
     std::ranges::copy(maps_in, std::back_inserter(maps));
 
-  auto cellc_map_it = std::ranges::find_if(maps, [](auto const &map) {
-    return UBLK_UIO_MEM_CELLC_NAME == read_from_as<std::string>(map / "name");
-  });
+  return maps;
+}
+
+} // namespace
+
+namespace ublk::slave {
+
+void run(slave_param const &param) {
+  struct ublk_structured_maps {
+    std::unique_ptr<qublkcmd_t> p_qcmd;
+    std::unique_ptr<qublkcmd_ack_t> p_qcmd_ack;
+    std::shared_ptr<ublk_cellc const> p_cellc;
+    ublk::mem_t<std::byte> p_cells;
+    size_t cells_sz;
+  } structured_maps;
+
+  auto maps = maps_fetch(UBLK_PREFIX + param.bdev_suffix);
+
+  auto cellc_map_it =
+      std::ranges::find(maps, UBLK_UIO_MEM_CELLC_NAME, [](auto const &map) {
+        return read_from_as<std::string>(map / "name");
+      });
   if (std::ranges::end(maps) == cellc_map_it)
     throw std::runtime_error("no map with cell configuration");
 
@@ -111,25 +113,25 @@ void run(slave_param const &param) {
             off_factor * get_page_size(), uio_dev_path)};
         auto *p_cmdb_raw = cmdb.get();
 
-        using TH = decltype(req.p_cellc->cmdb_head);
+        using TH = decltype(structured_maps.p_cellc->cmdb_head);
         using TT = decltype(p_cmdb_raw->tail);
 
-        req.p_qcmd = std::unique_ptr<qublkcmd_t>{new qublkcmd_t{
-            pos_t<TH>{new TH{req.p_cellc->cmdb_head},
+        structured_maps.p_qcmd = std::unique_ptr<qublkcmd_t>{new qublkcmd_t{
+            pos_t<TH>{new TH{structured_maps.p_cellc->cmdb_head},
                       std::default_delete<TH>{}},
             pos_t<TT const>{&p_cmdb_raw->tail,
                             [cmdb]([[maybe_unused]] auto *p) {}},
             std::span{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
         }};
       } else if (UBLK_UIO_MEM_CELLC_NAME == map_name) {
-        req.p_cellc = map_shared<ublk_cellc const>(
+        structured_maps.p_cellc = map_shared<ublk_cellc const>(
             read_from_as<size_t>(sz_path, std::hex), PROT_READ,
             off_factor * get_page_size(), uio_dev_path);
       } else if (UBLK_UIO_MEM_CELLS_NAME == map_name) {
-        req.cells_sz = read_from_as<size_t>(sz_path, std::hex);
-        req.p_cells =
-            map_shared<std::byte>(req.cells_sz, PROT_READ | PROT_WRITE,
-                                  off_factor * get_page_size(), uio_dev_path);
+        structured_maps.cells_sz = read_from_as<size_t>(sz_path, std::hex);
+        structured_maps.p_cells = map_shared<std::byte>(
+            structured_maps.cells_sz, PROT_READ | PROT_WRITE,
+            off_factor * get_page_size(), uio_dev_path);
       }
       uio_devs[UBLK_UIO_KERNEL_TO_USER_DIR_SUFFIX] = uio_dev_path;
     } else {
@@ -138,23 +140,27 @@ void run(slave_param const &param) {
             read_from_as<size_t>(sz_path, std::hex), PROT_READ | PROT_WRITE,
             off_factor * get_page_size(), uio_dev_path)};
         auto *p_cmdb_raw = cmdb.get();
-        auto *p_cellc_raw = req.p_cellc.get();
+        auto *p_cellc_raw = structured_maps.p_cellc.get();
 
-        using TH = decltype(req.p_cellc->cmdb_ack_head);
+        using TH = decltype(structured_maps.p_cellc->cmdb_ack_head);
         using TT = decltype(p_cmdb_raw->tail);
 
-        rsp.p_qcmd = std::unique_ptr<qublkcmd_ack_t>{new qublkcmd_ack_t{
-            pos_t<TH const>{&p_cellc_raw->cmdb_ack_head,
-                            [cellc = req.p_cellc]([[maybe_unused]] auto *p) {}},
-            pos_t<TT>{&p_cmdb_raw->tail, [cmdb]([[maybe_unused]] auto *p) {}},
-            std::span<ublk_cmd_ack>{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
-        }};
+        structured_maps.p_qcmd_ack =
+            std::unique_ptr<qublkcmd_ack_t>{new qublkcmd_ack_t{
+                pos_t<TH const>{&p_cellc_raw->cmdb_ack_head,
+                                [cellc = structured_maps.p_cellc](
+                                    [[maybe_unused]] auto *p) {}},
+                pos_t<TT>{&p_cmdb_raw->tail,
+                          [cmdb]([[maybe_unused]] auto *p) {}},
+                std::span<ublk_cmd_ack>{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
+            }};
       }
       uio_devs[UBLK_UIO_USER_TO_KERNEL_DIR_SUFFIX] = uio_dev_path;
     }
   }
 
-  if (!req.p_qcmd || !req.p_cellc || !req.p_cells || !rsp.p_qcmd)
+  if (!structured_maps.p_qcmd || !structured_maps.p_cellc ||
+      !structured_maps.p_cells || !structured_maps.p_qcmd_ack)
     _exit(EXIT_FAILURE);
 
   auto fd_notify = uptrwd<const int>{};
@@ -169,11 +175,12 @@ void run(slave_param const &param) {
     _exit(EXIT_FAILURE);
 
   auto handler = CmdHandlerFactory{}.create_unique(
-      param.handler, std::move(req.p_cellc), {req.p_cells.get(), req.cells_sz},
-      std::make_unique<CmdAcknowledger>(std::move(rsp.p_qcmd),
+      param.handler, std::move(structured_maps.p_cellc),
+      {structured_maps.p_cells.get(), structured_maps.cells_sz},
+      std::make_unique<CmdAcknowledger>(std::move(structured_maps.p_qcmd_ack),
                                         std::move(fd_notify)));
 
-  auto r = ublk::handler(*req.p_qcmd, uio_devs, *handler);
+  auto r = ublk::handler(*structured_maps.p_qcmd, uio_devs, *handler);
 
   spdlog::info("finished, err {}", r);
 

@@ -134,7 +134,8 @@ void Master::create(cli::target_create_param const &param) {
   auto discarder = std::shared_ptr<IDiscardHandler>{};
 
   if (param.path != "dummy") {
-    auto fd_target = std::shared_ptr{open(param.path, O_RDWR | O_CREAT)};
+    auto fd_target = std::shared_ptr{open(
+        param.path, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH)};
     if (!fd_target)
       throw std::runtime_error(
           fmt::format("could not open '{}' as target", param.path.string()));
@@ -146,8 +147,9 @@ void Master::create(cli::target_create_param const &param) {
     reader = std::make_shared<DummyReadHandler>();
     writer = std::make_shared<DummyWriteHandler>();
     flusher = std::make_shared<DummyFlushHandler>();
-    discarder = std::make_shared<DummyDiscardHandler>();
   }
+
+  discarder = std::make_shared<DummyDiscardHandler>();
 
   auto hs = std::map<
       ublk_cmd_op,
