@@ -45,6 +45,7 @@
 #include "read_handler.hpp"
 #include "read_handler_interface.hpp"
 #include "target.hpp"
+#include "ublk_req_handler_interface.hpp"
 #include "write_handler.hpp"
 #include "write_handler_interface.hpp"
 
@@ -151,9 +152,7 @@ void Master::create(cli::target_create_param const &param) {
 
   discarder = std::make_shared<DummyDiscardHandler>();
 
-  auto hs = std::map<
-      ublk_cmd_op,
-      std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>>>{
+  auto hs = std::map<ublk_cmd_op, std::shared_ptr<IUblkReqHandler>>{
       {
           UBLK_CMD_OP_READ,
           std::make_unique<CmdReadHandlerAdaptor>(

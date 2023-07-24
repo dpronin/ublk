@@ -1,13 +1,10 @@
 #pragma once
 
-#include "handler_interface.hpp"
-#include "ublk_req.hpp"
+#include "ublk_req_handler_interface.hpp"
 
 namespace ublk {
 
-template <int eVal>
-class ReqOpErrHandler
-    : public IHandler<int(std::shared_ptr<ublk_req>) noexcept> {
+template <int eVal> class ReqOpErrHandler : public IUblkReqHandler {
 
 public:
   ReqOpErrHandler() = default;

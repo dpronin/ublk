@@ -9,11 +9,12 @@
 
 #include "cache_line_aligned_allocator.hpp"
 #include "ublk_req.hpp"
+#include "ublk_req_handler_interface.hpp"
 
 namespace ublk {
 
 CmdHandler::CmdHandler(
-    std::shared_ptr<IHandler<int(std::shared_ptr<ublk_req>) noexcept>> handler,
+    std::shared_ptr<IUblkReqHandler> handler,
     std::shared_ptr<ublk_cellc const> cellc, std::span<std::byte> cells,
     std::shared_ptr<IHandler<int(ublk_cmd_ack) noexcept>> acknowledger)
     : handler_(std::move(handler)), cellc_(std::move(cellc)), cells_(cells),
