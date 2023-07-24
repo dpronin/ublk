@@ -1,10 +1,10 @@
 #include "cmd_write_handler.hpp"
 
 #include <cassert>
-#include <cstdint>
-#include <cstdlib>
 
 #include <utility>
+
+#include <linux/ublk/cmd.h>
 
 #include "for_each_celld.hpp"
 
