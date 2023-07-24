@@ -2,15 +2,14 @@
 
 #include <algorithm>
 #include <memory>
-#include <ostream>
 #include <ranges>
-#include <sstream>
-#include <stdexcept>
+#include <tuple>
 #include <utility>
 
-#include "types.hpp"
 #include "utility.hpp"
 
+#include "cli_error.hpp"
+#include "cmd_interface.hpp"
 #include "cmd_null.hpp"
 
 using namespace ublk::cli;
@@ -31,14 +30,7 @@ std::unique_ptr<ICmd> CmdParserDefault::parse(args_t args) {
 
       cmd = std::get<3>(*it)(std::move(args));
     } else {
-      std::ostringstream oss;
-      oss << "unknown command '" << cmd_name;
-      if (!args.empty()) {
-        std::ranges::copy(args, std::ostream_iterator<arg_t>(oss << ' ', " "));
-        oss << '\b';
-      }
-      oss << '\'';
-      throw std::invalid_argument(oss.str());
+      throw cli_error(cmd_name, args, "Unknown Command");
     }
   }
 

@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME}
     cli/bdev_unmap_param.hpp
     cli/bdev_unmapper_interface.hpp
     cli/cli_ctx.hpp
+    cli/cli_error.hpp
     cli/cli_state.hpp
     cli/cmd.hpp
     cli/cmd_args.hpp
