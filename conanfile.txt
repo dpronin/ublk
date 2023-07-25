@@ -1,9 +1,9 @@
 [requires]
-boost/[~1.82]
+boost/[~1.83]
 fmt/[~10.0]
 spdlog/[~1.11]
 libnl/[~3.2]
-readline/[~8.1]
+pybind11/[~2.11]
 
 [generators]
 CMakeToolchain
