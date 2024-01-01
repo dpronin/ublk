@@ -29,8 +29,6 @@ pybind11_add_module(${PROJECT_NAME}
     cmd_write_handler.hpp
     cmd_write_handler_adaptor.hpp
     concepts.hpp
-    creator_interface.hpp
-    destroyer_interface.hpp
     discard_handler_interface.hpp
     dummy_discard_handler.hpp
     dummy_flush_handler.hpp
@@ -48,7 +46,6 @@ pybind11_add_module(${PROJECT_NAME}
     handler.cpp
     handler.hpp
     handler_interface.hpp
-    mapper_interface.hpp
     mapping.hpp
     master.cpp
     master.hpp
@@ -71,8 +68,6 @@ pybind11_add_module(${PROJECT_NAME}
     target_properties.hpp
     ublk_req.hpp
     ublk_req_handler_interface.hpp
-    unmapper_interface.hpp
-    uread.hpp
     utility.hpp
     write_handler.hpp
     write_handler_interface.hpp

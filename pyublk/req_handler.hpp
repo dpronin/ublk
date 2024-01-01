@@ -3,7 +3,6 @@
 #include <array>
 #include <map>
 #include <memory>
-#include <utility>
 
 #include <linux/ublk/cmd.h>
 

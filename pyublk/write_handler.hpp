@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <cassert>
+#include <cerrno>
 
 #include <memory>
 #include <utility>

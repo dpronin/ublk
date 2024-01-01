@@ -7,10 +7,7 @@
 #include <sys/mman.h>
 
 #include <filesystem>
-#include <functional>
-#include <memory>
 #include <type_traits>
-#include <utility>
 
 #include <spdlog/spdlog.h>
 

@@ -22,10 +22,10 @@ public:
 
   template <typename U>
   constexpr explicit page_aligned_allocator(
-      page_aligned_allocator<U> const &other) noexcept {}
+      page_aligned_allocator<U> const &other [[maybe_unused]]) noexcept {}
 
-  page_aligned_allocator(page_aligned_allocator<T> const &other) = default;
-  page_aligned_allocator(page_aligned_allocator<T> &&other) = default;
+  page_aligned_allocator(page_aligned_allocator<T> const &) = default;
+  page_aligned_allocator(page_aligned_allocator<T> &&) = default;
 
   T *allocate(size_t n) {
     if (n > std::numeric_limits<size_t>::max() / sizeof(T))
@@ -41,6 +41,6 @@ public:
     throw std::bad_alloc();
   }
 
-  void deallocate(T *p, size_t n) noexcept { std::free(p); }
+  void deallocate(T *p, size_t n [[maybe_unused]]) noexcept { std::free(p); }
 };
 } // namespace ublk

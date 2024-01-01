@@ -47,7 +47,10 @@ auto fds_open(ublk::evpaths_t const &evpaths) {
     fds[EV_FD_LISTEN] = ublk::open(it->second, O_RDWR);
 
     struct epoll_event ev {
-      .events = EPOLLIN, .data = {.fd = *fds[EV_FD_LISTEN]},
+      .events = EPOLLIN,
+      .data = {
+          .fd = *fds[EV_FD_LISTEN],
+      },
     };
 
     fds[EV_FD_EPOLL] = ublk::epoll_create1(0);
