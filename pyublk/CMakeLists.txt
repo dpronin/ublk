@@ -73,12 +73,7 @@ pybind11_add_module(${PROJECT_NAME}
     page_aligned_allocator.hpp
     pyublk.cpp
     qublkcmd.hpp
-    raid5/cached_target.cpp
-    raid5/cached_target.hpp
-    raid5/read_handler.hpp
-    raid5/target.cpp
-    raid5/target.hpp
-    raid5/write_handler.hpp
+    read_handler.hpp
     read_handler_interface.hpp
     req_handler.cpp
     req_handler.hpp
@@ -103,6 +98,7 @@ add_subdirectory(null)
 add_subdirectory(raid0)
 add_subdirectory(raid1)
 add_subdirectory(raid4)
+add_subdirectory(raid5)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
@@ -117,6 +113,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ublk::raid0
     ublk::raid1
     ublk::raid4
+    ublk::raid5
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE
