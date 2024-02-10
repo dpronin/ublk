@@ -73,10 +73,6 @@ pybind11_add_module(${PROJECT_NAME}
     page_aligned_allocator.hpp
     pyublk.cpp
     qublkcmd.hpp
-    raid0/read_handler.hpp
-    raid0/target.cpp
-    raid0/target.hpp
-    raid0/write_handler.hpp
     raid1/read_handler.hpp
     raid1/target.hpp
     raid1/write_handler.hpp
@@ -113,6 +109,7 @@ pybind11_add_module(${PROJECT_NAME}
 
 add_subdirectory(inmem)
 add_subdirectory(null)
+add_subdirectory(raid0)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
@@ -124,6 +121,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::system
     ublk::inmem
     ublk::null
+    ublk::raid0
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE
