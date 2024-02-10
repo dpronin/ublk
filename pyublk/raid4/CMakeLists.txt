@@ -1,0 +1,17 @@
+add_library(ublk_raid4 STATIC
+    cached_target.cpp
+    cached_target.hpp
+    read_handler.hpp
+    target.cpp
+    target.hpp
+    write_handler.hpp
+)
+
+target_include_directories(ublk_raid4 PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
+target_link_libraries(ublk_raid4 PRIVATE utils)
+target_compile_features(ublk_raid4 PRIVATE
+    cxx_std_23
+)
+set_property(TARGET ublk_raid4 PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+add_library(ublk::raid4 ALIAS ublk_raid4)
