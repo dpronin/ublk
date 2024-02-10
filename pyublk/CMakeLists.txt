@@ -70,10 +70,6 @@ pybind11_add_module(${PROJECT_NAME}
     handler_interface.hpp
     master.cpp
     master.hpp
-    null/discard_handler.hpp
-    null/flush_handler.hpp
-    null/read_handler.hpp
-    null/write_handler.hpp
     page_aligned_allocator.hpp
     pyublk.cpp
     qublkcmd.hpp
@@ -116,6 +112,7 @@ pybind11_add_module(${PROJECT_NAME}
 )
 
 add_subdirectory(inmem)
+add_subdirectory(null)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
@@ -126,6 +123,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::headers
     Boost::system
     ublk::inmem
+    ublk::null
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE
