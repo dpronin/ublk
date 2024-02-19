@@ -1,0 +1,2 @@
+target_create name=raid40_4cached capacity_sectors=2097152 type=raid40 strip_len_sectors=256 raid4s="strip_len_sectors=256;cache_len_stripes=50;data_paths=/dev/nullb0,/dev/nullb1;parity_path=/dev/nullb2:strip_len_sectors=256;cache_len_stripes=50;data_paths=/dev/nullb3,/dev/nullb4;parity_path=/dev/nullb5:strip_len_sectors=256;cache_len_stripes=50;data_paths=/dev/nullb6,/dev/nullb7;parity_path=/dev/nullb8:strip_len_sectors=256;cache_len_stripes=50;data_paths=/dev/nullb9,/dev/nullb10;parity_path=/dev/nullb11"
+bdev_map bdev_suffix=0 target_name=raid40_4cached

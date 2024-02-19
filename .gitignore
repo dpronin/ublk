@@ -1,0 +1,5 @@
+build/
+.cache/
+CMakeUserPresets.json
+*.sublime-*
+compile_commands.json

@@ -1,0 +1,2 @@
+target_create name=inmem capacity_sectors=2097152 type=inmem
+bdev_map bdev_suffix=0 target_name=inmem

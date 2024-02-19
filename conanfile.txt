@@ -1,0 +1,17 @@
+[requires]
+boost/[~1.84]
+spdlog/[~1.13]
+libnl/[~3.9]
+pybind11/[~2.11]
+jfalcou-eve/v2023.02.15
+
+[test_requires]
+gtest/[~1.14]
+benchmark/[~1.8]
+
+[generators]
+CMakeToolchain
+CMakeDeps
+
+[layout]
+cmake_layout

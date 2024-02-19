@@ -1,0 +1,2 @@
+target_create name=raid1 capacity_sectors=2097152 type=raid1 paths=0.dat,1.dat,2.dat,3.dat,4.dat,5.dat,6.dat,7.dat,8.dat,9.dat,10.dat,11.dat
+bdev_map bdev_suffix=0 target_name=raid1

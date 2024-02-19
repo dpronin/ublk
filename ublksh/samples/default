@@ -1,0 +1,2 @@
+target_create name=default capacity_sectors=2097152 type=default path=0.dat
+bdev_map bdev_suffix=0 target_name=default
