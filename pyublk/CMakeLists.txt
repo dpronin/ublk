@@ -115,7 +115,3 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ublk::raid4
     ublk::raid5
 )
-
-target_compile_features(${PROJECT_NAME} PRIVATE
-    cxx_std_23
-)

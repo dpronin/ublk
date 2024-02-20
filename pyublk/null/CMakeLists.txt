@@ -7,8 +7,5 @@ add_library(ublk_null INTERFACE
 
 target_include_directories(ublk_null INTERFACE ${CMAKE_CURRENT_LIST_DIR}/..)
 # target_link_libraries(ublk_null PRIVATE)
-target_compile_features(ublk_null INTERFACE
-    cxx_std_23
-)
 
 add_library(ublk::null ALIAS ublk_null)
