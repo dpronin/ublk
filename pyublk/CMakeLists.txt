@@ -51,10 +51,6 @@ pybind11_add_module(${PROJECT_NAME}
     cmd_write_handler.cpp
     cmd_write_handler.hpp
     cmd_write_handler_adaptor.hpp
-    def/flush_handler.hpp
-    def/read_handler.hpp
-    def/target.hpp
-    def/write_handler.hpp
     discard_handler_interface.hpp
     epoll.hpp
     factory_interface.hpp
@@ -93,6 +89,7 @@ pybind11_add_module(${PROJECT_NAME}
     write_handler_interface.hpp
 )
 
+add_subdirectory(def)
 add_subdirectory(inmem)
 add_subdirectory(null)
 add_subdirectory(raid0)
@@ -108,6 +105,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     libnl::libnl
     Boost::headers
     Boost::system
+    ublk::def
     ublk::inmem
     ublk::null
     ublk::raid0
