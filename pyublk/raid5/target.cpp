@@ -133,17 +133,19 @@ ssize_t Target::write(std::span<std::byte const> buf,
     auto const data_lp =
         cached_stripe_view().subspan(parity_stripe_offset + strip_sz_);
 
-    if (auto const res =
-            read_data_skip_parity(stripe_id * (hs_.size() - 1), 0, data_fp);
-        res < 0) [[unlikely]] {
-      return res;
-    }
+    if (chunk.size() < data_fp.size() + data_lp.size()) {
+      if (auto const res =
+              read_data_skip_parity(stripe_id * (hs_.size() - 1), 0, data_fp);
+          res < 0) [[unlikely]] {
+        return res;
+      }
 
-    if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1) +
-                                                   data_fp.size() / strip_sz_,
-                                               0, data_lp);
-        res < 0) [[unlikely]] {
-      return res;
+      if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1) +
+                                                     data_fp.size() / strip_sz_,
+                                                 0, data_lp);
+          res < 0) [[unlikely]] {
+        return res;
+      }
     }
 
     /* Modify the part of the stripe with the new data come in */

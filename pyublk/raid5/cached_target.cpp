@@ -29,6 +29,10 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
   auto stripe_offset{offset % stripe_data_sz_};
 
   while (!buf.empty()) {
+    auto const chunk{
+        buf.subspan(0, std::min(stripe_data_sz_ - stripe_offset, buf.size())),
+    };
+
     auto [cached_stripe, valid] = cache_->find_allocate_mutable(stripe_id);
     assert(!cached_stripe.empty());
 
@@ -40,7 +44,7 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
     auto const data_lp =
         cached_stripe.subspan(parity_stripe_offset + strip_sz_);
 
-    if (!valid) {
+    if (!valid && chunk.size() < (data_fp.size() + data_lp.size())) {
       /*
        * Read the whole stripe from backend if not found as a valid stripe line
        * in the cache
@@ -63,10 +67,6 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
         return res;
       }
     }
-
-    auto const chunk{
-        buf.subspan(0, std::min(stripe_data_sz_ - stripe_offset, buf.size())),
-    };
 
     /* Modify the part of the stripe with the new data come in */
     auto const data_fp_offset = std::min(stripe_offset, data_fp.size());
