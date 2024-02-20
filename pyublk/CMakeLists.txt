@@ -19,6 +19,7 @@ target_include_directories(utils INTERFACE
 
 target_link_libraries(utils INTERFACE
     eve::eve
+    Boost::system
 )
 
 pybind11_add_module(${PROJECT_NAME}
