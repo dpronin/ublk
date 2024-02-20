@@ -7,8 +7,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include <spdlog/spdlog.h>
-
 #include <filesystem>
 #include <new>
 #include <type_traits>
@@ -29,7 +27,6 @@ mem_t<Target> mmap(size_t sz, int prot = PROT_READ | PROT_WRITE, int fd = -1,
   void *p = ::mmap(nullptr, sz, prot, flags | (-1 == fd ? MAP_ANONYMOUS : 0),
                    fd, offset);
   if (p == MAP_FAILED) {
-    spdlog::error("mmap() failed, reason: {}", strerror(errno));
     return {};
   }
 
@@ -49,10 +46,7 @@ mem_t<Target> mmap(size_t sz, int prot = PROT_READ | PROT_WRITE, int fd = -1,
               sz);
         },
     };
-  } catch (std::exception const &ex) {
-    spdlog::error("mmap() failed, reason: {}", ex.what());
   } catch (...) {
-    spdlog::error("mmap() failed, reason: unknown exception");
   }
 
   return {};

@@ -22,6 +22,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <spdlog/spdlog.h>
+
 #include "cmd_acknowledger.hpp"
 #include "cmd_handler_factory.hpp"
 #include "file.hpp"
