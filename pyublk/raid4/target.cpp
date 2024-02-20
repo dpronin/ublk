@@ -99,28 +99,35 @@ ssize_t Target::read(std::span<std::byte> buf, __off64_t offset) noexcept {
 
 ssize_t Target::write(std::span<std::byte const> buf,
                       __off64_t offset) noexcept {
-  ssize_t rb{0};
+  ssize_t wb{0};
 
   auto stripe_id{offset / stripe_data_sz_};
   auto stripe_offset{offset % stripe_data_sz_};
 
   while (!buf.empty()) {
     auto const chunk{
-        buf.subspan(0, std::min(stripe_data_sz_ - stripe_offset, buf.size()))};
+        buf.subspan(0, std::min(stripe_data_sz_ - stripe_offset, buf.size())),
+    };
 
-    /* Read the whole stripe from the backend excluding parity */
-    if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1), 0,
-                                               cached_stripe_data_view());
-        res < 0) [[unlikely]] {
-      return res;
+    auto const copy_from = chunk;
+
+    /*
+     * Read the whole stripe from the backend excluding parity in case we intend
+     * to partially modify the stripe
+     */
+    if (copy_from.size() < cached_stripe_data_view().size()) {
+      if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1),
+                                                 0, cached_stripe_data_view());
+          res < 0) [[unlikely]] {
+        return res;
+      }
     }
 
-    auto const from = chunk;
-    auto const to =
+    auto const copy_to =
         cached_stripe_data_view().subspan(stripe_offset, chunk.size());
 
     /* Modify the part of the stripe with the new data come in */
-    algo::copy(from, to);
+    algo::copy(copy_from, copy_to);
 
     /* Renew Parity of the stripe */
     cached_stripe_parity_renew();
@@ -133,10 +140,10 @@ ssize_t Target::write(std::span<std::byte const> buf,
     ++stripe_id;
     stripe_offset = 0;
     buf = buf.subspan(chunk.size());
-    rb += chunk.size();
+    wb += chunk.size();
   }
 
-  return rb;
+  return wb;
 }
 
 } // namespace ublk::raid4

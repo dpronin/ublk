@@ -24,21 +24,29 @@ CachedTarget::CachedTarget(
 
 ssize_t CachedTarget::write(std::span<std::byte const> buf,
                             __off64_t offset) noexcept {
-  ssize_t rb{0};
+  ssize_t wb{0};
 
   auto stripe_id{offset / stripe_data_sz_};
   auto stripe_offset{offset % stripe_data_sz_};
 
   while (!buf.empty()) {
+    auto const chunk{
+        buf.subspan(0, std::min(stripe_data_sz_ - stripe_offset, buf.size())),
+    };
+
+    auto const copy_from = chunk;
+
     auto const [cached_stripe, valid] =
         cache_->find_allocate_mutable(stripe_id);
     assert(!cached_stripe.empty());
+
     auto const cached_data_stripe = cached_stripe.subspan(0, stripe_data_sz_);
-    if (!valid) {
-      /*
-       * Read the whole stripe from the backend excluding parity if cache miss
-       * took place
-       */
+
+    /*
+     * Read the whole stripe from the backend excluding parity if cache miss
+     * took place and we intend to partially modify the stripe
+     */
+    if (!valid && copy_from.size() < cached_data_stripe.size()) {
       if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1),
                                                  0, cached_data_stripe);
           res < 0) [[unlikely]] {
@@ -47,16 +55,11 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
       }
     }
 
-    auto const chunk{
-        buf.subspan(0, std::min(cached_data_stripe.size_bytes() - stripe_offset,
-                                buf.size())),
-    };
-
-    auto const from = chunk;
-    auto const to = cached_data_stripe.subspan(stripe_offset, chunk.size());
+    auto const copy_to =
+        cached_data_stripe.subspan(stripe_offset, chunk.size());
 
     /* Modify the part of the stripe with the new data come in */
-    algo::copy(from, to);
+    algo::copy(copy_from, copy_to);
 
     /* Renew Parity of the stripe */
     parity_renew(cached_stripe);
@@ -71,10 +74,10 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
     ++stripe_id;
     stripe_offset = 0;
     buf = buf.subspan(chunk.size());
-    rb += chunk.size();
+    wb += chunk.size();
   }
 
-  return rb;
+  return wb;
 }
 
 ssize_t CachedTarget::read(std::span<std::byte> buf,
