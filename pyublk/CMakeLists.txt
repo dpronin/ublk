@@ -8,7 +8,11 @@ find_package(eve CONFIG REQUIRED)
 add_library(utils INTERFACE
     algo.hpp
     concepts.hpp
+    file.hpp
     math.hpp
+    mem.hpp
+    mem_types.hpp
+    page.hpp
     span.hpp
     utility.hpp
 )
@@ -56,7 +60,6 @@ pybind11_add_module(${PROJECT_NAME}
     factory_interface.hpp
     factory_shared_interface.hpp
     factory_unique_interface.hpp
-    file.hpp
     flat_lru_cache.hpp
     flush_handler_composite.hpp
     flush_handler_interface.hpp
@@ -71,13 +74,10 @@ pybind11_add_module(${PROJECT_NAME}
     inmem/write_handler.hpp
     master.cpp
     master.hpp
-    mem.hpp
-    mem_types.hpp
     null/discard_handler.hpp
     null/flush_handler.hpp
     null/read_handler.hpp
     null/write_handler.hpp
-    page.hpp
     page_aligned_allocator.hpp
     pyublk.cpp
     qublkcmd.hpp
