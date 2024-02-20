@@ -25,13 +25,12 @@ private:
 
   template <typename T = std::byte>
   auto cached_stripe_data_view() const noexcept {
-    return to_span_of<T>({cached_stripe_.get(), stripe_data_sz_});
+    return to_span_of<T>(cached_stripe_view().subspan(0, stripe_data_sz_));
   }
 
   template <typename T = std::byte>
   auto cached_stripe_parity_view() const noexcept {
-    return to_span_of<T>(
-        cached_stripe_view().subspan(stripe_data_sz_, strip_sz_));
+    return to_span_of<T>(cached_stripe_view().subspan(stripe_data_sz_));
   }
 
   ssize_t cached_stripe_write(uint64_t stripe_id_at) noexcept;

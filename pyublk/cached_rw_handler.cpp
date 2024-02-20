@@ -34,7 +34,7 @@ ssize_t CachedRWHandler::read(std::span<std::byte> buf,
       auto const from = cached_chunk.subspan(chunk_offset, chunk.size());
       auto const to = chunk;
 
-      algo::copy(to_span_of<std::byte const>(from), to);
+      algo::copy(std::as_bytes(from), to);
 
       ++chunk_id;
       chunk_offset = 0;

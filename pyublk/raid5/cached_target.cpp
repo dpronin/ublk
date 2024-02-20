@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "algo.hpp"
-#include "span.hpp"
 
 namespace ublk::raid5 {
 
@@ -37,10 +36,9 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
     auto const parity_stripe_offset = parity_strip_id * strip_sz_;
 
     /* Split data and parity strips */
-    auto const data_fp =
-        to_span_of<uint64_t>(cached_stripe.subspan(0, parity_stripe_offset));
-    auto const data_lp = to_span_of<uint64_t>(
-        cached_stripe.subspan(parity_stripe_offset + strip_sz_));
+    auto const data_fp = cached_stripe.subspan(0, parity_stripe_offset);
+    auto const data_lp =
+        cached_stripe.subspan(parity_stripe_offset + strip_sz_);
 
     if (!valid) {
       /*
@@ -49,17 +47,17 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
        */
 
       /* Read the first part of the stripe before the parity strip */
-      if (auto const res = read_data_skip_parity(
-              stripe_id * (hs_.size() - 1), 0, std::as_writable_bytes(data_fp));
+      if (auto const res =
+              read_data_skip_parity(stripe_id * (hs_.size() - 1), 0, data_fp);
           res < 0) [[unlikely]] {
         cache_->invalidate(stripe_id);
         return res;
       }
 
       /* Read the last part of the stripe after the parity strip */
-      if (auto const res = read_data_skip_parity(
-              stripe_id * (hs_.size() - 1) + data_fp.size_bytes() / strip_sz_,
-              0, std::as_writable_bytes(data_lp));
+      if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1) +
+                                                     data_fp.size() / strip_sz_,
+                                                 0, data_lp);
           res < 0) [[unlikely]] {
         cache_->invalidate(stripe_id);
         return res;
@@ -71,16 +69,14 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
     };
 
     /* Modify the part of the stripe with the new data come in */
-    auto const data_fp_offset = std::min(stripe_offset, data_fp.size_bytes());
+    auto const data_fp_offset = std::min(stripe_offset, data_fp.size());
     auto const chunk_fp = chunk.subspan(
-        0, std::min(chunk.size(), data_fp.size_bytes() - data_fp_offset));
-    algo::copy(chunk_fp, std::as_writable_bytes(data_fp).subspan(
-                             data_fp_offset, chunk_fp.size()));
+        0, std::min(chunk.size(), data_fp.size() - data_fp_offset));
+    algo::copy(chunk_fp, data_fp.subspan(data_fp_offset, chunk_fp.size()));
     auto const data_lp_offset =
-        std::max(stripe_offset, data_fp.size_bytes()) - data_fp.size_bytes();
+        std::max(stripe_offset, data_fp.size()) - data_fp.size();
     auto const chunk_lp = chunk.subspan(chunk_fp.size());
-    algo::copy(chunk_lp, std::as_writable_bytes(data_lp).subspan(
-                             data_lp_offset, chunk_lp.size()));
+    algo::copy(chunk_lp, data_lp.subspan(data_lp_offset, chunk_lp.size()));
 
     /* Renew Parity of the stripe */
     parity_renew(parity_strip_id, cached_stripe);
@@ -126,18 +122,18 @@ ssize_t CachedTarget::read(std::span<std::byte> buf,
       };
 
       /* Read the part of the stripe to the chunk */
-      auto const data_fp_offset = std::min(stripe_offset, data_fp.size_bytes());
+      auto const data_fp_offset = std::min(stripe_offset, data_fp.size());
       auto const chunk_fp = chunk.subspan(
-          0, std::min(chunk.size(), data_fp.size_bytes() - data_fp_offset));
-      algo::copy(to_span_of<std::byte const>(
-                     data_fp.subspan(data_fp_offset, chunk_fp.size())),
-                 chunk_fp);
+          0, std::min(chunk.size(), data_fp.size() - data_fp_offset));
+      algo::copy(
+          std::as_bytes(data_fp.subspan(data_fp_offset, chunk_fp.size())),
+          chunk_fp);
       auto const data_lp_offset =
-          std::max(stripe_offset, data_fp.size_bytes()) - data_fp.size_bytes();
+          std::max(stripe_offset, data_fp.size()) - data_fp.size();
       auto const chunk_lp = chunk.subspan(chunk_fp.size());
-      algo::copy(to_span_of<std::byte const>(
-                     data_lp.subspan(data_lp_offset, chunk_lp.size())),
-                 chunk_lp);
+      algo::copy(
+          std::as_bytes(data_lp.subspan(data_lp_offset, chunk_lp.size())),
+          chunk_lp);
 
       ++stripe_id;
       stripe_offset = 0;
@@ -145,17 +141,17 @@ ssize_t CachedTarget::read(std::span<std::byte> buf,
       rb += chunk.size();
     } else {
       /* Read the first part of the stripe before the parity strip */
-      if (auto const res = read_data_skip_parity(
-              stripe_id * (hs_.size() - 1), 0, std::as_writable_bytes(data_fp));
+      if (auto const res =
+              read_data_skip_parity(stripe_id * (hs_.size() - 1), 0, data_fp);
           res < 0) [[unlikely]] {
         cache_->invalidate(stripe_id);
         return res;
       }
 
       /* Read the last part of the stripe after the parity strip */
-      if (auto const res = read_data_skip_parity(
-              stripe_id * (hs_.size() - 1) + data_fp.size_bytes() / strip_sz_,
-              0, std::as_writable_bytes(data_lp));
+      if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1) +
+                                                     data_fp.size() / strip_sz_,
+                                                 0, data_lp);
           res < 0) [[unlikely]] {
         cache_->invalidate(stripe_id);
         return res;
