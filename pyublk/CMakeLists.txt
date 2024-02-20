@@ -68,10 +68,6 @@ pybind11_add_module(${PROJECT_NAME}
     handler.cpp
     handler.hpp
     handler_interface.hpp
-    inmem/read_handler.hpp
-    inmem/target.cpp
-    inmem/target.hpp
-    inmem/write_handler.hpp
     master.cpp
     master.hpp
     null/discard_handler.hpp
@@ -119,6 +115,8 @@ pybind11_add_module(${PROJECT_NAME}
     write_handler_interface.hpp
 )
 
+add_subdirectory(inmem)
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -127,4 +125,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     libnl::libnl
     Boost::headers
     Boost::system
+    ublk::inmem
+)
+
+target_compile_features(${PROJECT_NAME} PRIVATE
+    cxx_std_23
 )
