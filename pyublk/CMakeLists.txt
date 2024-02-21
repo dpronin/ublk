@@ -26,7 +26,7 @@ target_link_libraries(utils INTERFACE
     Boost::system
 )
 
-pybind11_add_module(${PROJECT_NAME}
+pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     align.hpp
     aligned_allocator.hpp
     cache_line_aligned_allocator.hpp
