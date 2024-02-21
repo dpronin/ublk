@@ -94,17 +94,14 @@ void Target::parity_renew(std::span<std::byte const> stripe_data,
   }
 }
 
-void Target::cached_stripe_parity_renew() noexcept {
-  parity_renew(cached_stripe_data_view(), cached_stripe_parity_view());
-}
-
 ssize_t Target::stripe_write(uint64_t stripe_id_at,
-                             std::span<std::byte const> stripe) noexcept {
+                             std::span<std::byte const> stripe_data,
+                             std::span<std::byte const> parity) noexcept {
   ssize_t wb{0};
 
-  for (size_t hid = 0; hid < hs_.size(); ++hid) {
+  for (size_t hid = 0; hid < hs_.size() - 1; ++hid) {
     if (auto const res =
-            hs_[hid]->write(stripe.subspan(hid * strip_sz_, strip_sz_),
+            hs_[hid]->write(stripe_data.subspan(hid * strip_sz_, strip_sz_),
                             stripe_id_at * strip_sz_);
         res >= 0) [[likely]] {
       wb += res;
@@ -113,11 +110,22 @@ ssize_t Target::stripe_write(uint64_t stripe_id_at,
     }
   }
 
+  if (auto const res = hs_.back()->write(parity, stripe_id_at * strip_sz_);
+      res >= 0) [[likely]] {
+    wb += res;
+  } else {
+    return res;
+  }
+
   return wb;
 }
 
-ssize_t Target::cached_stripe_write(uint64_t stripe_id_at) noexcept {
-  return stripe_write(stripe_id_at, cached_stripe_view());
+ssize_t Target::stripe_write(uint64_t stripe_id_at,
+                             std::span<std::byte const> stripe) noexcept {
+  assert(!(stripe.size() < (stripe_data_sz_ + strip_sz_)));
+  auto const stripe_data = stripe.subspan(0, stripe_data_sz_);
+  auto const parity = stripe.subspan(stripe_data_sz_);
+  return stripe_write(stripe_id_at, stripe_data, parity);
 }
 
 ssize_t Target::read(std::span<std::byte> buf, __off64_t offset) noexcept {
@@ -136,32 +144,50 @@ ssize_t Target::write(std::span<std::byte const> buf,
         buf.subspan(0, std::min(stripe_data_sz_ - stripe_offset, buf.size())),
     };
 
-    auto const copy_from = chunk;
-
     /*
      * Read the whole stripe from the backend excluding parity in case we intend
      * to partially modify the stripe
      */
-    if (copy_from.size() < cached_stripe_data_view().size()) {
+    if (auto const copy_from = chunk;
+        copy_from.size() < cached_stripe_data_view().size()) {
       if (auto const res =
               read_stripe_data(stripe_id, cached_stripe_data_view());
           res < 0) [[unlikely]] {
         return res;
       }
-    }
 
-    auto const copy_to =
-        cached_stripe_data_view().subspan(stripe_offset, chunk.size());
+      auto const copy_to =
+          cached_stripe_data_view().subspan(stripe_offset, chunk.size());
 
-    /* Modify the part of the stripe with the new data come in */
-    algo::copy(copy_from, copy_to);
+      /* Modify the part of the stripe with the new data come in */
+      algo::copy(copy_from, copy_to);
 
-    /* Renew Parity of the stripe */
-    cached_stripe_parity_renew();
+      /* Renew Parity of the stripe */
+      parity_renew(cached_stripe_data_view(), cached_stripe_parity_view());
 
-    /* Write Back the whole stripe including the parity part */
-    if (auto const res = cached_stripe_write(stripe_id); res < 0) [[unlikely]] {
-      return res;
+      /* Write Back the whole stripe including the parity part */
+      if (auto const res = stripe_write(stripe_id, cached_stripe_data_view(),
+                                        cached_stripe_parity_view());
+          res < 0) [[unlikely]] {
+        return res;
+      }
+      /*
+       * Calculate parity based on newly incoming stripe-long chunk and write
+       * back the whole stripe including the chunk and parity computed
+       */
+    } else {
+      /* Renew Parity of the stripe */
+      parity_renew(std::as_bytes(chunk), cached_stripe_parity_view());
+
+      /*
+       * Write Back the whole stripe including the newly incoming chunk as data
+       * and parity computed
+       */
+      if (auto const res = stripe_write(stripe_id, std::as_bytes(chunk),
+                                        cached_stripe_parity_view());
+          res < 0) [[unlikely]] {
+        return res;
+      }
     }
 
     ++stripe_id;

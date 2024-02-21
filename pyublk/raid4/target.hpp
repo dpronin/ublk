@@ -33,13 +33,13 @@ private:
     return to_span_of<T>(cached_stripe_view().subspan(stripe_data_sz_));
   }
 
-  ssize_t cached_stripe_write(uint64_t stripe_id_at) noexcept;
-  void cached_stripe_parity_renew() noexcept;
-
 protected:
   void parity_renew(std::span<std::byte const> stripe_data,
                     std::span<std::byte> parity) noexcept;
 
+  ssize_t stripe_write(uint64_t stripe_id_at,
+                       std::span<std::byte const> stripe_data,
+                       std::span<std::byte const> parity) noexcept;
   ssize_t stripe_write(uint64_t stripe_id_at,
                        std::span<std::byte const> stripe) noexcept;
   ssize_t read_data_skip_parity(uint64_t strip_id_from,
