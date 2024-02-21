@@ -47,8 +47,7 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
      * took place and we intend to partially modify the stripe
      */
     if (!valid && copy_from.size() < cached_stripe_data.size()) {
-      if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1),
-                                                 0, cached_stripe_data);
+      if (auto const res = read_stripe_data(stripe_id, cached_stripe_data);
           res < 0) [[unlikely]] {
         cache_->invalidate(stripe_id);
         return res;
@@ -110,8 +109,7 @@ ssize_t CachedTarget::read(std::span<std::byte> buf,
       stripe_offset = 0;
       buf = buf.subspan(chunk.size());
       rb += chunk.size();
-    } else if (auto const res = Target::read_data_skip_parity(
-                   stripe_id * (hs_.size() - 1), 0, cached_stripe_data);
+    } else if (auto const res = read_stripe_data(stripe_id, cached_stripe_data);
                res < 0) [[unlikely]] {
       cache_->invalidate(stripe_id);
       return res;

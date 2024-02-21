@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 
+#include <boost/dynamic_bitset/dynamic_bitset.hpp>
+
 #include "mem_types.hpp"
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
@@ -34,9 +36,18 @@ private:
   }
 
 protected:
+  void parity_to(uint64_t parity_start_offset, std::span<std::byte const> data,
+                 std::span<std::byte> parity) noexcept;
+
+  void parity_to(std::span<std::byte const> stripe_data,
+                 std::span<std::byte> parity) noexcept;
+
   void parity_renew(std::span<std::byte const> stripe_data,
                     std::span<std::byte> parity) noexcept;
 
+  ssize_t stripe_write(uint64_t stripe_id_at, uint64_t stripe_offset,
+                       std::span<std::byte const> stripe_data,
+                       std::span<std::byte const> parity) noexcept;
   ssize_t stripe_write(uint64_t stripe_id_at,
                        std::span<std::byte const> stripe_data,
                        std::span<std::byte const> parity) noexcept;
@@ -70,9 +81,10 @@ public:
 protected:
   uint64_t strip_sz_;
   uint64_t stripe_data_sz_;
-  std::vector<std::shared_ptr<IRWHandler>> hs_;
+  boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
 
 private:
+  std::vector<std::shared_ptr<IRWHandler>> hs_;
   uptrwd<std::byte[]> cached_stripe_;
 };
 

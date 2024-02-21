@@ -73,42 +73,83 @@ ssize_t Target::read_stripe_data(uint64_t stripe_id,
 
 ssize_t Target::read_stripe_parity(uint64_t stripe_id,
                                    std::span<std::byte> buf) noexcept {
-  return hs_.back()->read(buf.subspan(0, std::min(strip_sz_, buf.size())),
-                          stripe_id * strip_sz_);
+  buf = buf.subspan(0, std::min(strip_sz_, buf.size()));
+  assert(!(buf.size() < strip_sz_));
+  return hs_.back()->read(buf, stripe_id * strip_sz_);
+}
+
+void Target::parity_to(uint64_t parity_start_offset,
+                       std::span<std::byte const> data,
+                       std::span<std::byte> parity) noexcept {
+  parity_start_offset = parity_start_offset % strip_sz_;
+  data = data.subspan(
+      0, std::min(stripe_data_sz_ - parity_start_offset, data.size()));
+  parity = parity.subspan(0, std::min(strip_sz_, parity.size()));
+
+  assert(is_multiple_of(parity_start_offset, sizeof(uint64_t)));
+  assert(is_multiple_of(data.size(), sizeof(uint64_t)));
+  assert(!(parity.size() < strip_sz_));
+
+  auto data_u64 = to_span_of<uint64_t const>(data);
+  auto const parity_u64 = to_span_of<uint64_t>(parity);
+
+  if (auto const parity_u64_offset = parity_start_offset / sizeof(uint64_t)) {
+    auto const chunk_u64_len =
+        std::min(data_u64.size(), parity_u64.size() - parity_u64_offset);
+    auto const parity_u64_chunk =
+        parity_u64.subspan(parity_u64_offset, chunk_u64_len);
+    auto const data_u64_chunk = data_u64.subspan(0, chunk_u64_len);
+    math::xor_to(data_u64_chunk, parity_u64_chunk);
+    data_u64 = data_u64.subspan(data_u64_chunk.size());
+  }
+
+  while (!data_u64.empty()) {
+    auto const data_u64_chunk =
+        data_u64.subspan(0, std::min(parity_u64.size(), data_u64.size()));
+    auto const parity_u64_chunk = parity_u64.subspan(0, data_u64_chunk.size());
+    math::xor_to(data_u64_chunk, parity_u64_chunk);
+    data_u64 = data_u64.subspan(data_u64_chunk.size());
+  }
+}
+
+void Target::parity_to(std::span<std::byte const> stripe_data,
+                       std::span<std::byte> parity) noexcept {
+  parity_to(0, stripe_data, parity);
 }
 
 void Target::parity_renew(std::span<std::byte const> stripe_data,
                           std::span<std::byte> parity) noexcept {
-  assert(!(stripe_data.size() < stripe_data_sz_));
-  assert(!(parity.size() < strip_sz_));
-
-  stripe_data = stripe_data.subspan(0, stripe_data_sz_);
-  parity = parity.subspan(0, strip_sz_);
-
-  auto const parity_u64 = to_span_of<uint64_t>(parity);
-  algo::fill(parity_u64, UINT64_C(0));
-  for (auto stripe_data_u64 = to_span_of<uint64_t const>(stripe_data);
-       !stripe_data_u64.empty();
-       stripe_data_u64 = stripe_data_u64.subspan(parity_u64.size())) {
-    math::xor_to(stripe_data_u64.subspan(0, parity_u64.size()), parity_u64);
-  }
+  algo::fill(to_span_of<uint64_t>(parity), UINT64_C(0));
+  parity_to(stripe_data, parity);
 }
 
-ssize_t Target::stripe_write(uint64_t stripe_id_at,
-                             std::span<std::byte const> stripe_data,
+ssize_t Target::stripe_write(uint64_t stripe_id_at, uint64_t stripe_offset,
+                             std::span<std::byte const> data,
                              std::span<std::byte const> parity) noexcept {
   ssize_t wb{0};
 
-  for (size_t hid = 0; hid < hs_.size() - 1; ++hid) {
-    if (auto const res =
-            hs_[hid]->write(stripe_data.subspan(hid * strip_sz_, strip_sz_),
-                            stripe_id_at * strip_sz_);
+  stripe_id_at += stripe_offset / stripe_data_sz_;
+  stripe_offset = stripe_offset % stripe_data_sz_;
+  data =
+      data.subspan(0, std::min(stripe_data_sz_ - stripe_offset, data.size()));
+  parity = parity.subspan(0, std::min(strip_sz_, parity.size()));
+
+  assert(!(parity.size() < strip_sz_));
+
+  for (size_t hid = stripe_offset / strip_sz_;
+       !data.empty() && hid < hs_.size() - 1; ++hid, stripe_offset = 0) {
+    auto const chunk = data.subspan(0, std::min(strip_sz_, data.size()));
+    if (auto const res = hs_[hid]->write(chunk, stripe_id_at * strip_sz_ +
+                                                    stripe_offset % strip_sz_);
         res >= 0) [[likely]] {
       wb += res;
     } else {
       return res;
     }
+    data = data.subspan(chunk.size());
   }
+
+  assert(data.empty());
 
   if (auto const res = hs_.back()->write(parity, stripe_id_at * strip_sz_);
       res >= 0) [[likely]] {
@@ -117,7 +158,17 @@ ssize_t Target::stripe_write(uint64_t stripe_id_at,
     return res;
   }
 
+  if (!(stripe_id_at < stripe_parity_coherency_state_.size())) [[unlikely]]
+    stripe_parity_coherency_state_.resize(stripe_id_at + 1);
+  stripe_parity_coherency_state_.set(stripe_id_at);
+
   return wb;
+}
+
+ssize_t Target::stripe_write(uint64_t stripe_id_at,
+                             std::span<std::byte const> stripe_data,
+                             std::span<std::byte const> parity) noexcept {
+  return stripe_write(stripe_id_at, 0, stripe_data, parity);
 }
 
 ssize_t Target::stripe_write(uint64_t stripe_id_at,
@@ -125,7 +176,7 @@ ssize_t Target::stripe_write(uint64_t stripe_id_at,
   assert(!(stripe.size() < (stripe_data_sz_ + strip_sz_)));
   auto const stripe_data = stripe.subspan(0, stripe_data_sz_);
   auto const parity = stripe.subspan(stripe_data_sz_);
-  return stripe_write(stripe_id_at, stripe_data, parity);
+  return stripe_write(stripe_id_at, 0, stripe_data, parity);
 }
 
 ssize_t Target::read(std::span<std::byte> buf, __off64_t offset) noexcept {
@@ -148,28 +199,63 @@ ssize_t Target::write(std::span<std::byte const> buf,
      * Read the whole stripe from the backend excluding parity in case we intend
      * to partially modify the stripe
      */
-    if (auto const copy_from = chunk;
-        copy_from.size() < cached_stripe_data_view().size()) {
-      if (auto const res =
-              read_stripe_data(stripe_id, cached_stripe_data_view());
-          res < 0) [[unlikely]] {
+    if (chunk.size() < cached_stripe_data_view().size()) {
+      if (!(stripe_id < stripe_parity_coherency_state_.size())) [[unlikely]]
+        stripe_parity_coherency_state_.resize(stripe_id + 1);
+
+      if (stripe_parity_coherency_state_[stripe_id]) [[likely]] {
+        auto const tmp_data_chunk =
+            cached_stripe_data_view().subspan(stripe_offset, chunk.size());
+        if (auto const res =
+                read_stripe_data(stripe_id, stripe_offset, tmp_data_chunk);
+            res < 0) [[unlikely]] {
+          return res;
+        } else if (auto const res = read_stripe_parity(
+                       stripe_id, cached_stripe_parity_view());
+                   res < 0) [[unlikely]] {
+          return res;
+        } else {
+          /*
+           * Renew a required chunk of parity of the stripe by computing a piece
+           * of parity from the scratch basing on the result of old data being
+           * XORed with a new data come in
+           */
+          math::xor_to(chunk, tmp_data_chunk);
+          parity_to(stripe_offset % cached_stripe_parity_view().size(),
+                    tmp_data_chunk, cached_stripe_parity_view());
+
+          /*
+           * Write Back a piece of the stripe including the newly incoming
+           * chunk as data and the piece of parity computed and updated
+           */
+          if (auto const res =
+                  stripe_write(stripe_id, stripe_offset, std::as_bytes(chunk),
+                               cached_stripe_parity_view());
+              res < 0) [[unlikely]] {
+            return res;
+          }
+        }
+      } else if (auto const res =
+                     read_stripe_data(stripe_id, cached_stripe_data_view());
+                 res < 0) [[unlikely]] {
         return res;
-      }
+      } else {
+        auto const copy_from = chunk;
+        auto const copy_to =
+            cached_stripe_data_view().subspan(stripe_offset, chunk.size());
 
-      auto const copy_to =
-          cached_stripe_data_view().subspan(stripe_offset, chunk.size());
+        /* Modify the part of the stripe with the new data come in */
+        algo::copy(copy_from, copy_to);
 
-      /* Modify the part of the stripe with the new data come in */
-      algo::copy(copy_from, copy_to);
+        /* Renew Parity of the stripe */
+        parity_renew(cached_stripe_data_view(), cached_stripe_parity_view());
 
-      /* Renew Parity of the stripe */
-      parity_renew(cached_stripe_data_view(), cached_stripe_parity_view());
-
-      /* Write Back the whole stripe including the parity part */
-      if (auto const res = stripe_write(stripe_id, cached_stripe_data_view(),
-                                        cached_stripe_parity_view());
-          res < 0) [[unlikely]] {
-        return res;
+        /* Write Back the whole stripe including the parity part */
+        if (auto const res = stripe_write(stripe_id, cached_stripe_data_view(),
+                                          cached_stripe_parity_view());
+            res < 0) [[unlikely]] {
+          return res;
+        }
       }
       /*
        * Calculate parity based on newly incoming stripe-long chunk and write
