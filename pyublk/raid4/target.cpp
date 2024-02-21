@@ -167,12 +167,6 @@ ssize_t Target::stripe_write(uint64_t stripe_id_at, uint64_t stripe_offset,
 }
 
 ssize_t Target::stripe_write(uint64_t stripe_id_at,
-                             std::span<std::byte const> stripe_data,
-                             std::span<std::byte const> parity) noexcept {
-  return stripe_write(stripe_id_at, 0, stripe_data, parity);
-}
-
-ssize_t Target::stripe_write(uint64_t stripe_id_at,
                              std::span<std::byte const> stripe) noexcept {
   assert(!(stripe.size() < (stripe_data_sz_ + strip_sz_)));
   auto const stripe_data = stripe.subspan(0, stripe_data_sz_);
@@ -195,6 +189,8 @@ ssize_t Target::write(std::span<std::byte const> buf,
     auto const chunk{
         buf.subspan(0, std::min(stripe_data_sz_ - stripe_offset, buf.size())),
     };
+
+    auto write_from = chunk;
 
     /*
      * Read the whole stripe from the backend excluding parity in case we intend
@@ -224,17 +220,6 @@ ssize_t Target::write(std::span<std::byte const> buf,
           math::xor_to(chunk, tmp_data_chunk);
           parity_to(stripe_offset % cached_stripe_parity_view().size(),
                     tmp_data_chunk, cached_stripe_parity_view());
-
-          /*
-           * Write Back a piece of the stripe including the newly incoming
-           * chunk as data and the piece of parity computed and updated
-           */
-          if (auto const res =
-                  stripe_write(stripe_id, stripe_offset, std::as_bytes(chunk),
-                               cached_stripe_parity_view());
-              res < 0) [[unlikely]] {
-            return res;
-          }
         }
       } else if (auto const res =
                      read_stripe_data(stripe_id, cached_stripe_data_view());
@@ -251,12 +236,7 @@ ssize_t Target::write(std::span<std::byte const> buf,
         /* Renew Parity of the stripe */
         parity_renew(cached_stripe_data_view(), cached_stripe_parity_view());
 
-        /* Write Back the whole stripe including the parity part */
-        if (auto const res = stripe_write(stripe_id, cached_stripe_data_view(),
-                                          cached_stripe_parity_view());
-            res < 0) [[unlikely]] {
-          return res;
-        }
+        write_from = cached_stripe_data_view();
       }
       /*
        * Calculate parity based on newly incoming stripe-long chunk and write
@@ -265,16 +245,17 @@ ssize_t Target::write(std::span<std::byte const> buf,
     } else {
       /* Renew Parity of the stripe */
       parity_renew(std::as_bytes(chunk), cached_stripe_parity_view());
+    }
 
-      /*
-       * Write Back the whole stripe including the newly incoming chunk as data
-       * and parity computed
-       */
-      if (auto const res = stripe_write(stripe_id, std::as_bytes(chunk),
-                                        cached_stripe_parity_view());
-          res < 0) [[unlikely]] {
-        return res;
-      }
+    /*
+     * Write Back the chunk including the newly incoming data and the parity
+     * computed and updated
+     */
+    if (auto const res =
+            stripe_write(stripe_id, stripe_offset, std::as_bytes(write_from),
+                         cached_stripe_parity_view());
+        res < 0) [[unlikely]] {
+      return res;
     }
 
     ++stripe_id;

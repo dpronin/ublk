@@ -49,9 +49,6 @@ protected:
                        std::span<std::byte const> stripe_data,
                        std::span<std::byte const> parity) noexcept;
   ssize_t stripe_write(uint64_t stripe_id_at,
-                       std::span<std::byte const> stripe_data,
-                       std::span<std::byte const> parity) noexcept;
-  ssize_t stripe_write(uint64_t stripe_id_at,
                        std::span<std::byte const> stripe) noexcept;
   ssize_t read_data_skip_parity(uint64_t strip_id_from,
                                 uint64_t strip_offset_from,
