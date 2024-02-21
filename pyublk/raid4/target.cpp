@@ -104,13 +104,13 @@ void Target::parity_to(uint64_t parity_start_offset,
     data_u64 = data_u64.subspan(data_u64_chunk.size());
   }
 
-  while (!data_u64.empty()) {
-    auto const data_u64_chunk =
-        data_u64.subspan(0, std::min(parity_u64.size(), data_u64.size()));
-    auto const parity_u64_chunk = parity_u64.subspan(0, data_u64_chunk.size());
-    math::xor_to(data_u64_chunk, parity_u64_chunk);
-    data_u64 = data_u64.subspan(data_u64_chunk.size());
+  for (; !(data_u64.size() < parity_u64.size());
+       data_u64 = data_u64.subspan(parity_u64.size())) {
+    math::xor_to(data_u64.subspan(0, parity_u64.size()), parity_u64);
   }
+
+  if (!data_u64.empty())
+    math::xor_to(data_u64, parity_u64.subspan(0, data_u64.size()));
 }
 
 void Target::parity_to(std::span<std::byte const> stripe_data,
