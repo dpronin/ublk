@@ -88,6 +88,7 @@ void Target::parity_to(uint64_t parity_start_offset,
 
   assert(is_multiple_of(parity_start_offset, sizeof(uint64_t)));
   assert(is_multiple_of(data.size(), sizeof(uint64_t)));
+  assert(is_multiple_of(parity.size(), sizeof(uint64_t)));
   assert(!(parity.size() < strip_sz_));
 
   auto data_u64 = to_span_of<uint64_t const>(data);
