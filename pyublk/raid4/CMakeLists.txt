@@ -1,6 +1,4 @@
 add_library(ublk_raid4 STATIC
-    cached_target.cpp
-    cached_target.hpp
     read_handler.hpp
     target.cpp
     target.hpp

@@ -75,7 +75,6 @@
 #include "raid1/target.hpp"
 #include "raid1/write_handler.hpp"
 
-#include "raid4/cached_target.hpp"
 #include "raid4/read_handler.hpp"
 #include "raid4/target.hpp"
 #include "raid4/write_handler.hpp"
@@ -248,19 +247,26 @@ handlers_ops make_raid4_ops(uint64_t strip_sz, uint64_t cache_len_stripes,
   std::ranges::transform(std::move(default_hopss), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
-  auto target = std::shared_ptr<raid4::Target>{};
+  auto target =
+      std::make_shared<raid4::Target>(strip_sz, std::move(rw_handlers));
 
+  auto rw_handler = std::unique_ptr<IRWHandler>{};
+
+  auto const stripe_data_sz{strip_sz * (fds.size() - 1)};
+
+  rw_handler = std::make_unique<RWHandler>(
+      std::make_shared<raid4::ReadHandler>(target),
+      std::make_shared<raid4::WriteHandler>(target));
   if (auto cache = flat_lru_cache<uint64_t, std::byte>::create(
-          cache_len_stripes, strip_sz * fds.size())) {
-    target = std::make_shared<raid4::CachedTarget>(strip_sz, std::move(cache),
-                                                   std::move(rw_handlers));
-  } else {
-    target = std::make_shared<raid4::Target>(strip_sz, std::move(rw_handlers));
-  }
+          cache_len_stripes, stripe_data_sz))
+    rw_handler = std::make_unique<CachedRWHandler>(std::move(cache),
+                                                   std::move(rw_handler));
+
+  auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
 
   return {
-      .reader = std::make_shared<raid4::ReadHandler>(target),
-      .writer = std::make_shared<raid4::WriteHandler>(target),
+      .reader = std::make_shared<ReadHandler>(sp_rw_handler),
+      .writer = std::make_shared<WriteHandler>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
 }
