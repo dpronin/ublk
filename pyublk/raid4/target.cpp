@@ -57,18 +57,45 @@ ssize_t Target::read_data_skip_parity(uint64_t strip_id_from,
   return rb;
 }
 
-void Target::parity_renew(std::span<std::byte> stripe) noexcept {
-  auto const parity =
-      to_span_of<uint64_t>(stripe.subspan(stripe_data_sz_, strip_sz_));
-  algo::fill(parity, UINT64_C(0));
-  for (auto in = to_span_of<uint64_t const>(stripe.subspan(0, stripe_data_sz_));
-       !in.empty(); in = in.subspan(parity.size())) {
-    math::xor_to(in.subspan(0, parity.size()), parity);
+ssize_t Target::read_stripe_data(uint64_t stripe_id, uint64_t stripe_offset,
+                                 std::span<std::byte> buf) noexcept {
+  return read_data_skip_parity(
+      stripe_id * (hs_.size() - 1) +
+          (stripe_offset % stripe_data_sz_) / strip_sz_,
+      stripe_offset % strip_sz_,
+      buf.subspan(0, std::min(stripe_data_sz_, buf.size())));
+}
+
+ssize_t Target::read_stripe_data(uint64_t stripe_id,
+                                 std::span<std::byte> buf) noexcept {
+  return read_stripe_data(stripe_id, 0, buf);
+}
+
+ssize_t Target::read_stripe_parity(uint64_t stripe_id,
+                                   std::span<std::byte> buf) noexcept {
+  return hs_.back()->read(buf.subspan(0, std::min(strip_sz_, buf.size())),
+                          stripe_id * strip_sz_);
+}
+
+void Target::parity_renew(std::span<std::byte const> stripe_data,
+                          std::span<std::byte> parity) noexcept {
+  assert(!(stripe_data.size() < stripe_data_sz_));
+  assert(!(parity.size() < strip_sz_));
+
+  stripe_data = stripe_data.subspan(0, stripe_data_sz_);
+  parity = parity.subspan(0, strip_sz_);
+
+  auto const parity_u64 = to_span_of<uint64_t>(parity);
+  algo::fill(parity_u64, UINT64_C(0));
+  for (auto stripe_data_u64 = to_span_of<uint64_t const>(stripe_data);
+       !stripe_data_u64.empty();
+       stripe_data_u64 = stripe_data_u64.subspan(parity_u64.size())) {
+    math::xor_to(stripe_data_u64.subspan(0, parity_u64.size()), parity_u64);
   }
 }
 
 void Target::cached_stripe_parity_renew() noexcept {
-  parity_renew(cached_stripe_view());
+  parity_renew(cached_stripe_data_view(), cached_stripe_parity_view());
 }
 
 ssize_t Target::stripe_write(uint64_t stripe_id_at,
@@ -116,8 +143,8 @@ ssize_t Target::write(std::span<std::byte const> buf,
      * to partially modify the stripe
      */
     if (copy_from.size() < cached_stripe_data_view().size()) {
-      if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1),
-                                                 0, cached_stripe_data_view());
+      if (auto const res =
+              read_stripe_data(stripe_id, cached_stripe_data_view());
           res < 0) [[unlikely]] {
         return res;
       }

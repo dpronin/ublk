@@ -37,12 +37,20 @@ private:
   void cached_stripe_parity_renew() noexcept;
 
 protected:
-  void parity_renew(std::span<std::byte> stripe) noexcept;
+  void parity_renew(std::span<std::byte const> stripe_data,
+                    std::span<std::byte> parity) noexcept;
+
   ssize_t stripe_write(uint64_t stripe_id_at,
                        std::span<std::byte const> stripe) noexcept;
   ssize_t read_data_skip_parity(uint64_t strip_id_from,
                                 uint64_t strip_offset_from,
                                 std::span<std::byte> buf) noexcept;
+  ssize_t read_stripe_data(uint64_t stripe_id,
+                           std::span<std::byte> buf) noexcept;
+  ssize_t read_stripe_data(uint64_t stripe_id, uint64_t stripe_offset,
+                           std::span<std::byte> buf) noexcept;
+  ssize_t read_stripe_parity(uint64_t stripe_id,
+                             std::span<std::byte> buf) noexcept;
 
 public:
   explicit Target(uint64_t strip_sz,

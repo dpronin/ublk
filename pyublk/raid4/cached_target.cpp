@@ -40,15 +40,15 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
         cache_->find_allocate_mutable(stripe_id);
     assert(!cached_stripe.empty());
 
-    auto const cached_data_stripe = cached_stripe.subspan(0, stripe_data_sz_);
+    auto const cached_stripe_data = cached_stripe.subspan(0, stripe_data_sz_);
 
     /*
      * Read the whole stripe from the backend excluding parity if cache miss
      * took place and we intend to partially modify the stripe
      */
-    if (!valid && copy_from.size() < cached_data_stripe.size()) {
+    if (!valid && copy_from.size() < cached_stripe_data.size()) {
       if (auto const res = read_data_skip_parity(stripe_id * (hs_.size() - 1),
-                                                 0, cached_data_stripe);
+                                                 0, cached_stripe_data);
           res < 0) [[unlikely]] {
         cache_->invalidate(stripe_id);
         return res;
@@ -56,13 +56,15 @@ ssize_t CachedTarget::write(std::span<std::byte const> buf,
     }
 
     auto const copy_to =
-        cached_data_stripe.subspan(stripe_offset, chunk.size());
+        cached_stripe_data.subspan(stripe_offset, chunk.size());
 
     /* Modify the part of the stripe with the new data come in */
     algo::copy(copy_from, copy_to);
 
     /* Renew Parity of the stripe */
-    parity_renew(cached_stripe);
+    auto const cached_stripe_parity =
+        cached_stripe.subspan(cached_stripe_data.size());
+    parity_renew(cached_stripe_data, cached_stripe_parity);
 
     /* Write Back the whole stripe including the parity part */
     if (auto const res = stripe_write(stripe_id, cached_stripe); res < 0)
@@ -115,7 +117,9 @@ ssize_t CachedTarget::read(std::span<std::byte> buf,
       return res;
     } else {
       /* Renew Parity of the stripe */
-      parity_renew(cached_stripe);
+      auto const cached_stripe_parity =
+          cached_stripe.subspan(cached_stripe_data.size());
+      parity_renew(cached_stripe_data, cached_stripe_parity);
     }
   }
 
