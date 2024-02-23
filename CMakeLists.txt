@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 
 project(ublk
-        VERSION 1.1.5
+        VERSION 1.2.0
         HOMEPAGE_URL "https://github.com/dpronin/ublk"
         LANGUAGES CXX
         DESCRIPTION "Linux userspace python module that supports negotiating with ublkdrv and receiving block IO from the driver by using shared memory within UIO")
