@@ -13,6 +13,7 @@ add_library(utils INTERFACE
     mem.hpp
     mem_types.hpp
     page.hpp
+    size_units.hpp
     span.hpp
     utility.hpp
 )
