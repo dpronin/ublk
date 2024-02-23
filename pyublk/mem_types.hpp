@@ -13,6 +13,8 @@ template <typename T> using mem_t = std::unique_ptr<T, memd_t<T>>;
 template <typename T> using uptrwd = mem_t<T>;
 
 struct alloc_mode_new {};
-struct alloc_mode_mmap {};
+struct alloc_mode_mmap {
+  int flags{0};
+};
 
 } // namespace ublk

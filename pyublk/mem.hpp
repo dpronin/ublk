@@ -15,6 +15,7 @@
 #include "file.hpp"
 #include "mem_types.hpp"
 #include "page.hpp"
+#include "size_units.hpp"
 #include "utility.hpp"
 
 namespace ublk {
@@ -67,14 +68,16 @@ inline uptrwd<std::byte[]> make_unique_aligned_bytes(alloc_mode_new,
 
 template <typename Target = void>
 mem_t<Target> mmap_private(size_t sz, int prot = PROT_READ | PROT_WRITE,
-                           int fd = -1, long offset = 0) noexcept {
-  return mmap<Target>(sz, prot, fd, MAP_PRIVATE, offset);
+                           int fd = -1, int flags = 0,
+                           long offset = 0) noexcept {
+  return mmap<Target>(sz, prot, fd, MAP_PRIVATE | flags, offset);
 }
 
 template <typename Target = void>
 mem_t<Target> mmap_shared(size_t sz, int prot = PROT_READ | PROT_WRITE,
-                          int fd = -1, long offset = 0) noexcept {
-  return mmap<Target>(sz, prot, fd, MAP_SHARED, offset);
+                          int fd = -1, int flags = 0,
+                          long offset = 0) noexcept {
+  return mmap<Target>(sz, prot, fd, MAP_SHARED | flags, offset);
 }
 
 template <typename Target = void, typename... Args>
@@ -100,8 +103,9 @@ inline uptrwd<std::byte[]> make_unique_bytes(alloc_mode_new, size_t sz) {
   return std::make_unique<std::byte[]>(sz);
 }
 
-inline uptrwd<std::byte[]> make_unique_bytes(alloc_mode_mmap, size_t sz) {
-  return mmap_private<std::byte[]>(sz);
+inline uptrwd<std::byte[]> make_unique_bytes(alloc_mode_mmap param, size_t sz) {
+  return mmap_private<std::byte[]>(sz, PROT_READ | PROT_WRITE, -1, param.flags,
+                                   0);
 }
 
 inline auto get_unique_bytes_generator(size_t chunk_sz) {
@@ -112,7 +116,12 @@ inline auto get_unique_bytes_generator(size_t chunk_sz) {
           alloc_mode_new{}, alignof(std::max_align_t), chunk_sz);
     };
   } else {
-    gen = [=] { return make_unique_bytes(alloc_mode_mmap{}, chunk_sz); };
+    gen = [=] {
+      return make_unique_bytes(
+          alloc_mode_mmap{
+              !(chunk_sz < 2_MiB) ? (MAP_HUGETLB | (21 << MAP_HUGE_SHIFT)) : 0},
+          chunk_sz);
+    };
   }
   return gen;
 }
