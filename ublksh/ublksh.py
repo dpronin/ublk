@@ -41,6 +41,15 @@ class ublksh(Cmd):
             raise
 
         try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the default target cannot be"
+                " converted to Flag")
+            raise
+
+        try:
             target.path = args['path']
         except KeyError:
             print("No 'path' given for the default target in the arguments")
@@ -69,6 +78,15 @@ class ublksh(Cmd):
             raise
 
         try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the raid0 target cannot be"
+                " converted to Flag")
+            raise
+
+        try:
             target.paths = ublksh.__parse_csv_list__(args['paths'])
         except KeyError:
             print("No 'paths' given for the raid0 target in the arguments")
@@ -86,6 +104,15 @@ class ublksh(Cmd):
             print(
                 "'cache_len_sectors' given for the raid1 target cannot be"
                 " converted to sectors")
+            raise
+
+        try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the raid1 target cannot be"
+                " converted to Flag")
             raise
 
         try:
@@ -118,6 +145,15 @@ class ublksh(Cmd):
             print(
                 "'cache_len_stripes' given for the raid4 target cannot be"
                 " converted to stripes")
+            raise
+
+        try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the raid4 target cannot be"
+                " converted to Flag")
             raise
 
         try:
@@ -158,6 +194,15 @@ class ublksh(Cmd):
             print(
                 "'cache_len_stripes' given for the raid5 target cannot be"
                 " converted to stripes")
+            raise
+
+        try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the raid5 target cannot be"
+                " converted to Flag")
             raise
 
         try:
@@ -224,6 +269,15 @@ class ublksh(Cmd):
             raise
 
         try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the raid10 target cannot be"
+                " converted to Flag")
+            raise
+
+        try:
             target.raid1s = ublksh.__parse_targets_raid1s__(args['raid1s'])
         except KeyError:
             print("No 'raid1s' given for the raid10 target in the arguments")
@@ -253,6 +307,15 @@ class ublksh(Cmd):
             raise
 
         try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the raid40 target cannot be"
+                " converted to Flag")
+            raise
+
+        try:
             target.raid4s = ublksh.__parse_targets_raid4s__(args['raid4s'])
         except KeyError:
             print("No 'raid4s' given for the raid40 target in the arguments")
@@ -279,6 +342,15 @@ class ublksh(Cmd):
             print(
                 "'cache_len_strips' given for the raid50 target cannot be"
                 " converted to strips")
+            raise
+
+        try:
+            target.cache_write_through = int(
+                args.get('cache_write_through', True))
+        except ValueError:
+            print(
+                "'cache_write_through' given for the raid50 target cannot be"
+                " converted to Flag")
             raise
 
         try:
