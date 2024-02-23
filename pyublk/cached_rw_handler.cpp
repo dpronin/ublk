@@ -11,8 +11,9 @@ namespace ublk {
 
 CachedRWHandler::CachedRWHandler(
     std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache,
-    std::unique_ptr<IRWHandler> handler)
-    : cache_(std::move(cache)), handler_(std::move(handler)) {
+    std::unique_ptr<IRWHandler> handler, bool write_through /* = true*/)
+    : cache_(std::move(cache)), handler_(std::move(handler)),
+      write_through_(write_through) {
   assert(cache_);
   assert(handler_);
 }
@@ -28,11 +29,13 @@ ssize_t CachedRWHandler::read(std::span<std::byte> buf,
     auto [cached_chunk, valid] = cache_->find_allocate_mutable(chunk_id);
     assert(!cached_chunk.empty());
     if (valid) {
-      auto const chunk = buf.subspan(
-          0, std::min(cache_->item_sz() - chunk_offset, buf.size()));
+      auto const chunk{
+          buf.subspan(0,
+                      std::min(cache_->item_sz() - chunk_offset, buf.size())),
+      };
 
-      auto const from = cached_chunk.subspan(chunk_offset, chunk.size());
-      auto const to = chunk;
+      auto const from{cached_chunk.subspan(chunk_offset, chunk.size())};
+      auto const to{chunk};
 
       algo::copy(std::as_bytes(from), to);
 
@@ -63,20 +66,24 @@ ssize_t CachedRWHandler::write(std::span<std::byte const> buf,
         buf.subspan(0, std::min(cache_->item_sz() - chunk_offset, buf.size())),
     };
 
-    if (auto const res = handler_->write(chunk, offset + wb); res < 0)
+    if (auto const res{handler_->write(chunk, offset + wb)}; res < 0)
         [[unlikely]] {
       cache_->invalidate(chunk_id);
       return res;
     }
 
-    /* update cache with a corresponding data from the chunk */
-    auto [cached_chunk, _] = cache_->find_allocate_mutable(chunk_id);
-    assert(!cached_chunk.empty());
+    if (write_through_) {
+      /* update cache with a corresponding data from the chunk */
+      auto [cached_chunk, _]{cache_->find_allocate_mutable(chunk_id)};
+      assert(!cached_chunk.empty());
 
-    auto const from{chunk};
-    auto const to{cached_chunk.subspan(chunk_offset, chunk.size())};
+      auto const from{chunk};
+      auto const to{cached_chunk.subspan(chunk_offset, chunk.size())};
 
-    algo::copy(from, to);
+      algo::copy(from, to);
+    } else {
+      cache_->invalidate(chunk_id);
+    }
 
     wb += chunk.size();
     chunk_offset = 0;

@@ -14,7 +14,7 @@ class CachedRWHandler : public IRWHandler {
 public:
   explicit CachedRWHandler(
       std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache,
-      std::unique_ptr<IRWHandler> handler);
+      std::unique_ptr<IRWHandler> handler, bool write_through = true);
   ~CachedRWHandler() override = default;
 
   CachedRWHandler(CachedRWHandler const &) = delete;
@@ -30,6 +30,7 @@ public:
 private:
   std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache_;
   std::unique_ptr<IRWHandler> handler_;
+  bool write_through_;
 };
 
 } // namespace ublk

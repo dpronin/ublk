@@ -42,11 +42,14 @@ PYBIND11_MODULE(ublk, m) {
       .def(py::init([] -> ublk::target_default_cfg {
         return {
             .cache_len_sectors = 0,
+            .cache_write_through = true,
             .path = {},
         };
       }))
       .def_readwrite("cache_len_sectors",
                      &ublk::target_default_cfg::cache_len_sectors)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_default_cfg::cache_write_through)
       .def_readwrite("path", &ublk::target_default_cfg::path);
 
   py::class_<ublk::target_raid0_cfg>(m, "target_raid0")
@@ -54,6 +57,7 @@ PYBIND11_MODULE(ublk, m) {
         return {
             .strip_len_sectors = 0,
             .cache_len_strips = 0,
+            .cache_write_through = true,
             .paths = {},
         };
       }))
@@ -61,17 +65,22 @@ PYBIND11_MODULE(ublk, m) {
                      &ublk::target_raid0_cfg::strip_len_sectors)
       .def_readwrite("cache_len_strips",
                      &ublk::target_raid0_cfg::cache_len_strips)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_raid0_cfg::cache_write_through)
       .def_readwrite("paths", &ublk::target_raid0_cfg::paths);
 
   py::class_<ublk::target_raid1_cfg>(m, "target_raid1")
       .def(py::init([] -> ublk::target_raid1_cfg {
         return {
             .cache_len_sectors = 0,
+            .cache_write_through = true,
             .paths = {},
         };
       }))
       .def_readwrite("cache_len_sectors",
                      &ublk::target_raid1_cfg::cache_len_sectors)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_raid1_cfg::cache_write_through)
       .def_readwrite("paths", &ublk::target_raid1_cfg::paths);
 
   py::class_<ublk::target_raid4_cfg>(m, "target_raid4")
@@ -79,6 +88,7 @@ PYBIND11_MODULE(ublk, m) {
         return {
             .strip_len_sectors = 0,
             .cache_len_stripes = 0,
+            .cache_write_through = true,
             .data_paths = {},
             .parity_path = {},
         };
@@ -87,6 +97,8 @@ PYBIND11_MODULE(ublk, m) {
                      &ublk::target_raid4_cfg::strip_len_sectors)
       .def_readwrite("cache_len_stripes",
                      &ublk::target_raid4_cfg::cache_len_stripes)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_raid4_cfg::cache_write_through)
       .def_readwrite("data_paths", &ublk::target_raid4_cfg::data_paths)
       .def_readwrite("parity_path", &ublk::target_raid4_cfg::parity_path);
 
@@ -95,6 +107,7 @@ PYBIND11_MODULE(ublk, m) {
         return {
             .strip_len_sectors = 0,
             .cache_len_stripes = 0,
+            .cache_write_through = true,
             .paths = {},
         };
       }))
@@ -102,6 +115,8 @@ PYBIND11_MODULE(ublk, m) {
                      &ublk::target_raid5_cfg::strip_len_sectors)
       .def_readwrite("cache_len_stripes",
                      &ublk::target_raid5_cfg::cache_len_stripes)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_raid5_cfg::cache_write_through)
       .def_readwrite("paths", &ublk::target_raid5_cfg::paths);
 
   py::class_<ublk::target_raid10_cfg>(m, "target_raid10")
@@ -109,6 +124,7 @@ PYBIND11_MODULE(ublk, m) {
         return {
             .strip_len_sectors = 0,
             .cache_len_strips = 0,
+            .cache_write_through = true,
             .raid1s = {},
         };
       }))
@@ -116,6 +132,8 @@ PYBIND11_MODULE(ublk, m) {
                      &ublk::target_raid10_cfg::strip_len_sectors)
       .def_readwrite("cache_len_strips",
                      &ublk::target_raid10_cfg::cache_len_strips)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_raid10_cfg::cache_write_through)
       .def_readwrite("raid1s", &ublk::target_raid10_cfg::raid1s);
 
   py::class_<ublk::target_raid40_cfg>(m, "target_raid40")
@@ -123,6 +141,7 @@ PYBIND11_MODULE(ublk, m) {
         return {
             .strip_len_sectors = 0,
             .cache_len_strips = 0,
+            .cache_write_through = true,
             .raid4s = {},
         };
       }))
@@ -130,6 +149,8 @@ PYBIND11_MODULE(ublk, m) {
                      &ublk::target_raid40_cfg::strip_len_sectors)
       .def_readwrite("cache_len_strips",
                      &ublk::target_raid40_cfg::cache_len_strips)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_raid40_cfg::cache_write_through)
       .def_readwrite("raid4s", &ublk::target_raid40_cfg::raid4s);
 
   py::class_<ublk::target_raid50_cfg>(m, "target_raid50")
@@ -137,6 +158,7 @@ PYBIND11_MODULE(ublk, m) {
         return {
             .strip_len_sectors = 0,
             .cache_len_strips = 0,
+            .cache_write_through = true,
             .raid5s = {},
         };
       }))
@@ -144,6 +166,8 @@ PYBIND11_MODULE(ublk, m) {
                      &ublk::target_raid50_cfg::strip_len_sectors)
       .def_readwrite("cache_len_strips",
                      &ublk::target_raid50_cfg::cache_len_strips)
+      .def_readwrite("cache_write_through",
+                     &ublk::target_raid50_cfg::cache_write_through)
       .def_readwrite("raid5s", &ublk::target_raid50_cfg::raid5s);
 
   py::class_<ublk::target_create_param>(m, "target_create_param")
