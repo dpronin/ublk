@@ -94,6 +94,7 @@ add_subdirectory(inmem)
 add_subdirectory(null)
 add_subdirectory(raid0)
 add_subdirectory(raid1)
+add_subdirectory(raidsp)
 add_subdirectory(raid4)
 add_subdirectory(raid5)
 
