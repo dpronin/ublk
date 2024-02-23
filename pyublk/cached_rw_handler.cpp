@@ -12,10 +12,28 @@ namespace ublk {
 CachedRWHandler::CachedRWHandler(
     std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache,
     std::unique_ptr<IRWHandler> handler, bool write_through /* = true*/)
-    : cache_(std::move(cache)), handler_(std::move(handler)),
-      write_through_(write_through) {
+    : cache_(std::move(cache)), handler_(std::move(handler)) {
   assert(cache_);
   assert(handler_);
+  if (write_through) {
+    cache_updater_ = [this](uint64_t chunk_id_at, uint64_t chunk_offset_at,
+                            std::span<std::byte const> chunk) {
+      /* update cache with a corresponding data from the chunk */
+      auto [cached_chunk, _]{cache_->find_allocate_mutable(chunk_id_at)};
+      assert(!cached_chunk.empty());
+
+      auto const from{chunk};
+      auto const to{cached_chunk.subspan(chunk_offset_at, chunk.size())};
+
+      algo::copy(from, to);
+    };
+  } else {
+    cache_updater_ = [this](uint64_t chunk_id_at,
+                            uint64_t chunk_offset_at [[maybe_unused]],
+                            std::span<std::byte const> chunk [[maybe_unused]]) {
+      cache_->invalidate(chunk_id_at);
+    };
+  }
 }
 
 ssize_t CachedRWHandler::read(std::span<std::byte> buf,
@@ -72,18 +90,7 @@ ssize_t CachedRWHandler::write(std::span<std::byte const> buf,
       return res;
     }
 
-    if (write_through_) {
-      /* update cache with a corresponding data from the chunk */
-      auto [cached_chunk, _]{cache_->find_allocate_mutable(chunk_id)};
-      assert(!cached_chunk.empty());
-
-      auto const from{chunk};
-      auto const to{cached_chunk.subspan(chunk_offset, chunk.size())};
-
-      algo::copy(from, to);
-    } else {
-      cache_->invalidate(chunk_id);
-    }
+    cache_updater_(chunk_id, chunk_offset, chunk);
 
     wb += chunk.size();
     chunk_offset = 0;
