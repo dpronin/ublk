@@ -51,6 +51,10 @@ private:
     return std::span{cache_.get(), cache_len_};
   }
 
+  bool is_valid(cache_item_t const &cache_item) const noexcept {
+    return std::get<1>(cache_item) != cache_view().size();
+  }
+
   auto cache_value_view(uptrwd<T[]> const &cache_value) const noexcept {
     return std::span{
         cache_value.get(),
@@ -101,7 +105,7 @@ private:
     return {
         value_it - cache.begin(),
         cache.end() != value_it && key == key_proj(*value_it) &&
-            std::get<1>(*value_it) != cache.size(),
+            is_valid(*value_it),
     };
   }
 
@@ -132,8 +136,7 @@ public:
 
     auto [index, exact_match] = lower_bound_find(key);
     if (!exact_match) {
-      if ((cache.size() == index ||
-           std::get<1>(cache[index]) != cache.size())) {
+      if ((cache.size() == index || is_valid(cache[index]))) {
         auto value_it = cache.begin() + index;
         if (auto evict_value_it = std::ranges::max_element(
                 cache, keys_cmp{},
