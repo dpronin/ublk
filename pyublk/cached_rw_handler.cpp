@@ -17,26 +17,24 @@ CachedRWHandler::CachedRWHandler(
   assert(cache_);
   assert(handler_);
   if (write_through) {
-    cache_updater_ = [this](uint64_t chunk_id_at, uint64_t chunk_offset_at,
+    cache_updater_ = [this](uint64_t chunk_id,
                             std::span<std::byte const> chunk) {
-      auto const from{chunk};
-      auto const to{
-          std::span{chunk_tmp_.get() + chunk_offset_at, chunk.size()},
-      };
+      if (chunk.size() < cache_->item_sz()) {
+        cache_->invalidate(chunk_id);
+      } else {
+        auto const from{chunk};
+        auto const to{std::span{chunk_tmp_.get(), cache_->item_sz()}};
 
-      algo::copy(from, to);
+        algo::copy(from, to);
 
-      /* update cache with a corresponding data from the chunk */
-      auto evicted_value{cache_->update({chunk_id_at, std::move(chunk_tmp_)})};
-      assert(evicted_value);
-      chunk_tmp_.swap(evicted_value->second);
+        auto evicted_value{cache_->update({chunk_id, std::move(chunk_tmp_)})};
+        assert(evicted_value);
+        chunk_tmp_.swap(evicted_value->second);
+      }
     };
   } else {
-    cache_updater_ = [this](uint64_t chunk_id_at,
-                            uint64_t chunk_offset_at [[maybe_unused]],
-                            std::span<std::byte const> chunk [[maybe_unused]]) {
-      cache_->invalidate(chunk_id_at);
-    };
+    cache_updater_ = [this](uint64_t chunk_id, std::span<std::byte const> chunk
+                            [[maybe_unused]]) { cache_->invalidate(chunk_id); };
   }
   chunk_tmp_ = get_unique_bytes_generator(cache_->item_sz())();
 }
@@ -65,14 +63,16 @@ ssize_t CachedRWHandler::read(std::span<std::byte> buf,
       chunk_offset = 0;
       buf = buf.subspan(chunk.size());
       rb += chunk.size();
+    } else if (auto const res =
+                   handler_->read({chunk_tmp_.get(), cache_->item_sz()},
+                                  chunk_id * cache_->item_sz());
+               res < 0) [[unlikely]] {
+      cache_->invalidate(chunk_id);
+      return res;
     } else {
-      if (auto const res = handler_->read({chunk_tmp_.get(), cache_->item_sz()},
-                                          chunk_id * cache_->item_sz());
-          res < 0) [[unlikely]] {
-        cache_->invalidate(chunk_id);
-        return res;
-      }
       auto evicted_value{cache_->update({chunk_id, std::move(chunk_tmp_)})};
+      assert(evicted_value);
+      chunk_tmp_.swap(evicted_value->second);
     }
   }
 
@@ -97,12 +97,12 @@ ssize_t CachedRWHandler::write(std::span<std::byte const> buf,
       return res;
     }
 
-    cache_updater_(chunk_id, chunk_offset, chunk);
+    cache_updater_(chunk_id, chunk);
 
-    wb += chunk.size();
-    chunk_offset = 0;
     ++chunk_id;
+    chunk_offset = 0;
     buf = buf.subspan(chunk.size());
+    wb += chunk.size();
   }
 
   return wb;

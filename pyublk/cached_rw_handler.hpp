@@ -33,8 +33,7 @@ public:
 private:
   std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache_;
   std::unique_ptr<IRWHandler> handler_;
-  std::function<void(uint64_t chunk_id_at, uint64_t chunk_offset_at,
-                     std::span<std::byte const> chunk)>
+  std::function<void(uint64_t chunk_id, std::span<std::byte const> chunk)>
       cache_updater_;
   uptrwd<std::byte[]> chunk_tmp_;
 };
