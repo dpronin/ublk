@@ -164,10 +164,8 @@ public:
 
   void invalidate(Key key) noexcept {
     auto const cache = cache_view();
-    auto const [index, exact_match] = lower_bound_find(key);
-    if (exact_match)
+    if (auto const [index, exact_match] = lower_bound_find(key); exact_match)
       std::get<1>(cache[index]) = cache.size();
-    assert(std::get<1>(cache[index]) == cache.size());
   }
 
 private:
