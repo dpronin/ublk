@@ -17,6 +17,7 @@
 #include "concepts.hpp"
 #include "mem.hpp"
 #include "mem_types.hpp"
+#include "sector.hpp"
 
 namespace ublk {
 
@@ -27,8 +28,9 @@ public:
     auto cache = std::unique_ptr<flat_lru_cache<Key, T>>{};
     if (cache_len && cache_item_sz) {
       auto cache_storage = std::make_unique<uptrwd<T[]>[]>(cache_len);
-      std::ranges::generate(std::span{cache_storage.get(), cache_len},
-                            get_unique_bytes_generator(cache_item_sz));
+      std::ranges::generate(
+          std::span{cache_storage.get(), cache_len},
+          get_unique_bytes_generator(kSectorSz, cache_item_sz));
       cache =
           std::unique_ptr<flat_lru_cache<Key, T>>(new flat_lru_cache<Key, T>{
               std::move(cache_storage),

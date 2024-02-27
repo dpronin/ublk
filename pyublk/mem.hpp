@@ -98,12 +98,13 @@ inline uptrwd<std::byte[]> make_unique_bytes(alloc_mode_mmap param, size_t sz) {
                                    0);
 }
 
-inline auto get_unique_bytes_generator(size_t chunk_sz) {
+inline auto get_unique_bytes_generator(size_t alignment, size_t chunk_sz) {
   std::function<uptrwd<std::byte[]>()> gen;
   if (chunk_sz < get_page_size()) {
     gen = [=] {
       return detail::make_unique_aligned_bytes(
-          alloc_mode_new{}, alignof(std::max_align_t), chunk_sz);
+          alloc_mode_new{}, std::max(alignment, alignof(std::max_align_t)),
+          chunk_sz);
     };
   } else {
     gen = [=] {

@@ -23,20 +23,23 @@ CachedRWHandler::CachedRWHandler(
         cache_->invalidate(chunk_id);
       } else {
         auto const from{chunk};
-        auto const to{std::span{chunk_tmp_.get(), cache_->item_sz()}};
+        auto const to{cached_chunk_view()};
 
         algo::copy(from, to);
 
-        auto evicted_value{cache_->update({chunk_id, std::move(chunk_tmp_)})};
+        auto evicted_value{
+            cache_->update({chunk_id, std::move(cached_chunk_)}),
+        };
         assert(evicted_value);
-        chunk_tmp_.swap(evicted_value->second);
+        cached_chunk_.swap(evicted_value->second);
       }
     };
   } else {
     cache_updater_ = [this](uint64_t chunk_id, std::span<std::byte const> chunk
                             [[maybe_unused]]) { cache_->invalidate(chunk_id); };
   }
-  chunk_tmp_ = get_unique_bytes_generator(cache_->item_sz())();
+  cached_chunk_ =
+      get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz())();
 }
 
 ssize_t CachedRWHandler::read(std::span<std::byte> buf,
@@ -63,16 +66,15 @@ ssize_t CachedRWHandler::read(std::span<std::byte> buf,
       chunk_offset = 0;
       buf = buf.subspan(chunk.size());
       rb += chunk.size();
-    } else if (auto const res =
-                   handler_->read({chunk_tmp_.get(), cache_->item_sz()},
-                                  chunk_id * cache_->item_sz());
+    } else if (auto const res = handler_->read(cached_chunk_view(),
+                                               chunk_id * cache_->item_sz());
                res < 0) [[unlikely]] {
       cache_->invalidate(chunk_id);
       return res;
     } else {
-      auto evicted_value{cache_->update({chunk_id, std::move(chunk_tmp_)})};
+      auto evicted_value{cache_->update({chunk_id, std::move(cached_chunk_)})};
       assert(evicted_value);
-      chunk_tmp_.swap(evicted_value->second);
+      cached_chunk_.swap(evicted_value->second);
     }
   }
 

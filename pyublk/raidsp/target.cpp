@@ -24,7 +24,8 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
   assert(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
-  cached_stripe_ = get_unique_bytes_generator(stripe_data_sz_ + strip_sz_)();
+  cached_stripe_ = get_unique_bytes_generator(kCachedStripeAlignment,
+                                              stripe_data_sz_ + strip_sz_)();
 }
 
 ssize_t Target::read_data_skip_parity(uint64_t stripe_id_from,

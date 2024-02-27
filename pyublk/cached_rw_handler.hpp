@@ -10,10 +10,21 @@
 #include "flat_lru_cache.hpp"
 #include "mem_types.hpp"
 #include "rw_handler_interface.hpp"
+#include "sector.hpp"
+#include "span.hpp"
 
 namespace ublk {
 
 class CachedRWHandler : public IRWHandler {
+private:
+  constexpr static inline auto kCachedChunkAlignment = kSectorSz;
+  static_assert(is_aligned_to(kCachedChunkAlignment,
+                              alignof(std::max_align_t)));
+
+  template <typename T = std::byte> auto cached_chunk_view() const noexcept {
+    return to_span_of<T>({cached_chunk_.get(), cache_->item_sz()});
+  }
+
 public:
   explicit CachedRWHandler(
       std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache,
@@ -35,7 +46,7 @@ private:
   std::unique_ptr<IRWHandler> handler_;
   std::function<void(uint64_t chunk_id, std::span<std::byte const> chunk)>
       cache_updater_;
-  uptrwd<std::byte[]> chunk_tmp_;
+  uptrwd<std::byte[]> cached_chunk_;
 };
 
 } // namespace ublk

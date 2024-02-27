@@ -434,7 +434,7 @@ void Master::create(target_create_param const &param) {
           [&](target_inmem_cfg const &) {
             uint64_t const mem_sz{sectors_to_bytes(param.capacity_sectors)};
             auto target = std::make_shared<inmem::Target>(
-                get_unique_bytes_generator(mem_sz)(), mem_sz);
+                get_unique_bytes_generator(kSectorSz, mem_sz)(), mem_sz);
             reader = std::make_shared<inmem::ReadHandler>(target);
             writer = std::make_shared<inmem::WriteHandler>(target);
           },
