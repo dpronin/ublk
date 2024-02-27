@@ -8,6 +8,7 @@
 #include <span>
 
 #include "flat_lru_cache.hpp"
+#include "mem_types.hpp"
 #include "rw_handler_interface.hpp"
 
 namespace ublk {
@@ -35,6 +36,7 @@ private:
   std::function<void(uint64_t chunk_id_at, uint64_t chunk_offset_at,
                      std::span<std::byte const> chunk)>
       cache_updater_;
+  uptrwd<std::byte[]> chunk_tmp_;
 };
 
 } // namespace ublk

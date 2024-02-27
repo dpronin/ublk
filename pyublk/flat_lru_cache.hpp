@@ -9,11 +9,11 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <span>
 #include <utility>
 
-#include "algo.hpp"
 #include "concepts.hpp"
 #include "mem.hpp"
 #include "mem_types.hpp"
@@ -121,7 +121,9 @@ public:
   uint64_t item_sz() const noexcept { return cache_item_sz_; }
   uint64_t len() const noexcept { return cache_view().size(); }
 
-  std::span<T> find_mutable(Key key) const noexcept {
+  std::span<T const> find(Key key) const noexcept { return find_mutable(key); }
+
+  std::span<T> find_mutable(Key key) noexcept {
     if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
       touch(index);
       return cache_value_view(std::get<2>(cache_view()[index]));
@@ -129,14 +131,15 @@ public:
     return {};
   }
 
-  std::span<T const> find(Key key) const noexcept { return find_mutable(key); }
+  std::optional<std::pair<Key, uptrwd<T[]>>>
+  update(std::pair<Key, uptrwd<T[]>> value) noexcept {
+    auto evicted_value = std::optional<std::pair<Key, uptrwd<T[]>>>{};
 
-  std::pair<std::span<T>, bool> find_allocate_mutable(Key key) noexcept {
     auto const cache = cache_view();
 
-    auto [index, exact_match] = lower_bound_find(key);
+    auto [index, exact_match] = lower_bound_find(value.first);
     if (!exact_match) {
-      if ((cache.size() == index || is_valid(cache[index]))) {
+      if (!(index < cache.size()) || is_valid(cache[index])) {
         auto value_it = cache.begin() + index;
         if (auto evict_value_it = std::ranges::max_element(
                 cache, keys_cmp{},
@@ -148,22 +151,15 @@ public:
         }
         index = value_it - cache.begin();
       }
-      std::get<0>(cache[index]) = key;
+      evicted_value.emplace(std::get<0>(cache[index]),
+                            std::move(std::get<2>(cache[index])));
+      std::get<0>(cache[index]) = value.first;
+      std::get<2>(cache[index]) = std::move(value.second);
       assert(std::ranges::is_sorted(cache, keys_cmp{}, key_proj));
     }
 
     touch(index);
-    return {cache_value_view(std::get<2>(cache[index])), exact_match};
-  }
-
-  void update(Key key, std::span<T const> value) noexcept {
-    assert(value.size() == cache_item_sz_);
-
-    auto const from = value;
-    auto const [to, _] = find_allocate_mutable(key);
-    assert(!to.empty());
-
-    algo::copy(from, to);
+    return evicted_value;
   }
 
   void invalidate(Key key) noexcept {

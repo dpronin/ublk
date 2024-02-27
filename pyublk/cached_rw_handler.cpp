@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "algo.hpp"
+#include "mem.hpp"
 
 namespace ublk {
 
@@ -18,14 +19,17 @@ CachedRWHandler::CachedRWHandler(
   if (write_through) {
     cache_updater_ = [this](uint64_t chunk_id_at, uint64_t chunk_offset_at,
                             std::span<std::byte const> chunk) {
-      /* update cache with a corresponding data from the chunk */
-      auto [cached_chunk, _]{cache_->find_allocate_mutable(chunk_id_at)};
-      assert(!cached_chunk.empty());
-
       auto const from{chunk};
-      auto const to{cached_chunk.subspan(chunk_offset_at, chunk.size())};
+      auto const to{
+          std::span{chunk_tmp_.get() + chunk_offset_at, chunk.size()},
+      };
 
       algo::copy(from, to);
+
+      /* update cache with a corresponding data from the chunk */
+      auto evicted_value{cache_->update({chunk_id_at, std::move(chunk_tmp_)})};
+      assert(evicted_value);
+      chunk_tmp_.swap(evicted_value->second);
     };
   } else {
     cache_updater_ = [this](uint64_t chunk_id_at,
@@ -34,6 +38,7 @@ CachedRWHandler::CachedRWHandler(
       cache_->invalidate(chunk_id_at);
     };
   }
+  chunk_tmp_ = get_unique_bytes_generator(cache_->item_sz())();
 }
 
 ssize_t CachedRWHandler::read(std::span<std::byte> buf,
@@ -44,9 +49,8 @@ ssize_t CachedRWHandler::read(std::span<std::byte> buf,
   auto chunk_offset{offset % cache_->item_sz()};
 
   while (!buf.empty()) {
-    auto [cached_chunk, valid] = cache_->find_allocate_mutable(chunk_id);
-    assert(!cached_chunk.empty());
-    if (valid) {
+    if (auto cached_chunk = cache_->find_mutable(chunk_id);
+        !cached_chunk.empty()) {
       auto const chunk{
           buf.subspan(0,
                       std::min(cache_->item_sz() - chunk_offset, buf.size())),
@@ -61,11 +65,14 @@ ssize_t CachedRWHandler::read(std::span<std::byte> buf,
       chunk_offset = 0;
       buf = buf.subspan(chunk.size());
       rb += chunk.size();
-    } else if (auto const res =
-                   handler_->read(cached_chunk, chunk_id * cache_->item_sz());
-               res < 0) [[unlikely]] {
-      cache_->invalidate(chunk_id);
-      return res;
+    } else {
+      if (auto const res = handler_->read({chunk_tmp_.get(), cache_->item_sz()},
+                                          chunk_id * cache_->item_sz());
+          res < 0) [[unlikely]] {
+        cache_->invalidate(chunk_id);
+        return res;
+      }
+      auto evicted_value{cache_->update({chunk_id, std::move(chunk_tmp_)})};
     }
   }
 
