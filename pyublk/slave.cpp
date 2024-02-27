@@ -113,7 +113,7 @@ void run(slave_param const &param) {
         auto cmdb =
             std::shared_ptr<ublkdrv_cmdb const>{mmap_shared<ublkdrv_cmdb>(
                 read_from_as<size_t>(sz_path, std::hex), PROT_READ,
-                off_factor * get_page_size(), uio_dev_path)};
+                *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size())};
         auto *p_cmdb_raw = cmdb.get();
 
         using TH = decltype(structured_maps.p_cellc->cmdb_head);
@@ -129,12 +129,12 @@ void run(slave_param const &param) {
       } else if (UBLKDRV_UIO_MEM_CELLC_NAME == map_name) {
         structured_maps.p_cellc = mmap_shared<ublkdrv_cellc const>(
             read_from_as<size_t>(sz_path, std::hex), PROT_READ,
-            off_factor * get_page_size(), uio_dev_path);
+            *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size());
       } else if (UBLKDRV_UIO_MEM_CELLS_NAME == map_name) {
         structured_maps.cells_sz = read_from_as<size_t>(sz_path, std::hex);
         structured_maps.p_cells = mmap_shared<std::byte>(
             structured_maps.cells_sz, PROT_READ | PROT_WRITE,
-            off_factor * get_page_size(), uio_dev_path);
+            *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size());
       }
       uio_devs[UBLKDRV_UIO_KERNEL_TO_USER_DIR_SUFFIX] = uio_dev_path;
     } else {
@@ -142,7 +142,7 @@ void run(slave_param const &param) {
         auto cmdb =
             std::shared_ptr<ublkdrv_cmdb_ack>{mmap_shared<ublkdrv_cmdb_ack>(
                 read_from_as<size_t>(sz_path, std::hex), PROT_READ | PROT_WRITE,
-                off_factor * get_page_size(), uio_dev_path)};
+                *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size())};
         auto *p_cmdb_raw = cmdb.get();
         auto *p_cellc_raw = structured_maps.p_cellc.get();
 

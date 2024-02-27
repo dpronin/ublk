@@ -7,12 +7,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include <filesystem>
 #include <new>
 #include <type_traits>
 #include <utility>
 
-#include "file.hpp"
 #include "mem_types.hpp"
 #include "page.hpp"
 #include "size_units.hpp"
@@ -78,14 +76,6 @@ mem_t<Target> mmap_shared(size_t sz, int prot = PROT_READ | PROT_WRITE,
                           int fd = -1, int flags = 0,
                           long offset = 0) noexcept {
   return mmap<Target>(sz, prot, fd, MAP_SHARED | flags, offset);
-}
-
-template <typename Target = void, typename... Args>
-mem_t<Target> mmap_shared(size_t sz, int prot, long offset,
-                          std::filesystem::path const &path, int oflag = O_RDWR,
-                          Args... args) {
-  return mmap_shared<Target>(sz, prot, *open(path.c_str(), oflag, args...),
-                             offset);
 }
 
 template <typename T, typename... Args>
