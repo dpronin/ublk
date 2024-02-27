@@ -21,7 +21,7 @@
 
 namespace ublk {
 
-template <std::unsigned_integral Key, is_trivial T> class flat_lru_cache {
+template <std::unsigned_integral Key, typename T> class flat_lru_cache {
 public:
   static std::unique_ptr<flat_lru_cache<Key, T>>
   create(uint64_t cache_len, uint64_t cache_item_sz) {
