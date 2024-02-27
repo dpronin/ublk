@@ -48,6 +48,7 @@ private:
     return std::get<0>(std::forward<decltype(value)>(value));
   };
   using keys_cmp = std::less<>;
+  using keys_eq = std::equal_to<>;
 
   auto cache_view() const noexcept {
     return std::span{cache_.get(), cache_len_};
@@ -73,14 +74,15 @@ private:
 
     cache_ = std::make_unique<cache_item_t[]>(cache_len_);
 
-    std::ranges::transform(std::span{storage.get(), storage_len}, cache_.get(),
-                           [this](auto &storage_item) -> cache_item_t {
-                             return {
-                                 Key{std::numeric_limits<Key>::max()},
-                                 cache_len_,
-                                 std::move(storage_item),
-                             };
-                           });
+    std::ranges::transform(
+        std::span{storage.get(), storage_len}, cache_.get(),
+        [this, key_init = Key{}](auto &storage_item) mutable -> cache_item_t {
+          return {
+              Key{key_init++},
+              cache_len_,
+              std::move(storage_item),
+          };
+        });
 
     assert(std::ranges::all_of(cache_view(), [](auto const &cache_item) {
       return static_cast<bool>(std::get<2>(cache_item));
@@ -153,14 +155,22 @@ public:
         }
         index = value_it - cache.begin();
       }
-      evicted_value.emplace(std::get<0>(cache[index]),
-                            std::move(std::get<2>(cache[index])));
-      std::get<0>(cache[index]) = value.first;
-      std::get<2>(cache[index]) = std::move(value.second);
-      assert(std::ranges::is_sorted(cache, keys_cmp{}, key_proj));
     }
 
+    evicted_value.emplace(std::get<0>(cache[index]),
+                          std::move(std::get<2>(cache[index])));
+    std::get<0>(cache[index]) = value.first;
+    std::get<2>(cache[index]) = std::move(value.second);
     touch(index);
+
+#ifndef NDEBUG
+    if (!exact_match) {
+      assert(std::ranges::is_sorted(cache, keys_cmp{}, key_proj));
+      assert(cache.end() ==
+             std::ranges::adjacent_find(cache, keys_eq{}, key_proj));
+    }
+#endif
+
     return evicted_value;
   }
 
