@@ -399,7 +399,7 @@ class ublksh(Cmd):
         try:
             if target_type == 'null':
                 param.target = ublksh.__parse_target_null__(args)
-            if target_type == 'inmem':
+            elif target_type == 'inmem':
                 param.target = ublksh.__parse_target_inmem__(args)
             elif target_type == 'default':
                 param.target = ublksh.__parse_target_default__(args)
@@ -418,7 +418,8 @@ class ublksh(Cmd):
             elif target_type == 'raid50':
                 param.target = ublksh.__parse_target_raid50__(args)
             else:
-                print("Unknown 'type' given for the target in the arguments")
+                print("Unknown type '{}' given for the target in the arguments".format(
+                    target_type))
                 return
         except BaseException:
             print("Error occurred while parsing command parameters")
