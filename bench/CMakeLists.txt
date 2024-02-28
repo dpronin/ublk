@@ -8,6 +8,6 @@ foreach(bench fill copy xor)
 
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE
         benchmark::benchmark
-        utils
+        ublk::utils
     )
 endforeach()
