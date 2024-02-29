@@ -1,18 +1,16 @@
 #pragma once
 
-#include <cstddef>
-
-#include <bits/types.h>
-#include <sys/types.h>
-
-#include <span>
+#include "read_handler_interface.hpp"
+#include "read_query.hpp"
+#include "write_query.hpp"
+#include "write_handler_interface.hpp"
 
 namespace ublk {
 
-class IRWHandler {
+class IRWHandler : public IReadHandler, public IWriteHandler {
 public:
   IRWHandler() = default;
-  virtual ~IRWHandler() = default;
+  ~IRWHandler() override = default;
 
   IRWHandler(IRWHandler const &) = default;
   IRWHandler &operator=(IRWHandler const &) = default;
@@ -20,10 +18,8 @@ public:
   IRWHandler(IRWHandler &&) = default;
   IRWHandler &operator=(IRWHandler &&) = default;
 
-  virtual ssize_t read(std::span<std::byte> buf, __off64_t offset) noexcept = 0;
-
-  virtual ssize_t write(std::span<std::byte const> buf,
-                        __off64_t offset) noexcept = 0;
+  int submit(std::shared_ptr<read_query> rq) noexcept override = 0;
+  int submit(std::shared_ptr<write_query> wq) noexcept override = 0;
 };
 
 } // namespace ublk

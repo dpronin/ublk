@@ -26,8 +26,9 @@ public:
   FlushHandlerComposite(FlushHandlerComposite &&) = default;
   FlushHandlerComposite &operator=(FlushHandlerComposite &&) = default;
 
-  int handle() noexcept override {
-    std::ranges::for_each(hs_, [](auto const &h) { h->handle(); });
+  int submit(std::shared_ptr<flush_query> fq) noexcept override {
+    std::ranges::for_each(
+        hs_, [fq = std::move(fq)](auto const &h) { h->submit(fq); });
     return 0;
   }
 

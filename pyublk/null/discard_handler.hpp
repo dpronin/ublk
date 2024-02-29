@@ -15,9 +15,9 @@ public:
   DiscardHandler(DiscardHandler &&) = default;
   DiscardHandler &operator=(DiscardHandler &&) = default;
 
-  ssize_t handle([[maybe_unused]] __off64_t offset,
-                 size_t size) noexcept override {
-    return size;
+  int submit(std::shared_ptr<discard_query> dq
+             [[maybe_unused]]) noexcept override {
+    return 0;
   }
 };
 

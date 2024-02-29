@@ -1,15 +1,11 @@
 #pragma once
 
-#include <cstddef>
+#include <memory>
 
-#include <bits/types.h>
-#include <sys/types.h>
-
-#include <span>
-
-#include "handler_interface.hpp"
+#include "submitter_interface.hpp"
+#include "write_query.hpp"
 
 namespace ublk {
 using IWriteHandler =
-    IHandler<ssize_t(std::span<std::byte const>, __off64_t) noexcept>;
+    ISubmitter<int(std::shared_ptr<write_query>) noexcept>;
 } // namespace ublk

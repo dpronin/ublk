@@ -7,6 +7,7 @@
 
 #include "flush_handler_interface.hpp"
 #include "target.hpp"
+#include "flush_query.hpp"
 
 namespace ublk::def {
 
@@ -24,7 +25,9 @@ public:
   FlushHandler(FlushHandler &&) = default;
   FlushHandler &operator=(FlushHandler &&) = default;
 
-  int handle() noexcept override { return target_->fsync(); }
+  int submit(std::shared_ptr<flush_query> fq) noexcept override {
+    return target_->process(std::move(fq));
+  }
 
 private:
   std::shared_ptr<Target> target_;

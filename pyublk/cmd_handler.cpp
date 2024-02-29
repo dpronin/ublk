@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "ublk_req.hpp"
+#include "req.hpp"
 
 namespace ublk {
 
@@ -21,14 +21,14 @@ CmdHandler::CmdHandler(
 }
 
 int CmdHandler::handle(ublkdrv_cmd cmd) noexcept {
-  auto req = ublk_req::create(
-      cmd, cellds_, cells_, [a = acknowledger_](ublk_req const &req) {
+  auto rq =
+      req::create(cmd, cellds_, cells_, [a = acknowledger_](req const &rq) {
         ublkdrv_cmd_ack cmd_ack;
-        ublkdrv_cmd_ack_set_id(&cmd_ack, ublkdrv_cmd_get_id(&req.cmd()));
-        ublkdrv_cmd_ack_set_err(&cmd_ack, static_cast<__u16>(req.err()));
+        ublkdrv_cmd_ack_set_id(&cmd_ack, ublkdrv_cmd_get_id(&rq.cmd()));
+        ublkdrv_cmd_ack_set_err(&cmd_ack, static_cast<__u16>(rq.err()));
         a->handle(cmd_ack);
       });
-  return handler_->handle(std::move(req));
+  return handler_->handle(std::move(rq));
 }
 
 } // namespace ublk

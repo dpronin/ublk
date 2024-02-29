@@ -4,7 +4,6 @@
 
 #include <format>
 #include <memory>
-#include <span>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -18,6 +17,7 @@
 #include "handler_interface.hpp"
 #include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
+#include "write_req.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_write cmd) {
   auto const &base = *ublk::container_of(
@@ -44,9 +44,7 @@ namespace ublk {
 class CmdWriteHandlerAdaptor : public IUblkReqHandler {
 public:
   explicit CmdWriteHandlerAdaptor(
-      std::shared_ptr<
-          IHandler<int(ublkdrv_cmd_write, std::span<ublkdrv_celld const>,
-                       std::span<std::byte const>) noexcept>>
+      std::shared_ptr<IHandler<int(std::shared_ptr<write_req>) noexcept>>
           handler)
       : handler_(std::move(handler)) {
     assert(handler_);
@@ -59,18 +57,15 @@ public:
   CmdWriteHandlerAdaptor(CmdWriteHandlerAdaptor &&) = default;
   CmdWriteHandlerAdaptor &operator=(CmdWriteHandlerAdaptor &&) = default;
 
-  int handle(std::shared_ptr<ublk_req> req) noexcept override {
-    assert(UBLKDRV_CMD_OP_WRITE == ublkdrv_cmd_get_op(&req->cmd()));
-    spdlog::debug("process {}", req->cmd().u.w);
-    req->set_err(handler_->handle(req->cmd().u.w, req->cellds(), req->cells()));
+  int handle(std::shared_ptr<req> rq) noexcept override {
+    auto wrq = write_req::create(std::move(rq));
+    spdlog::debug("process {}", wrq->cmd());
+    handler_->handle(std::move(wrq));
     return 0;
   }
 
 private:
-  std::shared_ptr<
-      IHandler<int(ublkdrv_cmd_write, std::span<ublkdrv_celld const>,
-                   std::span<std::byte const>) noexcept>>
-      handler_;
+  std::shared_ptr<IHandler<int(std::shared_ptr<write_req>) noexcept>> handler_;
 };
 
 } // namespace ublk

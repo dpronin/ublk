@@ -78,7 +78,7 @@ auto maps_fetch(std::string_view bdev_name) {
 
 namespace ublk::slave {
 
-void run(slave_param const &param) {
+void run(boost::asio::io_context &io_ctx, slave_param const &param) {
   struct ublk_structured_maps {
     std::unique_ptr<qublkcmd_t> p_qcmd;
     std::unique_ptr<qublkcmd_ack_t> p_qcmd_ack;
@@ -183,8 +183,6 @@ void run(slave_param const &param) {
       {structured_maps.p_cells.get(), structured_maps.cells_sz},
       std::make_unique<CmdAcknowledger>(std::move(structured_maps.p_qcmd_ack),
                                         std::move(fd_notify)));
-
-  auto io_ctx = boost::asio::io_context{};
 
   async_start(uio_devs, io_ctx, std::move(structured_maps.p_qcmd),
               std::move(handler));

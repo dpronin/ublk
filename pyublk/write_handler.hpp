@@ -24,9 +24,8 @@ public:
   WriteHandler(WriteHandler &&) = default;
   WriteHandler &operator=(WriteHandler &&) = default;
 
-  ssize_t handle(std::span<std::byte const> buf,
-                 __off64_t offset) noexcept override {
-    return rwh_->write(buf, offset);
+  int submit(std::shared_ptr<write_query> wq) noexcept override {
+    return rwh_->submit(std::move(wq));
   }
 
 private:

@@ -4,19 +4,11 @@
 
 namespace ublk::raid4 {
 
-class Target : public raidsp::Target {
-
+class Target final : public raidsp::Target {
 public:
   using raidsp::Target::Target;
 
-  ~Target() override = default;
-
-  Target(Target const &) = delete;
-  Target &operator=(Target const &) = delete;
-
-  Target(Target &&) = default;
-  Target &operator=(Target &&) = default;
-
+protected:
   uint64_t stripe_id_to_parity_id(uint64_t stripe_id) const noexcept override;
 };
 

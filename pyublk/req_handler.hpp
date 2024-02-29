@@ -6,7 +6,7 @@
 
 #include <linux/ublkdrv/cmd.h>
 
-#include "ublk_req.hpp"
+#include "req.hpp"
 #include "ublk_req_handler_interface.hpp"
 
 namespace ublk {
@@ -23,7 +23,7 @@ public:
   ReqHandler(ReqHandler &&) = default;
   ReqHandler &operator=(ReqHandler &&) = default;
 
-  int handle(std::shared_ptr<ublk_req> req) noexcept override;
+  int handle(std::shared_ptr<req> req) noexcept override;
 
 private:
   std::array<std::shared_ptr<IUblkReqHandler>, UBLKDRV_CMD_OP_MAX + 2> hs_;

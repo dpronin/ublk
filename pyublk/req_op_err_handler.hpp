@@ -18,7 +18,7 @@ public:
   ReqOpErrHandler(ReqOpErrHandler &&) = default;
   ReqOpErrHandler &operator=(ReqOpErrHandler &&) = default;
 
-  int handle(std::shared_ptr<ublk_req> req [[maybe_unused]]) noexcept override {
+  int handle(std::shared_ptr<req> req [[maybe_unused]]) noexcept override {
     assert(req);
     req->set_err(eVal);
     return 0;

@@ -3,11 +3,13 @@
 #include <cassert>
 #include <cstddef>
 
+#include <memory>
 #include <utility>
 
 #include <linux/ublkdrv/cmd.h>
 
 #include "for_each_celld.hpp"
+#include "read_query.hpp"
 
 namespace ublk {
 
@@ -16,20 +18,23 @@ CmdReadHandler::CmdReadHandler(std::shared_ptr<IReadHandler> reader)
   assert(reader_);
 }
 
-int CmdReadHandler::handle(ublkdrv_cmd_read cmd,
-                           std::span<ublkdrv_celld const> cellds,
-                           std::span<std::byte> cells) noexcept {
+int CmdReadHandler::handle(std::shared_ptr<read_req> req) noexcept {
+  assert(req);
+  auto *p_req = req.get();
   return for_each_celld(
-      ublkdrv_cmd_read_get_offset(&cmd), ublkdrv_cmd_read_get_fcdn(&cmd),
-      ublkdrv_cmd_read_get_cds_nr(&cmd), cellds, cells,
-      [r = reader_.get()](uint64_t offset, std::span<std::byte> buf) {
-        while (!buf.empty()) {
-          if (auto const res = r->handle(buf, offset); res > 0) [[likely]] {
-            buf = buf.subspan(
-                std::min(static_cast<std::size_t>(res), buf.size()));
-          } else if (res < 0) [[unlikely]] {
-            return -static_cast<int>(res);
-          }
+      ublkdrv_cmd_read_get_offset(&req->cmd()),
+      ublkdrv_cmd_read_get_fcdn(&p_req->cmd()),
+      ublkdrv_cmd_read_get_cds_nr(&p_req->cmd()), p_req->cellds(),
+      p_req->cells(),
+      [r = reader_.get(), req = std::move(req)](uint64_t offset,
+                                                std::span<std::byte> buf) {
+        auto completer = [req](read_query const &rq) {
+          if (rq.err())
+            req->set_err(rq.err());
+        };
+        auto rq = read_query::create(buf, offset, std::move(completer));
+        if (auto const res{r->submit(std::move(rq))}) [[unlikely]] {
+          return res;
         }
         return 0;
       });

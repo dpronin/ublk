@@ -3,28 +3,18 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <bits/types.h>
-#include <sys/types.h>
-
-#include <span>
-
 #include "mem_types.hpp"
+#include "read_query.hpp"
+#include "write_query.hpp"
 
 namespace ublk::inmem {
 
-class Target {
+class Target final {
 public:
   explicit Target(uptrwd<std::byte[]> mem, uint64_t sz) noexcept;
-  ~Target() = default;
 
-  Target(Target const &) = delete;
-  Target &operator=(Target const &) = delete;
-
-  Target(Target &&) = default;
-  Target &operator=(Target &&) = default;
-
-  ssize_t read(std::span<std::byte> buf, __off64_t offset) noexcept;
-  ssize_t write(std::span<std::byte const> buf, __off64_t offset) noexcept;
+  int process(std::shared_ptr<read_query> rq) noexcept;
+  int process(std::shared_ptr<write_query> wq) noexcept;
 
 private:
   uptrwd<std::byte[]> mem_;

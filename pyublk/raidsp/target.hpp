@@ -3,7 +3,9 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <functional>
 #include <memory>
+#include <queue>
 #include <vector>
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
@@ -12,6 +14,8 @@
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
 #include "span.hpp"
+#include "read_query.hpp"
+#include "write_query.hpp"
 
 namespace ublk::raidsp {
 
@@ -20,64 +24,74 @@ private:
   std::vector<std::shared_ptr<IRWHandler>>
   stripe_id_to_handlers(uint64_t stripe_id);
 
+  int full_stripe_write_process(uint64_t stripe_id_at,
+                                std::shared_ptr<write_query> wq) noexcept;
+
 protected:
   constexpr static inline auto kCachedStripeAlignment = kSectorSz;
   static_assert(is_aligned_to(kCachedStripeAlignment,
                               alignof(std::max_align_t)));
 
-  template <typename T = std::byte> auto cached_stripe_view() const noexcept {
-    return to_span_of<T>({cached_stripe_.get(), stripe_data_sz_ + strip_sz_});
+  template <typename T = std::byte>
+  auto
+  cached_stripe_view(uptrwd<std::byte[]> const &cached_stripe) const noexcept {
+    return to_span_of<T>({cached_stripe.get(), stripe_data_sz_ + strip_sz_});
   }
 
   template <typename T = std::byte>
-  auto cached_stripe_data_view() const noexcept {
-    return to_span_of<T>(cached_stripe_view().subspan(0, stripe_data_sz_));
+  auto cached_stripe_data_view(
+      uptrwd<std::byte[]> const &cached_stripe) const noexcept {
+    return to_span_of<T>(
+        cached_stripe_view(cached_stripe).subspan(0, stripe_data_sz_));
   }
 
   template <typename T = std::byte>
-  auto cached_stripe_parity_view() const noexcept {
-    return to_span_of<T>(cached_stripe_view().subspan(stripe_data_sz_));
+  auto cached_stripe_parity_view(
+      uptrwd<std::byte[]> const &cached_stripe) const noexcept {
+    return to_span_of<T>(
+        cached_stripe_view(cached_stripe).subspan(stripe_data_sz_));
   }
 
-  ssize_t stripe_write(uint64_t stripe_id_at, uint64_t stripe_offset,
-                       std::span<std::byte const> stripe_data,
-                       std::span<std::byte const> parity) noexcept;
-  ssize_t stripe_write(uint64_t stripe_id_at,
-                       std::span<std::byte const> stripe) noexcept;
-  ssize_t read_data_skip_parity(uint64_t stripe_id_from,
-                                uint64_t stripe_offset_from,
-                                std::span<std::byte> buf) noexcept;
-  ssize_t read_stripe_data(uint64_t stripe_id,
-                           std::span<std::byte> buf) noexcept;
-  ssize_t read_stripe_data(uint64_t stripe_id, uint64_t stripe_offset,
-                           std::span<std::byte> buf) noexcept;
-  ssize_t read_stripe_parity(uint64_t stripe_id,
-                             std::span<std::byte> buf) noexcept;
+  int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
+                   std::shared_ptr<write_query> wqp) noexcept;
+  int stripe_write(uint64_t stripe_id_at,
+                   std::shared_ptr<write_query> wq) noexcept;
+
+  int read_data_skip_parity(uint64_t stripe_id_from,
+                            std::shared_ptr<read_query> rq) noexcept;
+  int read_stripe_data(uint64_t stripe_id_from,
+                       std::shared_ptr<read_query> rq) noexcept;
+  int read_stripe_parity(uint64_t stripe_id_from,
+                         std::shared_ptr<read_query> rq) noexcept;
+
+  ~Target() = default;
 
   virtual uint64_t
   stripe_id_to_parity_id(uint64_t stripe_id) const noexcept = 0;
 
+private:
+  int process(uint64_t stripe_id,
+              std::shared_ptr<write_query> wq) noexcept;
+
 public:
   explicit Target(uint64_t strip_sz,
                   std::vector<std::shared_ptr<IRWHandler>> hs);
-  virtual ~Target() = default;
 
-  Target(Target const &) = delete;
-  Target &operator=(Target const &) = delete;
-
-  Target(Target &&) = default;
-  Target &operator=(Target &&) = default;
-
-  virtual ssize_t read(std::span<std::byte> buf, __off64_t offset) noexcept;
-  virtual ssize_t write(std::span<std::byte const> buf,
-                        __off64_t offset) noexcept;
+  int process(std::shared_ptr<read_query> rq) noexcept;
+  int process(std::shared_ptr<write_query> wq) noexcept;
 
 protected:
   uint64_t strip_sz_;
   uint64_t stripe_data_sz_;
-  boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
   std::vector<std::shared_ptr<IRWHandler>> hs_;
-  uptrwd<std::byte[]> cached_stripe_;
+  std::function<uptrwd<std::byte[]>()> cached_stripe_generator_;
+  std::function<uptrwd<std::byte[]>()> cached_stripe_parity_generator_;
+
+private:
+  boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
+  boost::dynamic_bitset<uint64_t> stripe_write_lock_state_;
+  std::queue<std::pair<uint64_t, std::shared_ptr<write_query>>>
+      wqs_pending_;
 };
 
 } // namespace ublk::raidsp

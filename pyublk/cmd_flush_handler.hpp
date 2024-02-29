@@ -1,19 +1,19 @@
 #pragma once
 
 #include <cassert>
-#include <cstddef>
 
 #include <memory>
 #include <utility>
 
-#include <linux/ublkdrv/cmd.h>
-
 #include "flush_handler_interface.hpp"
+#include "flush_query.hpp"
+#include "flush_req.hpp"
 #include "handler_interface.hpp"
 
 namespace ublk {
 
-class CmdFlushHandler : public IHandler<int(ublkdrv_cmd_flush) noexcept> {
+class CmdFlushHandler
+    : public IHandler<int(std::shared_ptr<flush_req>) noexcept> {
 public:
   explicit CmdFlushHandler(std::shared_ptr<IFlushHandler> flusher)
       : flusher_(std::move(flusher)) {
@@ -27,8 +27,14 @@ public:
   CmdFlushHandler(CmdFlushHandler &&) = default;
   CmdFlushHandler &operator=(CmdFlushHandler &&) = default;
 
-  int handle(ublkdrv_cmd_flush cmd [[maybe_unused]]) noexcept override {
-    return flusher_->handle();
+  int handle(std::shared_ptr<flush_req> req) noexcept override {
+    assert(req);
+    auto completer = [req = std::move(req)](flush_query const &fq
+                                            [[maybe_unused]]) {
+      if (fq.err())
+        req->set_err(fq.err());
+    };
+    return flusher_->submit(flush_query::create(completer));
   }
 
 private:

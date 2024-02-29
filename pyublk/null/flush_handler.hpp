@@ -15,7 +15,10 @@ public:
   FlushHandler(FlushHandler &&) = default;
   FlushHandler &operator=(FlushHandler &&) = default;
 
-  int handle() noexcept override { return 0; }
+  int submit(std::shared_ptr<flush_query> fq
+             [[maybe_unused]]) noexcept override {
+    return 0;
+  }
 };
 
 } // namespace ublk::null

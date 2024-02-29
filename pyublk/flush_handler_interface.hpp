@@ -1,7 +1,11 @@
 #pragma once
 
-#include "handler_interface.hpp"
+#include <memory>
+
+#include "submitter_interface.hpp"
+#include "flush_query.hpp"
 
 namespace ublk {
-using IFlushHandler = IHandler<int() noexcept>;
+using IFlushHandler =
+    ISubmitter<int(std::shared_ptr<flush_query>) noexcept>;
 } // namespace ublk

@@ -11,43 +11,29 @@
 
 namespace ublk::raid1 {
 
-class Target {
+class Target final {
 public:
-  explicit Target(std::vector<std::shared_ptr<IRWHandler>> hs)
+  explicit Target(std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
       : next_id_(0), hs_(std::move(hs)) {
     assert(!(hs_.size() < 2));
     assert(next_id_ < hs_.size());
     assert(std::ranges::all_of(
         hs_, [](auto const &h) { return static_cast<bool>(h); }));
   }
-  virtual ~Target() = default;
 
-  Target(Target const &) = default;
-  Target &operator=(Target const &) = default;
-
-  Target(Target &&) = default;
-  Target &operator=(Target &&) = default;
-
-  virtual ssize_t read(std::span<std::byte> buf, __off64_t offset) noexcept {
-    auto const res = hs_[next_id_]->read(buf, offset);
-    if (res > 0) [[likely]]
+  int process(std::shared_ptr<read_query> rq) noexcept {
+    if (auto const res = hs_[next_id_]->submit(std::move(rq)); !res) [[likely]]
       next_id_ = (next_id_ + 1) % hs_.size();
-    return res;
+    return 0;
   }
 
-  virtual ssize_t write(std::span<std::byte const> buf,
-                        __off64_t offset) noexcept {
-    auto rb{static_cast<ssize_t>(buf.size())};
-
+  int process(std::shared_ptr<write_query> wq) noexcept {
     for (auto const &h : hs_) {
-      if (auto const res = h->write(buf, offset); res >= 0) [[likely]] {
-        rb = std::min(rb, res);
-      } else {
+      if (auto const res = h->submit(wq)) [[unlikely]] {
         return res;
       }
     }
-
-    return rb;
+    return 0;
   }
 
 private:

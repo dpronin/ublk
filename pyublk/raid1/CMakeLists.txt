@@ -5,7 +5,10 @@ add_library(ublk_raid1 INTERFACE
 )
 
 target_include_directories(ublk_raid1 INTERFACE ${CMAKE_CURRENT_LIST_DIR}/..)
-target_link_libraries(ublk_raid1 INTERFACE ublk::utils)
+target_link_libraries(ublk_raid1 INTERFACE
+    Boost::system
+    ublk::utils
+)
 set_property(TARGET ublk_raid1 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::raid1 ALIAS ublk_raid1)

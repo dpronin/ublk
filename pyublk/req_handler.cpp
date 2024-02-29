@@ -30,7 +30,7 @@ ReqHandler::ReqHandler(
   }
 }
 
-int ReqHandler::handle(std::shared_ptr<ublk_req> req) noexcept {
+int ReqHandler::handle(std::shared_ptr<req> req) noexcept {
   auto const op = ublkdrv_cmd_get_op(&req->cmd());
   auto const hid = std::min(static_cast<size_t>(op), std::size(hs_) - 1);
   assert(hs_[hid]);

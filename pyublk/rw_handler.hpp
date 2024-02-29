@@ -27,13 +27,12 @@ public:
   RWHandler(RWHandler &&) = default;
   RWHandler &operator=(RWHandler &&) = default;
 
-  ssize_t read(std::span<std::byte> buf, __off64_t offset) noexcept override {
-    return rh_->handle(buf, offset);
+  int submit(std::shared_ptr<read_query> rq) noexcept override {
+    return rh_->submit(std::move(rq));
   }
 
-  ssize_t write(std::span<std::byte const> buf,
-                __off64_t offset) noexcept override {
-    return wh_->handle(buf, offset);
+  int submit(std::shared_ptr<write_query> wq) noexcept override {
+    return wh_->submit(std::move(wq));
   }
 
 private:

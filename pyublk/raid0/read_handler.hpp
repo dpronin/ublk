@@ -24,8 +24,8 @@ public:
   ReadHandler(ReadHandler &&) = default;
   ReadHandler &operator=(ReadHandler &&) = default;
 
-  ssize_t handle(std::span<std::byte> buf, __off64_t offset) noexcept override {
-    return target_->read(buf, offset);
+  int submit(std::shared_ptr<read_query> rq) noexcept override {
+    return target_->process(std::move(rq));
   }
 
 private:

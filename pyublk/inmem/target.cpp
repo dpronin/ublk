@@ -16,29 +16,33 @@ Target::Target(uptrwd<std::byte[]> mem, uint64_t sz) noexcept
   assert(mem_);
 }
 
-ssize_t Target::read(std::span<std::byte> buf, __off64_t offset) noexcept {
-  if (mem_sz_ < offset + buf.size()) [[unlikely]]
-    return -EINVAL;
+int Target::process(std::shared_ptr<read_query> rq) noexcept {
+  assert(rq);
 
-  auto const from = std::span<std::byte const>{mem_.get() + offset, buf.size()};
-  auto const to = buf;
+  if (mem_sz_ < rq->offset() + rq->buf().size()) [[unlikely]]
+    return EINVAL;
+
+  auto const from =
+      std::span<std::byte const>{mem_.get() + rq->offset(), rq->buf().size()};
+  auto const to = rq->buf();
 
   algo::copy(from, to);
 
-  return buf.size();
+  return 0;
 }
 
-ssize_t Target::write(std::span<std::byte const> buf,
-                      __off64_t offset) noexcept {
-  if (mem_sz_ < offset + buf.size()) [[unlikely]]
-    return -EINVAL;
+int Target::process(std::shared_ptr<write_query> wq) noexcept {
+  assert(wq);
 
-  auto const from = buf;
-  auto const to = std::span{mem_.get() + offset, buf.size()};
+  if (mem_sz_ < wq->offset() + wq->buf().size()) [[unlikely]]
+    return EINVAL;
+
+  auto const from = wq->buf();
+  auto const to = std::span{mem_.get() + wq->offset(), wq->buf().size()};
 
   algo::copy(from, to);
 
-  return buf.size();
+  return 0;
 }
 
 } // namespace ublk::inmem

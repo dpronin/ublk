@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
 
 #include <functional>
@@ -21,8 +20,10 @@ private:
   static_assert(is_aligned_to(kCachedChunkAlignment,
                               alignof(std::max_align_t)));
 
-  template <typename T = std::byte> auto cached_chunk_view() const noexcept {
-    return to_span_of<T>({cached_chunk_.get(), cache_->item_sz()});
+  template <typename T = std::byte>
+  auto
+  cached_chunk_view(uptrwd<std::byte[]> const &cached_chunk) const noexcept {
+    return to_span_of<T>({cached_chunk.get(), cache_->item_sz()});
   }
 
 public:
@@ -40,9 +41,8 @@ public:
   void set_write_through(bool value) noexcept;
   bool write_through() const noexcept;
 
-  ssize_t read(std::span<std::byte> buf, __off64_t offset) noexcept override;
-  ssize_t write(std::span<std::byte const> buf,
-                __off64_t offset) noexcept override;
+  int submit(std::shared_ptr<read_query> rq) noexcept override;
+  int submit(std::shared_ptr<write_query> wq) noexcept override;
 
 private:
   std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache_;
@@ -50,7 +50,7 @@ private:
   std::function<void(uint64_t chunk_id, std::span<std::byte const> chunk)>
       cache_updater_;
   bool write_through_;
-  uptrwd<std::byte[]> cached_chunk_;
+  std::function<uptrwd<std::byte[]>()> cached_chunk_generator_;
 };
 
 } // namespace ublk

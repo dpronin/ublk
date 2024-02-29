@@ -13,6 +13,7 @@
 
 #include <linux/ublkdrv/cmd.h>
 
+#include "discard_req.hpp"
 #include "handler_interface.hpp"
 #include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
@@ -42,7 +43,8 @@ namespace ublk {
 class CmdDiscardHandlerAdaptor : public IUblkReqHandler {
 public:
   explicit CmdDiscardHandlerAdaptor(
-      std::shared_ptr<IHandler<int(ublkdrv_cmd_discard) noexcept>> handler)
+      std::shared_ptr<IHandler<int(std::shared_ptr<discard_req>) noexcept>>
+          handler)
       : handler_(std::move(handler)) {
     assert(handler_);
   }
@@ -55,15 +57,16 @@ public:
   CmdDiscardHandlerAdaptor(CmdDiscardHandlerAdaptor &&) = default;
   CmdDiscardHandlerAdaptor &operator=(CmdDiscardHandlerAdaptor &&) = default;
 
-  int handle(std::shared_ptr<ublk_req> req) noexcept override {
-    assert(UBLKDRV_CMD_OP_DISCARD == ublkdrv_cmd_get_op(&req->cmd()));
-    spdlog::debug("process {}", req->cmd().u.d);
-    req->set_err(handler_->handle(req->cmd().u.d));
+  int handle(std::shared_ptr<req> rq) noexcept override {
+    auto drq = discard_req::create(std::move(rq));
+    spdlog::debug("process {}", drq->cmd());
+    handler_->handle(std::move(drq));
     return 0;
   }
 
 private:
-  std::shared_ptr<IHandler<int(ublkdrv_cmd_discard) noexcept>> handler_;
+  std::shared_ptr<IHandler<int(std::shared_ptr<discard_req>) noexcept>>
+      handler_;
 };
 
 } // namespace ublk

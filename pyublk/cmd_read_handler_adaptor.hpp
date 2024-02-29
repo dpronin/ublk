@@ -4,7 +4,6 @@
 
 #include <format>
 #include <memory>
-#include <span>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -16,6 +15,7 @@
 #include <linux/ublkdrv/cmd.h>
 
 #include "handler_interface.hpp"
+#include "read_req.hpp"
 #include "ublk_req_handler_interface.hpp"
 #include "utility.hpp"
 
@@ -44,9 +44,7 @@ namespace ublk {
 class CmdReadHandlerAdaptor : public IUblkReqHandler {
 public:
   explicit CmdReadHandlerAdaptor(
-      std::shared_ptr<
-          IHandler<int(ublkdrv_cmd_read, std::span<ublkdrv_celld const>,
-                       std::span<std::byte>) noexcept>>
+      std::shared_ptr<IHandler<int(std::shared_ptr<read_req>) noexcept>>
           handler)
       : handler_(std::move(handler)) {
     assert(handler_);
@@ -59,17 +57,15 @@ public:
   CmdReadHandlerAdaptor(CmdReadHandlerAdaptor &&) = default;
   CmdReadHandlerAdaptor &operator=(CmdReadHandlerAdaptor &&) = default;
 
-  int handle(std::shared_ptr<ublk_req> req) noexcept override {
-    assert(UBLKDRV_CMD_OP_READ == ublkdrv_cmd_get_op(&req->cmd()));
-    spdlog::debug("process {}", req->cmd().u.r);
-    req->set_err(handler_->handle(req->cmd().u.r, req->cellds(), req->cells()));
+  int handle(std::shared_ptr<req> rq) noexcept override {
+    auto rrq = read_req::create(std::move(rq));
+    spdlog::debug("process {}", rrq->cmd());
+    handler_->handle(std::move(rrq));
     return 0;
   }
 
 private:
-  std::shared_ptr<IHandler<int(ublkdrv_cmd_read, std::span<ublkdrv_celld const>,
-                               std::span<std::byte>) noexcept>>
-      handler_;
+  std::shared_ptr<IHandler<int(std::shared_ptr<read_req>) noexcept>> handler_;
 };
 
 } // namespace ublk

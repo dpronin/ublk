@@ -87,10 +87,20 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     slave.cpp
     slave.hpp
     slave_param.hpp
+    submitter_interface.hpp
     target.hpp
     target_properties.hpp
-    ublk_req.hpp
+    discard_query.hpp
+    discard_req.hpp
+    flush_query.hpp
+    flush_req.hpp
+    query.hpp
+    read_query.hpp
+    read_req.hpp
+    req.hpp
     ublk_req_handler_interface.hpp
+    write_query.hpp
+    write_req.hpp
     write_handler_interface.hpp
 )
 
