@@ -1,12 +1,15 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <cstdlib>
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <new>
 
+#include "mem_allocator.hpp"
 #include "utility.hpp"
 
 namespace ublk {
@@ -27,12 +30,15 @@ public:
 
   using value_type = T;
 
-  aligned_allocator() = default;
+  aligned_allocator() : a_(std::make_shared<mem_allocator>()) {}
   ~aligned_allocator() = default;
 
   template <typename U, size_t A>
   constexpr explicit aligned_allocator(
-      [[maybe_unused]] aligned_allocator<U, A> const &other) noexcept {}
+      [[maybe_unused]] aligned_allocator<U, A> const &other) noexcept
+      : a_(other.underlying_allocator()) {
+    assert(a_);
+  }
 
   aligned_allocator(aligned_allocator<T, Alignment> const &other) = default;
   aligned_allocator(aligned_allocator<T, Alignment> &&other) = default;
@@ -42,13 +48,15 @@ public:
       throw std::bad_array_new_length();
 
     if (auto *p =
-            static_cast<T *>(std::aligned_alloc(Alignment, sizeof(T) * n)))
+            static_cast<T *>(a_->allocate_aligned(Alignment, sizeof(T) * n)))
       return p;
 
     throw std::bad_alloc();
   }
 
-  void deallocate(T *p, [[maybe_unused]] size_t n) noexcept { std::free(p); }
+  void deallocate(T *p, [[maybe_unused]] size_t n) noexcept {
+    a_->free_aligned(Alignment, p);
+  }
 
   template <typename U, size_t A>
   bool operator==(
@@ -60,6 +68,11 @@ public:
   bool operator!=(aligned_allocator<U, A> const &other) const noexcept {
     return !(*this == other);
   }
+
+  auto const &underlying_allocator() const noexcept { return a_; }
+
+private:
+  std::shared_ptr<mem_allocator> a_;
 };
 
 } // namespace ublk
