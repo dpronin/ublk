@@ -16,7 +16,13 @@ CachedRWHandler::CachedRWHandler(
     : cache_(std::move(cache)), handler_(std::move(handler)) {
   assert(cache_);
   assert(handler_);
-  if (write_through) {
+  set_write_through(write_through);
+  cached_chunk_ =
+      get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz())();
+}
+
+void CachedRWHandler::set_write_through(bool value) noexcept {
+  if (value) {
     cache_updater_ = [this](uint64_t chunk_id,
                             std::span<std::byte const> chunk) {
       if (chunk.size() < cache_->item_sz()) {
@@ -38,9 +44,10 @@ CachedRWHandler::CachedRWHandler(
     cache_updater_ = [this](uint64_t chunk_id, std::span<std::byte const> chunk
                             [[maybe_unused]]) { cache_->invalidate(chunk_id); };
   }
-  cached_chunk_ =
-      get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz())();
+  write_through_ = value;
 }
+
+bool CachedRWHandler::write_through() const noexcept { return write_through_; }
 
 ssize_t CachedRWHandler::read(std::span<std::byte> buf,
                               __off64_t offset) noexcept {

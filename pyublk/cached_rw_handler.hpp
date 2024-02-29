@@ -37,6 +37,9 @@ public:
   CachedRWHandler(CachedRWHandler &&) = default;
   CachedRWHandler &operator=(CachedRWHandler &&) = default;
 
+  void set_write_through(bool value) noexcept;
+  bool write_through() const noexcept;
+
   ssize_t read(std::span<std::byte> buf, __off64_t offset) noexcept override;
   ssize_t write(std::span<std::byte const> buf,
                 __off64_t offset) noexcept override;
@@ -46,6 +49,7 @@ private:
   std::unique_ptr<IRWHandler> handler_;
   std::function<void(uint64_t chunk_id, std::span<std::byte const> chunk)>
       cache_updater_;
+  bool write_through_;
   uptrwd<std::byte[]> cached_chunk_;
 };
 
