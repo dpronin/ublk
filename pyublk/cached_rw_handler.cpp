@@ -50,8 +50,7 @@ ssize_t CachedRWHandler::read(std::span<std::byte> buf,
   auto chunk_offset{offset % cache_->item_sz()};
 
   while (!buf.empty()) {
-    if (auto cached_chunk = cache_->find_mutable(chunk_id);
-        !cached_chunk.empty()) {
+    if (auto cached_chunk = cache_->find(chunk_id); !cached_chunk.empty()) {
       auto const chunk{
           buf.subspan(0,
                       std::min(cache_->item_sz() - chunk_offset, buf.size())),
