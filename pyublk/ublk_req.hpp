@@ -9,10 +9,17 @@
 #include <linux/ublkdrv/celld.h>
 #include <linux/ublkdrv/cmd.h>
 
+#include "cache_line_aligned_allocator.hpp"
+
 namespace ublk {
 
 class ublk_req {
 public:
+  template <typename... Args> static auto create(Args &&...args) {
+    return std::allocate_shared<ublk_req>(
+        cache_line_aligned_allocator<ublk_req>{}, std::forward<Args>(args)...);
+  }
+
   ublk_req() = default;
 
   explicit ublk_req(
