@@ -39,15 +39,6 @@ protected:
     return to_span_of<T>(cached_stripe_view().subspan(stripe_data_sz_));
   }
 
-  void parity_to(uint64_t parity_start_offset, std::span<std::byte const> data,
-                 std::span<std::byte> parity) noexcept;
-
-  void parity_to(std::span<std::byte const> stripe_data,
-                 std::span<std::byte> parity) noexcept;
-
-  void parity_renew(std::span<std::byte const> stripe_data,
-                    std::span<std::byte> parity) noexcept;
-
   ssize_t stripe_write(uint64_t stripe_id_at, uint64_t stripe_offset,
                        std::span<std::byte const> stripe_data,
                        std::span<std::byte const> parity) noexcept;

@@ -11,6 +11,7 @@
 #include "algo.hpp"
 #include "math.hpp"
 #include "mem.hpp"
+#include "parity.hpp"
 #include "utility.hpp"
 
 namespace ublk::raidsp {
@@ -89,52 +90,6 @@ ssize_t Target::read_stripe_parity(uint64_t stripe_id,
   auto const parity_id = stripe_id_to_parity_id(stripe_id);
   assert(parity_id < hs_.size());
   return hs_[parity_id]->read(buf, stripe_id * strip_sz_);
-}
-
-void Target::parity_to(uint64_t parity_start_offset,
-                       std::span<std::byte const> data,
-                       std::span<std::byte> parity) noexcept {
-  parity_start_offset = parity_start_offset % strip_sz_;
-  data = data.subspan(
-      0, std::min(stripe_data_sz_ - parity_start_offset, data.size()));
-  parity = parity.subspan(0, std::min(strip_sz_, parity.size()));
-
-  assert(is_multiple_of(parity_start_offset, sizeof(uint64_t)));
-  assert(is_multiple_of(data.size(), sizeof(uint64_t)));
-  assert(is_multiple_of(parity.size(), sizeof(uint64_t)));
-  assert(!(parity.size() < strip_sz_));
-
-  auto data_u64 = to_span_of<uint64_t const>(data);
-  auto const parity_u64 = to_span_of<uint64_t>(parity);
-
-  if (auto const parity_u64_offset = parity_start_offset / sizeof(uint64_t)) {
-    auto const chunk_u64_len =
-        std::min(data_u64.size(), parity_u64.size() - parity_u64_offset);
-    auto const parity_u64_chunk =
-        parity_u64.subspan(parity_u64_offset, chunk_u64_len);
-    auto const data_u64_chunk = data_u64.subspan(0, chunk_u64_len);
-    math::xor_to(data_u64_chunk, parity_u64_chunk);
-    data_u64 = data_u64.subspan(data_u64_chunk.size());
-  }
-
-  for (; !(data_u64.size() < parity_u64.size());
-       data_u64 = data_u64.subspan(parity_u64.size())) {
-    math::xor_to(data_u64.subspan(0, parity_u64.size()), parity_u64);
-  }
-
-  if (!data_u64.empty())
-    math::xor_to(data_u64, parity_u64.subspan(0, data_u64.size()));
-}
-
-void Target::parity_to(std::span<std::byte const> stripe_data,
-                       std::span<std::byte> parity) noexcept {
-  parity_to(0, stripe_data, parity);
-}
-
-void Target::parity_renew(std::span<std::byte const> stripe_data,
-                          std::span<std::byte> parity) noexcept {
-  algo::fill(to_span_of<uint64_t>(parity), UINT64_C(0));
-  parity_to(stripe_data, parity);
 }
 
 std::vector<std::shared_ptr<IRWHandler>>
@@ -252,8 +207,9 @@ ssize_t Target::write(std::span<std::byte const> buf,
            * XORed with a new data come in
            */
           math::xor_to(chunk, tmp_data_chunk);
-          parity_to(stripe_offset % cached_stripe_parity_view().size(),
-                    tmp_data_chunk, cached_stripe_parity_view());
+          parity_to(tmp_data_chunk,
+                    stripe_offset % cached_stripe_parity_view().size(),
+                    cached_stripe_parity_view());
         }
       } else if (auto const res =
                      read_stripe_data(stripe_id, cached_stripe_data_view());
