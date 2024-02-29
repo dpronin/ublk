@@ -29,4 +29,8 @@ auto to_span_of(std::span<S> data) noexcept {
   }
 }
 
+template <typename T> std::span<T> const_span_cast(std::span<T const> from) {
+  return std::span{const_cast<T *>(from.data()), from.size()};
+}
+
 } // namespace ublk

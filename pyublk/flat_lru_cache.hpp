@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <concepts>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -18,6 +17,7 @@
 #include "mem.hpp"
 #include "mem_types.hpp"
 #include "sector.hpp"
+#include "span.hpp"
 
 namespace ublk {
 
@@ -125,14 +125,16 @@ public:
   uint64_t item_sz() const noexcept { return cache_item_sz_; }
   uint64_t len() const noexcept { return cache_view().size(); }
 
-  std::span<T const> find(Key key) const noexcept { return find_mutable(key); }
-
-  std::span<T> find_mutable(Key key) noexcept {
+  std::span<T const> find(Key key) const noexcept {
     if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
       touch(index);
       return cache_value_view(std::get<2>(cache_view()[index]));
     }
     return {};
+  }
+
+  std::span<T> find_mutable(Key key) noexcept {
+    return const_span_cast(find(key));
   }
 
   std::optional<std::pair<Key, uptrwd<T[]>>>
