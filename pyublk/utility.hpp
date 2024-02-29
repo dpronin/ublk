@@ -60,8 +60,8 @@ constexpr ptrdiff_t offset_of(M T::*member) noexcept {
   return reinterpret_cast<ptrdiff_t>(&(reinterpret_cast<T *>(0)->*member));
 }
 
-template <standard_layout T, typename M>
-constexpr T *container_of(M *ptr, M T::*member) noexcept {
+template <standard_layout T, typename M1, typename M2 = M1>
+constexpr T *container_of(M1 *ptr, M2 T::*member) noexcept {
   return reinterpret_cast<T *>(reinterpret_cast<uintptr_t>(ptr) -
                                offset_of(member));
 }
