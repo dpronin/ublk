@@ -54,7 +54,8 @@ protected:
   ssize_t read_stripe_parity(uint64_t stripe_id,
                              std::span<std::byte> buf) noexcept;
 
-  virtual uint64_t stripe_id_to_parity_id(uint64_t stripe_id) noexcept = 0;
+  virtual uint64_t
+  stripe_id_to_parity_id(uint64_t stripe_id) const noexcept = 0;
 
 public:
   explicit Target(uint64_t strip_sz,

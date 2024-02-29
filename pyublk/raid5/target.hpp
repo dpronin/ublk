@@ -17,7 +17,7 @@ public:
   Target(Target &&) = default;
   Target &operator=(Target &&) = default;
 
-  uint64_t stripe_id_to_parity_id(uint64_t stripe_id) noexcept override;
+  uint64_t stripe_id_to_parity_id(uint64_t stripe_id) const noexcept override;
 };
 
 } // namespace ublk::raid5
