@@ -30,7 +30,11 @@ public:
 
   using value_type = T;
 
-  aligned_allocator() : a_(std::make_shared<mem_allocator>()) {}
+  explicit aligned_allocator(std::shared_ptr<mem_allocator> a = {})
+      : a_(std::move(a)) {
+    if (!a_)
+      a_ = std::make_shared<mem_allocator>();
+  }
   ~aligned_allocator() = default;
 
   template <typename U, size_t A>

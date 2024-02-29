@@ -11,6 +11,7 @@ add_library(ublk_utils INTERFACE
     file.hpp
     math.hpp
     mem.hpp
+    mem_allocator.hpp
     mem_types.hpp
     page.hpp
     size_units.hpp
