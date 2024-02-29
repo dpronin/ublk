@@ -20,11 +20,6 @@ public:
     return std::aligned_alloc(alignment, sz);
   }
 
-  virtual void free_aligned(size_t alignment [[maybe_unused]],
-                            void *p) noexcept {
-    return std::free(p);
-  }
-
   virtual void *allocate(size_t sz) noexcept { return std::malloc(sz); }
 
   virtual void free(void *p) noexcept { return std::free(p); }

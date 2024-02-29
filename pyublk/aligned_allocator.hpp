@@ -58,9 +58,7 @@ public:
     throw std::bad_alloc();
   }
 
-  void deallocate(T *p, [[maybe_unused]] size_t n) noexcept {
-    a_->free_aligned(Alignment, p);
-  }
+  void deallocate(T *p, [[maybe_unused]] size_t n) noexcept { a_->free(p); }
 
   template <typename U, size_t A>
   bool operator==(

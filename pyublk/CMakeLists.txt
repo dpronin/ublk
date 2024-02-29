@@ -7,11 +7,13 @@ find_package(eve CONFIG REQUIRED)
 
 add_library(ublk_utils INTERFACE
     algo.hpp
+    allocators.hpp
     concepts.hpp
     file.hpp
     math.hpp
     mem.hpp
     mem_allocator.hpp
+    mem_cached_allocator.hpp
     mem_types.hpp
     page.hpp
     size_units.hpp
