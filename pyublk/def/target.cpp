@@ -37,8 +37,9 @@ void async_read(boost::asio::random_access_file *raf,
         }
 
         if (bytes_read < rq->buf().size()) {
-          if (auto const res = ::ftruncate64(raf->native_handle(),
-                                             offset + rq->buf().size()) < 0) {
+          if ([[maybe_unused]] auto const res =
+                  ::ftruncate64(raf->native_handle(),
+                                offset + rq->buf().size()) < 0) {
             rq->set_err(errno);
             return;
           }
