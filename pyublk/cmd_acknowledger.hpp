@@ -4,7 +4,7 @@
 
 #include <linux/ublkdrv/cmd_ack.h>
 
-#include "mm/mem.hpp"
+#include "mm/mem_types.hpp"
 
 #include "handler_interface.hpp"
 #include "qublkcmd.hpp"

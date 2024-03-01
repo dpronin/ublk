@@ -7,7 +7,6 @@
 
 #include "flush_handler_interface.hpp"
 #include "target.hpp"
-#include "flush_query.hpp"
 
 namespace ublk::def {
 

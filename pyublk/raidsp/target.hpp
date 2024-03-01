@@ -10,8 +10,6 @@
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
-#include "mm/aligned_allocator.hpp"
-
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
@@ -34,8 +32,8 @@ protected:
                               alignof(std::max_align_t)));
 
   template <typename T = std::byte>
-  auto
-  cached_stripe_view(mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
+  auto cached_stripe_view(
+      mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
     return to_span_of<T>({cached_stripe.get(), stripe_data_sz_ + strip_sz_});
   }
 

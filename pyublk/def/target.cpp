@@ -98,8 +98,7 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
   return 0;
 }
 
-int Target::process(std::shared_ptr<flush_query> fq
-                    [[maybe_unused]]) noexcept {
+int Target::process(std::shared_ptr<flush_query> fq [[maybe_unused]]) noexcept {
   return ::fsync(raf_->native_handle());
 }
 
