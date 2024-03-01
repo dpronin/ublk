@@ -25,7 +25,6 @@
 #include <spdlog/spdlog.h>
 
 #include "cmd_acknowledger.hpp"
-#include "cmd_handler_factory.hpp"
 #include "file.hpp"
 #include "handler.hpp"
 #include "mem.hpp"
@@ -177,8 +176,8 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
   if (!fd_notify)
     _exit(EXIT_FAILURE);
 
-  auto handler = CmdHandlerFactory{}.create_unique(
-      param.handler,
+  assert(param.hfactory);
+  auto handler = param.hfactory->create_unique(
       {structured_maps.p_cellc->cellds, structured_maps.p_cellc->cellds_len},
       {structured_maps.p_cells.get(), structured_maps.cells_sz},
       std::make_unique<CmdAcknowledger>(std::move(structured_maps.p_qcmd_ack),

@@ -58,7 +58,7 @@ public:
   CmdWriteHandlerAdaptor &operator=(CmdWriteHandlerAdaptor &&) = default;
 
   int handle(std::shared_ptr<req> rq) noexcept override {
-    auto wrq = write_req::create(std::move(rq));
+    auto wrq = std::static_pointer_cast<write_req>(std::move(rq));
     spdlog::debug("process {}", wrq->cmd());
     handler_->handle(std::move(wrq));
     return 0;

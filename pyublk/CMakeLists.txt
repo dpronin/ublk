@@ -37,6 +37,7 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     cache_line_aligned_allocator.hpp
     cached_rw_handler.cpp
     cached_rw_handler.hpp
+    cells_holder.hpp
     cfq_base.hpp
     cfq_popper.hpp
     cfq_pos.hpp
@@ -76,8 +77,6 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     qublkcmd.hpp
     read_handler.hpp
     read_handler_interface.hpp
-    req_handler.cpp
-    req_handler.hpp
     req_handler_not_supp.hpp
     req_op_err_handler.hpp
     rvwrap.hpp

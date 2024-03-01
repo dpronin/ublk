@@ -58,7 +58,7 @@ public:
   CmdReadHandlerAdaptor &operator=(CmdReadHandlerAdaptor &&) = default;
 
   int handle(std::shared_ptr<req> rq) noexcept override {
-    auto rrq = read_req::create(std::move(rq));
+    auto rrq = std::static_pointer_cast<read_req>(std::move(rq));
     spdlog::debug("process {}", rrq->cmd());
     handler_->handle(std::move(rrq));
     return 0;

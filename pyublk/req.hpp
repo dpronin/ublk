@@ -1,63 +1,30 @@
 #pragma once
 
-#include <cstddef>
-
-#include <functional>
-#include <span>
-#include <utility>
-
 #include <linux/ublkdrv/celld.h>
 #include <linux/ublkdrv/cmd.h>
-
-#include "allocators.hpp"
 
 namespace ublk {
 
 class req {
 public:
-  template <typename... Args> static auto create(Args &&...args) {
-    return std::allocate_shared<req>(
-        mem::allocator::cache_line_aligned<req>::value,
-        std::forward<Args>(args)...);
-  }
-
   req() = default;
-
-  explicit req(ublkdrv_cmd cmd, std::span<ublkdrv_celld const> cellds,
-               std::span<std::byte> cells,
-               std::function<void(req const &)> &&completer = {}) noexcept
-      : cmd_(cmd), cellds_(cellds), cells_(cells), err_(0),
-        completer_(std::move(completer)) {}
-
-  ~req() noexcept {
-    if (completer_) {
-      try {
-        completer_(*this);
-      } catch (...) {
-      }
-    }
-  }
+  explicit req(ublkdrv_cmd const &cmd) noexcept : cmd_(cmd) {}
+  virtual ~req() = default;
 
   req(req const &) = delete;
   req &operator=(req const &) = delete;
 
-  req(req &&other) noexcept = default;
-  req &operator=(req &&other) noexcept = default;
+  req(req &&other) = delete;
+  req &operator=(req &&other) = delete;
 
   void set_err(int err) noexcept { err_ = err; }
   int err() const noexcept { return err_; }
 
   auto const &cmd() const noexcept { return cmd_; }
 
-  auto cellds() const noexcept { return cellds_; }
-  auto cells() const noexcept { return cells_; }
-
 private:
   ublkdrv_cmd cmd_{};
-  std::span<ublkdrv_celld const> cellds_;
-  std::span<std::byte> cells_;
-  int err_;
-  std::function<void(req const &)> completer_;
+  int err_{0};
 };
 
 } // namespace ublk

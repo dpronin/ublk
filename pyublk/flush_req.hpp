@@ -12,7 +12,7 @@
 
 namespace ublk {
 
-class flush_req {
+class flush_req final : public req {
 public:
   template <typename... Args> static auto create(Args &&...args) noexcept {
     return std::allocate_shared<flush_req>(
@@ -21,26 +21,32 @@ public:
   }
 
   flush_req() = default;
-
-  explicit flush_req(std::shared_ptr<req> rq) noexcept : req_(std::move(rq)) {
-    assert(req_);
-    assert(UBLKDRV_CMD_OP_FLUSH == ublkdrv_cmd_get_op(&req_->cmd()));
+  explicit flush_req(
+      ublkdrv_cmd const &cmd,
+      std::function<void(flush_req const &)> &&completer = {}) noexcept
+      : req(cmd), completer_(std::move(completer)) {
+    assert(UBLKDRV_CMD_OP_FLUSH == ublkdrv_cmd_get_op(&req::cmd()));
   }
-  ~flush_req() = default;
+  ~flush_req() noexcept override {
+    static_assert(std::is_nothrow_destructible_v<req>);
+    if (completer_) {
+      try {
+        completer_(*this);
+      } catch (...) {
+      }
+    }
+  }
 
   flush_req(flush_req const &) = delete;
   flush_req &operator=(flush_req const &) = delete;
 
-  flush_req(flush_req &&) = default;
-  flush_req &operator=(flush_req &&) = default;
+  flush_req(flush_req &&) = delete;
+  flush_req &operator=(flush_req &&) = delete;
 
-  void set_err(int err) noexcept { req_->set_err(err); }
-  int err() const noexcept { return req_->err(); }
-
-  auto const &cmd() const noexcept { return req_->cmd().u.f; }
+  auto const &cmd() const noexcept { return req::cmd().u.f; }
 
 private:
-  std::shared_ptr<req> req_;
+  std::function<void(flush_req const &)> completer_;
 };
 
 } // namespace ublk

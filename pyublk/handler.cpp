@@ -34,7 +34,7 @@ namespace {
 
 struct handler_ctx {
   std::unique_ptr<ublk::qublkcmd_t> qcmd;
-  std::unique_ptr<ublk::IHandler<int(ublkdrv_cmd) noexcept>> handler;
+  std::unique_ptr<ublk::IHandler<int(ublkdrv_cmd const &) noexcept>> handler;
 
   ublk::uptrwd<int const> fd;
   std::unique_ptr<boost::asio::posix::stream_descriptor> sd;
@@ -108,9 +108,10 @@ void async_read(std::shared_ptr<handler_ctx> ctx) {
 
 namespace ublk {
 
-void async_start(evpaths_t const &evpaths, boost::asio::io_context &io_ctx,
-                 std::unique_ptr<qublkcmd_t> qcmd,
-                 std::unique_ptr<IHandler<int(ublkdrv_cmd) noexcept>> handler) {
+void async_start(
+    evpaths_t const &evpaths, boost::asio::io_context &io_ctx,
+    std::unique_ptr<qublkcmd_t> qcmd,
+    std::unique_ptr<IHandler<int(ublkdrv_cmd const &) noexcept>> handler) {
 
   assert(qcmd);
   assert(handler);

@@ -3,16 +3,18 @@
 #include <cassert>
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 #include <linux/ublkdrv/cmd.h>
 
 #include "allocators.hpp"
+#include "cells_holder.hpp"
 #include "req.hpp"
 
 namespace ublk {
 
-class write_req {
+class write_req final : public req, public cells_holder<true> {
 public:
   template <typename... Args> static auto create(Args &&...args) noexcept {
     return std::allocate_shared<write_req>(
@@ -21,29 +23,34 @@ public:
   }
 
   write_req() = default;
-
-  explicit write_req(std::shared_ptr<req> rq) noexcept : req_(std::move(rq)) {
-    assert(req_);
-    assert(UBLKDRV_CMD_OP_WRITE == ublkdrv_cmd_get_op(&req_->cmd()));
+  explicit write_req(
+      ublkdrv_cmd const &cmd, std::span<ublkdrv_celld const> cellds,
+      std::span<std::byte> cells,
+      std::function<void(write_req const &)> &&completer = {}) noexcept
+      : req(cmd), cells_holder(cellds, cells),
+        completer_(std::move(completer)) {
+    assert(UBLKDRV_CMD_OP_WRITE == ublkdrv_cmd_get_op(&req::cmd()));
   }
-  ~write_req() = default;
+  ~write_req() noexcept override {
+    static_assert(std::is_nothrow_destructible_v<req>);
+    if (completer_) {
+      try {
+        completer_(*this);
+      } catch (...) {
+      }
+    }
+  }
 
   write_req(write_req const &) = delete;
   write_req &operator=(write_req const &) = delete;
 
-  write_req(write_req &&) = default;
-  write_req &operator=(write_req &&) = default;
+  write_req(write_req &&) = delete;
+  write_req &operator=(write_req &&) = delete;
 
-  void set_err(int err) noexcept { req_->set_err(err); }
-  int err() const noexcept { return req_->err(); }
-
-  auto const &cmd() const noexcept { return req_->cmd().u.w; }
-
-  auto cellds() const noexcept { return req_->cellds(); }
-  std::span<std::byte const> cells() const noexcept { return req_->cells(); }
+  auto const &cmd() const noexcept { return req::cmd().u.w; }
 
 private:
-  std::shared_ptr<req> req_;
+  std::function<void(write_req const &)> completer_;
 };
 
 } // namespace ublk

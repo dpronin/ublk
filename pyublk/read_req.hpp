@@ -8,11 +8,12 @@
 #include <linux/ublkdrv/cmd.h>
 
 #include "allocators.hpp"
+#include "cells_holder.hpp"
 #include "req.hpp"
 
 namespace ublk {
 
-class read_req {
+class read_req final : public req, public cells_holder<false> {
 public:
   template <typename... Args> static auto create(Args &&...args) noexcept {
     return std::allocate_shared<read_req>(
@@ -21,29 +22,34 @@ public:
   }
 
   read_req() = default;
-
-  explicit read_req(std::shared_ptr<req> rq) noexcept : req_(std::move(rq)) {
-    assert(req_);
-    assert(UBLKDRV_CMD_OP_READ == ublkdrv_cmd_get_op(&req_->cmd()));
+  explicit read_req(
+      ublkdrv_cmd const &cmd, std::span<ublkdrv_celld const> cellds,
+      std::span<std::byte> cells,
+      std::function<void(read_req const &)> &&completer = {}) noexcept
+      : req(cmd), cells_holder(cellds, cells),
+        completer_(std::move(completer)) {
+    assert(UBLKDRV_CMD_OP_READ == ublkdrv_cmd_get_op(&req::cmd()));
   }
-  ~read_req() = default;
+  ~read_req() noexcept override {
+    static_assert(std::is_nothrow_destructible_v<req>);
+    if (completer_) {
+      try {
+        completer_(*this);
+      } catch (...) {
+      }
+    }
+  }
 
   read_req(read_req const &) = delete;
   read_req &operator=(read_req const &) = delete;
 
-  read_req(read_req &&) = default;
-  read_req &operator=(read_req &&) = default;
+  read_req(read_req &&) = delete;
+  read_req &operator=(read_req &&) = delete;
 
-  void set_err(int err) noexcept { req_->set_err(err); }
-  int err() const noexcept { return req_->err(); }
-
-  auto const &cmd() const noexcept { return req_->cmd().u.r; }
-
-  auto cellds() const noexcept { return req_->cellds(); }
-  auto cells() const noexcept { return req_->cells(); }
+  auto const &cmd() const noexcept { return req::cmd().u.r; }
 
 private:
-  std::shared_ptr<req> req_;
+  std::function<void(read_req const &)> completer_;
 };
 
 } // namespace ublk

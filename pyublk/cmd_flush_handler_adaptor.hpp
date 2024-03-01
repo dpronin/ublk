@@ -55,7 +55,7 @@ public:
   CmdFlushHandlerAdaptor &operator=(CmdFlushHandlerAdaptor &&) = default;
 
   int handle(std::shared_ptr<req> rq) noexcept override {
-    auto frq = flush_req::create(std::move(rq));
+    auto frq = std::static_pointer_cast<flush_req>(std::move(rq));
     spdlog::debug("process {}", frq->cmd());
     handler_->handle(std::move(frq));
     return 0;

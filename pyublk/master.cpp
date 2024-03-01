@@ -25,10 +25,10 @@
 #include <boost/asio/io_context.hpp>
 
 #include "cached_rw_handler.hpp"
+#include "cmd_handler_factory.hpp"
 #include "file.hpp"
 #include "genl.hpp"
 #include "mem_types.hpp"
-#include "req_handler.hpp"
 #include "rw_handler_interface.hpp"
 #include "slave.hpp"
 
@@ -402,7 +402,7 @@ void Master::map(bdev_map_param const &param) {
     spdlog::info("started: {}", param.target_name);
     slave::run(target->io_ctx(), {
                                      .bdev_suffix = param.bdev_suffix,
-                                     .handler = target->req_handler(),
+                                     .hfactory = target->req_hfactory(),
                                  });
   } else if (child_pid > 0) {
     /* We're in a parent's body, remember a new child's PID */
@@ -575,7 +575,7 @@ void Master::create(target_create_param const &param) {
       },
   };
   targets_[param.name] = std::make_unique<Target>(
-      std::move(io_ctx), std::make_shared<ReqHandler>(std::move(hs)),
+      std::move(io_ctx), std::make_shared<CmdHandlerFactory>(std::move(hs)),
       target_properties{param.capacity_sectors});
 }
 

@@ -58,7 +58,7 @@ public:
   CmdDiscardHandlerAdaptor &operator=(CmdDiscardHandlerAdaptor &&) = default;
 
   int handle(std::shared_ptr<req> rq) noexcept override {
-    auto drq = discard_req::create(std::move(rq));
+    auto drq = std::static_pointer_cast<discard_req>(std::move(rq));
     spdlog::debug("process {}", drq->cmd());
     handler_->handle(std::move(drq));
     return 0;
