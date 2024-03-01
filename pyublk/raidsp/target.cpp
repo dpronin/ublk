@@ -255,9 +255,8 @@ int Target::process(uint64_t stripe_id,
 
             auto new_rpq = read_query::create(
                 new_cached_stripe_parity_view, 0,
-                [=, this, wq = std::move(wq),
-                 cached_stripe =
-                     std::move(cached_stripe)](read_query const &rpq) mutable {
+                [=, this, cached_stripe = std::move(cached_stripe)](
+                    read_query const &rpq) mutable {
                   if (rpq.err()) [[unlikely]] {
                     wq->set_err(rpq.err());
                     return;
