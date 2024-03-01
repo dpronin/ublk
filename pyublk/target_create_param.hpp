@@ -27,6 +27,7 @@ struct target_raid0_cfg {
 };
 
 struct target_raid1_cfg {
+  uint64_t read_len_sectors_per_path;
   uint64_t cache_len_sectors;
   bool cache_write_through;
   std::vector<std::filesystem::path> paths;

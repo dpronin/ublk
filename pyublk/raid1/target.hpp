@@ -8,22 +8,42 @@
 #include <vector>
 
 #include "rw_handler_interface.hpp"
+#include "sector.hpp"
+#include "utility.hpp"
 
 namespace ublk::raid1 {
 
 class Target final {
 public:
-  explicit Target(std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
-      : next_id_(0), hs_(std::move(hs)) {
+  explicit Target(uint64_t read_len_bytes_per_handler,
+                  std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
+      : read_len_bytes_per_handler_(read_len_bytes_per_handler), next_hid_(0),
+        hs_(std::move(hs)) {
+    assert(is_multiple_of(read_len_bytes_per_handler_, kSectorSz));
     assert(!(hs_.size() < 2));
-    assert(next_id_ < hs_.size());
     assert(std::ranges::all_of(
         hs_, [](auto const &h) { return static_cast<bool>(h); }));
   }
 
   int process(std::shared_ptr<read_query> rq) noexcept {
-    if (auto const res = hs_[next_id_]->submit(std::move(rq)); !res) [[likely]]
-      next_id_ = (next_id_ + 1) % hs_.size();
+    for (size_t rb{0}; rb < rq->buf().size();
+         next_hid_ = (next_hid_ + 1) % hs_.size()) {
+      auto const chunk_sz{
+          std::min(read_len_bytes_per_handler_, rq->buf().size() - rb),
+      };
+      auto new_rq = rq->subquery(rb, chunk_sz, rq->offset() + rb,
+                                 [rq](read_query const &new_rq) {
+                                   if (new_rq.err()) [[unlikely]] {
+                                     rq->set_err(new_rq.err());
+                                     return;
+                                   }
+                                 });
+      if (auto const res = hs_[next_hid_]->submit(std::move(new_rq)))
+          [[unlikely]] {
+        return res;
+      }
+      rb += chunk_sz;
+    }
     return 0;
   }
 
@@ -37,7 +57,9 @@ public:
   }
 
 private:
-  uint32_t next_id_;
+  uint64_t read_len_bytes_per_handler_;
+
+  uint32_t next_hid_;
   std::vector<std::shared_ptr<IRWHandler>> hs_;
 };
 

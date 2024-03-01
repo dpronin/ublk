@@ -1,8 +1,8 @@
+#include <memory>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
-
-#include <memory>
 
 #include "bdev_map_param.hpp"
 #include "bdev_unmap_param.hpp"
@@ -72,11 +72,14 @@ PYBIND11_MODULE(ublk, m) {
   py::class_<ublk::target_raid1_cfg>(m, "target_raid1")
       .def(py::init([] -> ublk::target_raid1_cfg {
         return {
+            .read_len_sectors_per_path = 0,
             .cache_len_sectors = 0,
             .cache_write_through = true,
             .paths = {},
         };
       }))
+      .def_readwrite("read_len_sectors_per_path",
+                     &ublk::target_raid1_cfg::read_len_sectors_per_path)
       .def_readwrite("cache_len_sectors",
                      &ublk::target_raid1_cfg::cache_len_sectors)
       .def_readwrite("cache_write_through",

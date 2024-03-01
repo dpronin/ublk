@@ -99,6 +99,15 @@ class ublksh(Cmd):
         target = ublk.target_raid1()
 
         try:
+            target.read_len_sectors_per_path = int(
+                args.get('read_len_sectors_per_path', 0))
+        except ValueError:
+            print(
+                "'read_len_sectors_per_path' given for the raid1 target cannot"
+                " be converted to sectors")
+            raise
+
+        try:
             target.cache_len_sectors = int(args.get('cache_len_sectors', 0))
         except ValueError:
             print(
