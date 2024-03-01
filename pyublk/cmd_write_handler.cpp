@@ -22,7 +22,7 @@ int CmdWriteHandler::handle(std::shared_ptr<write_req> req) noexcept {
   assert(req);
   auto *p_req = req.get();
   return for_each_celld(
-      ublkdrv_cmd_write_get_offset(&req->cmd()),
+      ublkdrv_cmd_write_get_offset(&p_req->cmd()),
       ublkdrv_cmd_write_get_fcdn(&p_req->cmd()),
       ublkdrv_cmd_write_get_cds_nr(&p_req->cmd()), p_req->cellds(),
       p_req->cells(),
