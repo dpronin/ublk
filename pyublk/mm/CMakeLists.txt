@@ -1,8 +1,9 @@
-add_library(ublk_mm INTERFACE
+add_library(ublk_mm STATIC
     aligned_allocator.hpp
     cache_line_aligned_allocator.hpp
     generic_allocators.hpp
     mem_allocator.hpp
+    mem_cached_allocator.cpp
     mem_cached_allocator.hpp
     mem.hpp
     mem_pool_allocator.hpp
@@ -12,8 +13,8 @@ add_library(ublk_mm INTERFACE
     pool_allocators.hpp
 )
 
-target_include_directories(ublk_mm INTERFACE ${CMAKE_CURRENT_LIST_DIR}/..)
-target_link_libraries(ublk_mm INTERFACE
+target_include_directories(ublk_mm PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
+target_link_libraries(ublk_mm PRIVATE
     ublk::utils
 )
 set_property(TARGET ublk_mm PROPERTY POSITION_INDEPENDENT_CODE ON)
