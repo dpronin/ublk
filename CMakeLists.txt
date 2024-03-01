@@ -8,10 +8,15 @@ project(ublk
 
 option(UT_ENABLE "enable unit tests to compile along")
 option(BENCH_ENABLE "enable benchmarks to compile along")
+option(COVERAGE_ENABLE "enable coverage to compile along")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
+
+list(APPEND CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -38,6 +43,10 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Release" OR ${CMAKE_BUILD_TYPE} MATCHES "RelWit
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
   set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
 endif()
+
+if (COVERAGE_ENABLE)
+  include(CodeCoverage)
+endif ()
 
 add_subdirectory(pyublk)
 
