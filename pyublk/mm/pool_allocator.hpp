@@ -12,7 +12,7 @@
 #include "mem_pool_allocator.hpp"
 #include "utility.hpp"
 
-namespace ublk {
+namespace ublk::mm {
 
 template <typename T, size_t Alignment = alignof(T)> class pool_allocator {
   static_assert(is_power_of_2(Alignment), "Alignment must be a power of 2");
@@ -73,4 +73,4 @@ public:
   }
 };
 
-} // namespace ublk
+} // namespace ublk::mm

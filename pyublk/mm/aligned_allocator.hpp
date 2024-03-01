@@ -12,7 +12,7 @@
 #include "mem_allocator.hpp"
 #include "utility.hpp"
 
-namespace ublk {
+namespace ublk::mm {
 
 template <typename T, size_t Alignment = alignof(T)> class aligned_allocator {
 public:
@@ -77,4 +77,4 @@ private:
   std::shared_ptr<mem_allocator> a_;
 };
 
-} // namespace ublk
+} // namespace ublk::mm

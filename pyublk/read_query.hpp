@@ -8,7 +8,8 @@
 #include <span>
 #include <utility>
 
-#include "pool_allocators.hpp"
+#include "mm/pool_allocators.hpp"
+
 #include "query.hpp"
 
 namespace ublk {
@@ -17,7 +18,7 @@ class read_query final : public query {
 public:
   template <typename... Args> static auto create(Args &&...args) noexcept {
     return std::allocate_shared<read_query>(
-        mem::allocator::pool_cache_line_aligned<read_query>::value,
+        mm::allocator::pool_cache_line_aligned<read_query>::value,
         std::forward<Args>(args)...);
   }
 

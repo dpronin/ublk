@@ -10,7 +10,7 @@
 #include "mem_allocator.hpp"
 #include "utility.hpp"
 
-namespace ublk {
+namespace ublk::mm {
 
 template <typename T, size_t Alignment = alignof(T)> class mem_pool_allocator {
 public:
@@ -47,4 +47,4 @@ private:
   std::stack<void *> free_;
 };
 
-} // namespace ublk
+} // namespace ublk::mm

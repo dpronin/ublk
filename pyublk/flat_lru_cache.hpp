@@ -13,9 +13,10 @@
 #include <span>
 #include <utility>
 
+#include "mm/mem.hpp"
+#include "mm/mem_types.hpp"
+
 #include "concepts.hpp"
-#include "mem.hpp"
-#include "mem_types.hpp"
 #include "sector.hpp"
 #include "span.hpp"
 
@@ -27,10 +28,10 @@ public:
   create(uint64_t cache_len, uint64_t cache_item_sz) {
     auto cache = std::unique_ptr<flat_lru_cache<Key, T>>{};
     if (cache_len && cache_item_sz) {
-      auto cache_storage = std::make_unique<uptrwd<T[]>[]>(cache_len);
+      auto cache_storage = std::make_unique<mm::uptrwd<T[]>[]>(cache_len);
       std::ranges::generate(
           std::span{cache_storage.get(), cache_len},
-          get_unique_bytes_generator(kSectorSz, cache_item_sz));
+          mm::get_unique_bytes_generator(kSectorSz, cache_item_sz));
       cache =
           std::unique_ptr<flat_lru_cache<Key, T>>(new flat_lru_cache<Key, T>{
               std::move(cache_storage),
@@ -42,7 +43,7 @@ public:
   }
 
 private:
-  using cache_item_t = std::tuple<Key, uint64_t, uptrwd<T[]>>;
+  using cache_item_t = std::tuple<Key, uint64_t, mm::uptrwd<T[]>>;
 
   static inline constexpr auto key_proj = [](auto &&value) noexcept {
     return std::get<0>(std::forward<decltype(value)>(value));
@@ -58,14 +59,14 @@ private:
     return std::get<1>(cache_item) != cache_view().size();
   }
 
-  auto cache_value_view(uptrwd<T[]> const &cache_value) const noexcept {
+  auto cache_value_view(mm::uptrwd<T[]> const &cache_value) const noexcept {
     return std::span{
         cache_value.get(),
         cache_item_sz_,
     };
   }
 
-  explicit flat_lru_cache(std::unique_ptr<uptrwd<T[]>[]> storage,
+  explicit flat_lru_cache(std::unique_ptr<mm::uptrwd<T[]>[]> storage,
                           uint64_t storage_len, uint64_t storage_item_sz)
       : cache_len_(storage_len), cache_item_sz_(storage_item_sz) {
     assert(storage);
@@ -137,9 +138,9 @@ public:
     return const_span_cast(find(key));
   }
 
-  std::optional<std::pair<Key, uptrwd<T[]>>>
-  update(std::pair<Key, uptrwd<T[]>> value) noexcept {
-    auto evicted_value = std::optional<std::pair<Key, uptrwd<T[]>>>{};
+  std::optional<std::pair<Key, mm::uptrwd<T[]>>>
+  update(std::pair<Key, mm::uptrwd<T[]>> value) noexcept {
+    auto evicted_value = std::optional<std::pair<Key, mm::uptrwd<T[]>>>{};
 
     auto const cache = cache_view();
 

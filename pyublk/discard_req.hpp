@@ -7,7 +7,8 @@
 
 #include <linux/ublkdrv/cmd.h>
 
-#include "pool_allocators.hpp"
+#include "mm/pool_allocators.hpp"
+
 #include "req.hpp"
 
 namespace ublk {
@@ -16,7 +17,7 @@ class discard_req final : public req {
 public:
   template <typename... Args> static auto create(Args &&...args) noexcept {
     return std::allocate_shared<discard_req>(
-        mem::allocator::pool_cache_line_aligned<discard_req>::value,
+        mm::allocator::pool_cache_line_aligned<discard_req>::value,
         std::forward<Args>(args)...);
   }
 

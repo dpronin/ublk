@@ -16,7 +16,7 @@
 #include "size_units.hpp"
 #include "utility.hpp"
 
-namespace ublk {
+namespace ublk::mm {
 
 template <typename Target = void>
 mem_t<Target> mmap(size_t sz, int prot = PROT_READ | PROT_WRITE, int fd = -1,
@@ -117,4 +117,4 @@ inline auto get_unique_bytes_generator(size_t alignment, size_t chunk_sz) {
   return gen;
 }
 
-} // namespace ublk
+} // namespace ublk::mm

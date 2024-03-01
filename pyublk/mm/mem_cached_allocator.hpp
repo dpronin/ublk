@@ -13,7 +13,7 @@
 #include "mem_types.hpp"
 #include "utility.hpp"
 
-namespace ublk {
+namespace ublk::mm {
 
 class mem_cached_allocator : public mem_allocator {
 private:
@@ -92,4 +92,4 @@ private:
 
 inline auto __mem_cached_allocator__ = std::make_shared<mem_cached_allocator>();
 
-} // namespace ublk
+} // namespace ublk::mm

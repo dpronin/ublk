@@ -24,11 +24,12 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include "mm/mem_types.hpp"
+
 #include "cached_rw_handler.hpp"
 #include "cmd_handler_factory.hpp"
 #include "file.hpp"
 #include "genl.hpp"
-#include "mem_types.hpp"
 #include "rw_handler_interface.hpp"
 #include "slave.hpp"
 
@@ -102,7 +103,8 @@ auto backend_device_open(std::filesystem::path const &path) {
 
 handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
                               uint64_t cache_len_sectors,
-                              bool cache_write_through, uptrwd<int const> fd) {
+                              bool cache_write_through,
+                              mm::uptrwd<int const> fd) {
   auto target = std::make_shared<def::Target>(io_ctx, std::move(fd));
 
   auto rw_handler = std::unique_ptr<IRWHandler>{};
@@ -163,7 +165,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz, uint64_t cache_len_strips,
 
 handlers_ops make_raid0_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
                             uint64_t cache_len_strips, bool cache_write_through,
-                            std::vector<uptrwd<const int>> fds) {
+                            std::vector<mm::uptrwd<const int>> fds) {
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
       std::move(fds), std::back_inserter(default_hopss), [&](auto &&fd) {
@@ -176,7 +178,7 @@ handlers_ops make_raid0_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
 handlers_ops make_raid0_ops(boost::asio::io_context &io_ctx,
                             target_raid0_cfg const &raid0) {
-  std::vector<uptrwd<int const>> fd_targets;
+  std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid0.paths, std::back_inserter(fd_targets),
                          backend_device_open);
   return make_raid0_ops(io_ctx, sectors_to_bytes(raid0.strip_len_sectors),
@@ -222,7 +224,7 @@ handlers_ops make_raid1_ops(uint64_t cache_len_sectors,
 handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
                             uint64_t cache_len_sectors,
                             bool cache_write_through,
-                            std::vector<uptrwd<const int>> fds) {
+                            std::vector<mm::uptrwd<const int>> fds) {
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
       std::move(fds), std::back_inserter(default_hopss), [&](auto &&fd) {
@@ -235,7 +237,7 @@ handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
 
 handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
                             target_raid1_cfg const &raid1) {
-  std::vector<uptrwd<int const>> fd_targets;
+  std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid1.paths, std::back_inserter(fd_targets),
                          backend_device_open);
   return make_raid1_ops(io_ctx, raid1.cache_len_sectors,
@@ -245,7 +247,7 @@ handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
 handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
                             uint64_t cache_len_stripes,
                             bool cache_write_through,
-                            std::vector<uptrwd<int const>> fds) {
+                            std::vector<mm::uptrwd<int const>> fds) {
   assert(!(fds.size() < 2));
 
   std::vector<handlers_ops> default_hopss;
@@ -291,7 +293,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
 handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx,
                             target_raid4_cfg const &raid4) {
-  std::vector<uptrwd<int const>> fd_targets;
+  std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid4.data_paths, std::back_inserter(fd_targets),
                          backend_device_open);
   fd_targets.push_back(backend_device_open(raid4.parity_path));
@@ -303,7 +305,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx,
 handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
                             uint64_t cache_len_stripes,
                             bool cache_write_through,
-                            std::vector<uptrwd<int const>> fds) {
+                            std::vector<mm::uptrwd<int const>> fds) {
   assert(!(fds.size() < 2));
 
   std::vector<handlers_ops> default_hopss;
@@ -349,7 +351,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
 handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx,
                             target_raid5_cfg const &raid5) {
-  std::vector<uptrwd<int const>> fd_targets;
+  std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid5.paths, std::back_inserter(fd_targets),
                          backend_device_open);
   return make_raid5_ops(io_ctx, sectors_to_bytes(raid5.strip_len_sectors),
@@ -450,7 +452,7 @@ void Master::create(target_create_param const &param) {
           [&](target_inmem_cfg const &) {
             uint64_t const mem_sz{sectors_to_bytes(param.capacity_sectors)};
             auto target = std::make_shared<inmem::Target>(
-                get_unique_bytes_generator(kSectorSz, mem_sz)(), mem_sz);
+                mm::get_unique_bytes_generator(kSectorSz, mem_sz)(), mem_sz);
             reader = std::make_shared<inmem::ReadHandler>(target);
             writer = std::make_shared<inmem::WriteHandler>(target);
           },

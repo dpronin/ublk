@@ -8,7 +8,7 @@
 #include <new>
 #include <system_error>
 
-#include "mem_types.hpp"
+#include "mm/mem_types.hpp"
 
 namespace ublk {
 
@@ -23,11 +23,11 @@ constexpr auto pfddcloser = +[](int const *pfd) {
 } // namespace detail
 
 template <typename... Args>
-uptrwd<int const> open(std::filesystem::path const &path, Args... args) {
+mm::uptrwd<int const> open(std::filesystem::path const &path, Args... args) {
   int err{0};
   if (auto const fd = ::open(path.c_str(), args...); fd >= 0) {
-    if (auto result =
-            uptrwd<int const>{new (std::nothrow) int{fd}, detail::pfddcloser})
+    if (auto result = mm::uptrwd<int const>{new (std::nothrow) int{fd},
+                                            detail::pfddcloser})
       return result;
     err = ENOMEM;
     close(fd);

@@ -5,8 +5,9 @@
 
 #include <utility>
 
+#include "mm/mem.hpp"
+
 #include "algo.hpp"
-#include "mem.hpp"
 #include "read_query.hpp"
 #include "write_query.hpp"
 
@@ -20,7 +21,7 @@ CachedRWHandler::CachedRWHandler(
   assert(handler_);
   set_write_through(write_through);
   cached_chunk_generator_ =
-      get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz());
+      mm::get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz());
 }
 
 void CachedRWHandler::set_write_through(bool value) noexcept {

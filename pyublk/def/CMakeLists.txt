@@ -11,6 +11,7 @@ add_library(ublk_def STATIC
 target_include_directories(ublk_def PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
 target_link_libraries(ublk_def PRIVATE
     ublk::utils
+    ublk::mm
     liburing::liburing
 )
 target_link_libraries(ublk_def PUBLIC

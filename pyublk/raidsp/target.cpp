@@ -10,13 +10,14 @@
 #include <span>
 #include <utility>
 
+#include "mm/mem.hpp"
+
 #include "algo.hpp"
 #include "math.hpp"
-#include "mem.hpp"
 #include "parity.hpp"
 #include "read_query.hpp"
-#include "write_query.hpp"
 #include "utility.hpp"
+#include "write_query.hpp"
 
 namespace ublk::raidsp {
 
@@ -29,14 +30,14 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
   assert(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
-  cached_stripe_generator_ = get_unique_bytes_generator(
+  cached_stripe_generator_ = mm::get_unique_bytes_generator(
       kCachedStripeAlignment, stripe_data_sz_ + strip_sz_);
   cached_stripe_parity_generator_ =
-      get_unique_bytes_generator(kCachedStripeAlignment, strip_sz_);
+      mm::get_unique_bytes_generator(kCachedStripeAlignment, strip_sz_);
 }
 
-int Target::read_data_skip_parity(
-    uint64_t stripe_id_from, std::shared_ptr<read_query> rq) noexcept {
+int Target::read_data_skip_parity(uint64_t stripe_id_from,
+                                  std::shared_ptr<read_query> rq) noexcept {
   assert(rq->offset() < stripe_data_sz_);
 
   auto stripe_id{stripe_id_from};
@@ -187,15 +188,15 @@ int Target::stripe_write(uint64_t stripe_id_at,
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
   assert(rq);
 
-  return read_data_skip_parity(
-      rq->offset() / stripe_data_sz_,
-      rq->subquery(0, rq->buf().size(), rq->offset() % stripe_data_sz_,
-                   [rq](read_query const &new_rq) {
-                     if (new_rq.err()) [[unlikely]] {
-                       rq->set_err(new_rq.err());
-                       return;
-                     }
-                   }));
+  return read_data_skip_parity(rq->offset() / stripe_data_sz_,
+                               rq->subquery(0, rq->buf().size(),
+                                            rq->offset() % stripe_data_sz_,
+                                            [rq](read_query const &new_rq) {
+                                              if (new_rq.err()) [[unlikely]] {
+                                                rq->set_err(new_rq.err());
+                                                return;
+                                              }
+                                            }));
 }
 
 int Target::full_stripe_write_process(
@@ -209,8 +210,8 @@ int Target::full_stripe_write_process(
 
   auto wqp = write_query::create(
       cached_stripe_parity_view, 0,
-      [wqd, cached_stripe_parity = std::shared_ptr{std::move(
-                cached_stripe_parity)}](write_query const &new_wqp) {
+      [wqd, cached_stripe_parity = std::shared_ptr{
+                std::move(cached_stripe_parity)}](write_query const &new_wqp) {
         if (new_wqp.err()) [[unlikely]] {
           wqd->set_err(new_wqp.err());
           return;
@@ -255,8 +256,8 @@ int Target::process(uint64_t stripe_id,
             auto new_rpq = read_query::create(
                 new_cached_stripe_parity_view, 0,
                 [=, this, wq = std::move(wq),
-                 cached_stripe = std::move(cached_stripe)](
-                    read_query const &rpq) mutable {
+                 cached_stripe =
+                     std::move(cached_stripe)](read_query const &rpq) mutable {
                   if (rpq.err()) [[unlikely]] {
                     wq->set_err(rpq.err());
                     return;
@@ -276,8 +277,7 @@ int Target::process(uint64_t stripe_id,
                             new_cached_stripe_parity_view);
 
                   auto new_wqd = write_query::create(
-                      chunk, wq->offset(),
-                      [wq](write_query const &new_wqd) {
+                      chunk, wq->offset(), [wq](write_query const &new_wqd) {
                         if (new_wqd.err()) [[unlikely]] {
                           wq->set_err(new_wqd.err());
                           return;
@@ -349,8 +349,8 @@ int Target::process(uint64_t stripe_id,
 
             auto new_wqp = write_query::create(
                 new_cached_stripe_parity_view, 0,
-                [wq, cached_stripe_sp = std::shared_ptr{std::move(
-                         cached_stripe)}](write_query const &new_wq) {
+                [wq, cached_stripe_sp = std::shared_ptr{
+                         std::move(cached_stripe)}](write_query const &new_wq) {
                   if (new_wq.err()) [[unlikely]] {
                     wq->set_err(new_wq.err());
                     return;

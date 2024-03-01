@@ -2,8 +2,8 @@
 
 #include <concepts>
 
-#include "mem.hpp"
+#include "mm/mem.hpp"
 
 namespace ublk {
-template <std::integral T> using pos_t = uptrwd<T>;
+template <std::integral T> using pos_t = mm::uptrwd<T>;
 } // namespace ublk

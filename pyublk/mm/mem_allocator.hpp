@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdlib>
 
-namespace ublk {
+namespace ublk::mm {
 
 class mem_allocator {
 public:
@@ -25,4 +25,4 @@ public:
   virtual void free(void *p) noexcept { return std::free(p); }
 };
 
-} // namespace ublk
+} // namespace ublk::mm

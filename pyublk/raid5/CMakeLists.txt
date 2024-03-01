@@ -10,6 +10,7 @@ target_link_libraries(ublk_raid5 PRIVATE
     Boost::system
     ublk::utils
     ublk::raidsp
+    ublk::mm
 )
 set_property(TARGET ublk_raid5 PROPERTY POSITION_INDEPENDENT_CODE ON)
 

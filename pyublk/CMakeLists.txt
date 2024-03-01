@@ -7,17 +7,10 @@ find_package(eve CONFIG REQUIRED)
 
 add_library(ublk_utils INTERFACE
     algo.hpp
-    allocators.hpp
     concepts.hpp
     file.hpp
     math.hpp
-    mem.hpp
-    mem_allocator.hpp
-    mem_cached_allocator.hpp
-    mem_pool_allocator.hpp
-    mem_types.hpp
     page.hpp
-    pool_allocator.hpp
     size_units.hpp
     span.hpp
     utility.hpp
@@ -35,8 +28,6 @@ target_link_libraries(ublk_utils INTERFACE
 
 pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     align.hpp
-    aligned_allocator.hpp
-    cache_line_aligned_allocator.hpp
     cached_rw_handler.cpp
     cached_rw_handler.hpp
     cells_holder.hpp
@@ -74,7 +65,6 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     handler_interface.hpp
     master.cpp
     master.hpp
-    page_aligned_allocator.hpp
     pyublk.cpp
     qublkcmd.hpp
     read_handler.hpp
@@ -105,6 +95,7 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     write_handler_interface.hpp
 )
 
+add_subdirectory(mm)
 add_subdirectory(def)
 add_subdirectory(inmem)
 add_subdirectory(null)
@@ -121,6 +112,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     libnl::libnl
     Boost::headers
     Boost::system
+    ublk::mm
     ublk::utils
     ublk::def
     ublk::inmem

@@ -4,7 +4,7 @@
 #include <memory>
 #include <type_traits>
 
-namespace ublk {
+namespace ublk::mm {
 
 template <typename T>
 using memd_t = std::function<void(
@@ -17,4 +17,4 @@ struct alloc_mode_mmap {
   int flags{0};
 };
 
-} // namespace ublk
+} // namespace ublk::mm

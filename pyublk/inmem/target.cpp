@@ -6,12 +6,13 @@
 #include <span>
 #include <utility>
 
+#include "mm/mem_types.hpp"
+
 #include "algo.hpp"
-#include "mem_types.hpp"
 
 namespace ublk::inmem {
 
-Target::Target(uptrwd<std::byte[]> mem, uint64_t sz) noexcept
+Target::Target(mm::uptrwd<std::byte[]> mem, uint64_t sz) noexcept
     : mem_(std::move(mem)), mem_sz_(sz) {
   assert(mem_);
 }

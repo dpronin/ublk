@@ -24,10 +24,11 @@
 
 #include <spdlog/spdlog.h>
 
+#include "mm/mem.hpp"
+
 #include "cmd_acknowledger.hpp"
 #include "file.hpp"
 #include "handler.hpp"
-#include "mem.hpp"
 #include "page.hpp"
 #include "qublkcmd.hpp"
 
@@ -82,7 +83,7 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
     std::unique_ptr<qublkcmd_t> p_qcmd;
     std::unique_ptr<qublkcmd_ack_t> p_qcmd_ack;
     std::shared_ptr<ublkdrv_cellc const> p_cellc;
-    ublk::mem_t<std::byte> p_cells;
+    mm::mem_t<std::byte> p_cells;
     size_t cells_sz;
   } structured_maps;
 
@@ -110,7 +111,7 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
     if (uio_name.ends_with(UBLKDRV_UIO_KERNEL_TO_USER_DIR_SUFFIX)) {
       if (UBLKDRV_UIO_MEM_CMDB_NAME == map_name) {
         auto cmdb =
-            std::shared_ptr<ublkdrv_cmdb const>{mmap_shared<ublkdrv_cmdb>(
+            std::shared_ptr<ublkdrv_cmdb const>{mm::mmap_shared<ublkdrv_cmdb>(
                 read_from_as<size_t>(sz_path, std::hex), PROT_READ,
                 *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size())};
         auto *p_cmdb_raw = cmdb.get();
@@ -126,12 +127,12 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
             std::span{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
         }};
       } else if (UBLKDRV_UIO_MEM_CELLC_NAME == map_name) {
-        structured_maps.p_cellc = mmap_shared<ublkdrv_cellc const>(
+        structured_maps.p_cellc = mm::mmap_shared<ublkdrv_cellc const>(
             read_from_as<size_t>(sz_path, std::hex), PROT_READ,
             *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size());
       } else if (UBLKDRV_UIO_MEM_CELLS_NAME == map_name) {
         structured_maps.cells_sz = read_from_as<size_t>(sz_path, std::hex);
-        structured_maps.p_cells = mmap_shared<std::byte>(
+        structured_maps.p_cells = mm::mmap_shared<std::byte>(
             structured_maps.cells_sz, PROT_READ | PROT_WRITE,
             *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size());
       }
@@ -139,7 +140,7 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
     } else {
       if (UBLKDRV_UIO_MEM_CMDB_NAME == map_name) {
         auto cmdb =
-            std::shared_ptr<ublkdrv_cmdb_ack>{mmap_shared<ublkdrv_cmdb_ack>(
+            std::shared_ptr<ublkdrv_cmdb_ack>{mm::mmap_shared<ublkdrv_cmdb_ack>(
                 read_from_as<size_t>(sz_path, std::hex), PROT_READ | PROT_WRITE,
                 *open(uio_dev_path, O_RDWR), 0, off_factor * get_page_size())};
         auto *p_cmdb_raw = cmdb.get();
@@ -165,7 +166,7 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
       !structured_maps.p_cells || !structured_maps.p_qcmd_ack)
     _exit(EXIT_FAILURE);
 
-  auto fd_notify = uptrwd<const int>{};
+  auto fd_notify = mm::uptrwd<const int>{};
 
   if (auto it = uio_devs.find(UBLKDRV_UIO_USER_TO_KERNEL_DIR_SUFFIX);
       it != uio_devs.end()) {

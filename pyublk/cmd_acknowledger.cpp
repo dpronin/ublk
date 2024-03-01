@@ -34,7 +34,7 @@ template <> struct fmt::formatter<ublkdrv_cmd_ack> : fmt::formatter<std::string>
 namespace ublk {
 
 CmdAcknowledger::CmdAcknowledger(std::unique_ptr<qublkcmd_ack_t> qcmd_ack,
-                                 uptrwd<const int> fd_notify)
+                                 mm::uptrwd<const int> fd_notify)
     : qcmd_ack_(std::move(qcmd_ack)), fd_notify_(std::move(fd_notify)) {
 
   assert(qcmd_ack_);

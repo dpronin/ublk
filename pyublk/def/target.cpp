@@ -61,7 +61,7 @@ void async_read(boost::asio::random_access_file *raf,
 
 namespace ublk::def {
 
-Target::Target(boost::asio::io_context &io_ctx, uptrwd<const int> fd) {
+Target::Target(boost::asio::io_context &io_ctx, mm::uptrwd<const int> fd) {
   assert(fd);
 
   auto const *p_fd = fd.get();

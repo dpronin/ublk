@@ -8,8 +8,9 @@
 
 #include <linux/ublkdrv/cmd.h>
 
+#include "mm/pool_allocators.hpp"
+
 #include "cells_holder.hpp"
-#include "pool_allocators.hpp"
 #include "req.hpp"
 
 namespace ublk {
@@ -18,7 +19,7 @@ class write_req final : public req, public cells_holder<true> {
 public:
   template <typename... Args> static auto create(Args &&...args) noexcept {
     return std::allocate_shared<write_req>(
-        mem::allocator::pool_cache_line_aligned<write_req>::value,
+        mm::allocator::pool_cache_line_aligned<write_req>::value,
         std::forward<Args>(args)...);
   }
 

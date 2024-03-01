@@ -10,11 +10,12 @@
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
-#include "mem_types.hpp"
+#include "mm/aligned_allocator.hpp"
+
+#include "read_query.hpp"
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
 #include "span.hpp"
-#include "read_query.hpp"
 #include "write_query.hpp"
 
 namespace ublk::raidsp {
@@ -34,20 +35,20 @@ protected:
 
   template <typename T = std::byte>
   auto
-  cached_stripe_view(uptrwd<std::byte[]> const &cached_stripe) const noexcept {
+  cached_stripe_view(mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
     return to_span_of<T>({cached_stripe.get(), stripe_data_sz_ + strip_sz_});
   }
 
   template <typename T = std::byte>
   auto cached_stripe_data_view(
-      uptrwd<std::byte[]> const &cached_stripe) const noexcept {
+      mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
     return to_span_of<T>(
         cached_stripe_view(cached_stripe).subspan(0, stripe_data_sz_));
   }
 
   template <typename T = std::byte>
   auto cached_stripe_parity_view(
-      uptrwd<std::byte[]> const &cached_stripe) const noexcept {
+      mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
     return to_span_of<T>(
         cached_stripe_view(cached_stripe).subspan(stripe_data_sz_));
   }
@@ -70,8 +71,7 @@ protected:
   stripe_id_to_parity_id(uint64_t stripe_id) const noexcept = 0;
 
 private:
-  int process(uint64_t stripe_id,
-              std::shared_ptr<write_query> wq) noexcept;
+  int process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept;
 
 public:
   explicit Target(uint64_t strip_sz,
@@ -84,14 +84,13 @@ protected:
   uint64_t strip_sz_;
   uint64_t stripe_data_sz_;
   std::vector<std::shared_ptr<IRWHandler>> hs_;
-  std::function<uptrwd<std::byte[]>()> cached_stripe_generator_;
-  std::function<uptrwd<std::byte[]>()> cached_stripe_parity_generator_;
+  std::function<mm::uptrwd<std::byte[]>()> cached_stripe_generator_;
+  std::function<mm::uptrwd<std::byte[]>()> cached_stripe_parity_generator_;
 
 private:
   boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
   boost::dynamic_bitset<uint64_t> stripe_write_lock_state_;
-  std::queue<std::pair<uint64_t, std::shared_ptr<write_query>>>
-      wqs_pending_;
+  std::queue<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
 };
 
 } // namespace ublk::raidsp

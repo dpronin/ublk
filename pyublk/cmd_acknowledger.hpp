@@ -4,8 +4,9 @@
 
 #include <linux/ublkdrv/cmd_ack.h>
 
+#include "mm/mem.hpp"
+
 #include "handler_interface.hpp"
-#include "mem.hpp"
 #include "qublkcmd.hpp"
 
 namespace ublk {
@@ -13,7 +14,7 @@ namespace ublk {
 class CmdAcknowledger : public IHandler<int(ublkdrv_cmd_ack) noexcept> {
 public:
   explicit CmdAcknowledger(std::unique_ptr<qublkcmd_ack_t> qcmd_ack,
-                           uptrwd<const int> fd_notify);
+                           mm::uptrwd<const int> fd_notify);
   ~CmdAcknowledger() override = default;
 
   CmdAcknowledger(CmdAcknowledger const &) = delete;
@@ -26,7 +27,7 @@ public:
 
 private:
   std::unique_ptr<qublkcmd_ack_t> qcmd_ack_;
-  uptrwd<const int> fd_notify_;
+  mm::uptrwd<const int> fd_notify_;
 };
 
 } // namespace ublk
