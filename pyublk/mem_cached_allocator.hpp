@@ -90,4 +90,6 @@ private:
   busy_table_t btbl_;
 };
 
+inline auto __mem_cached_allocator__ = std::make_shared<mem_cached_allocator>();
+
 } // namespace ublk

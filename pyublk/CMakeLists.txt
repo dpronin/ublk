@@ -14,8 +14,10 @@ add_library(ublk_utils INTERFACE
     mem.hpp
     mem_allocator.hpp
     mem_cached_allocator.hpp
+    mem_pool_allocator.hpp
     mem_types.hpp
     page.hpp
+    pool_allocator.hpp
     size_units.hpp
     span.hpp
     utility.hpp

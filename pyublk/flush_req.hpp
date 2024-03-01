@@ -7,7 +7,7 @@
 
 #include <linux/ublkdrv/cmd.h>
 
-#include "allocators.hpp"
+#include "pool_allocators.hpp"
 #include "req.hpp"
 
 namespace ublk {
@@ -16,7 +16,7 @@ class flush_req final : public req {
 public:
   template <typename... Args> static auto create(Args &&...args) noexcept {
     return std::allocate_shared<flush_req>(
-        mem::allocator::cache_line_aligned<flush_req>::value,
+        mem::allocator::pool_cache_line_aligned<flush_req>::value,
         std::forward<Args>(args)...);
   }
 
