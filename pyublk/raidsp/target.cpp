@@ -406,26 +406,29 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
         std::min(stripe_data_sz_ - stripe_offset, wq->buf().size() - wb),
     };
 
-    auto new_wq =
-        wq->subquery(wb, chunk_sz, stripe_offset,
-                     [wq, stripe_id, this](write_query const &new_wq) {
-                       if (new_wq.err()) [[unlikely]]
-                         wq->set_err(new_wq.err());
+    auto new_wq = wq->subquery(
+        wb, chunk_sz, stripe_offset,
+        [wq, stripe_id, this](write_query const &new_wq) {
+          if (new_wq.err()) [[unlikely]]
+            wq->set_err(new_wq.err());
 
-                       auto next_wq = std::ranges::find_if(
-                           wqs_pending_,
-                           [stripe_id](uint64_t wq_stripe_id) {
-                             return stripe_id == wq_stripe_id;
-                           },
-                           [](auto const &wq_pend) { return wq_pend.first; });
-                       if (next_wq != wqs_pending_.end()) {
-                         process(stripe_id, std::move(next_wq->second));
-                         std::iter_swap(next_wq, wqs_pending_.end() - 1);
-                         wqs_pending_.pop_back();
-                       } else {
-                         stripe_write_lock_state_.reset(stripe_id);
-                       }
-                     });
+          for (bool finish = false; !finish;) {
+            if (auto next_wq_it = std::ranges::find_if(
+                    wqs_pending_,
+                    [stripe_id](uint64_t wq_stripe_id) {
+                      return stripe_id == wq_stripe_id;
+                    },
+                    [](auto const &wq_pend) { return wq_pend.first; });
+                next_wq_it != wqs_pending_.end()) {
+              finish = 0 == process(stripe_id, std::move(next_wq_it->second));
+              std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
+              wqs_pending_.pop_back();
+            } else {
+              stripe_write_lock_state_.reset(stripe_id);
+              finish = true;
+            }
+          }
+        });
     if (stripe_write_lock_state_.test_set(stripe_id)) [[unlikely]] {
       wqs_pending_.emplace_back(stripe_id, std::move(new_wq));
     } else if (auto const res{process(stripe_id, std::move(new_wq))})
