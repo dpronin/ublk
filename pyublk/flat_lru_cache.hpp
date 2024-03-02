@@ -114,6 +114,18 @@ private:
     };
   }
 
+  std::pair<size_t, size_t>
+  range_find(std::pair<Key, Key> range) const noexcept {
+    assert(!(range.first > range.second));
+    auto const cache = cache_view();
+    auto const first =
+        std::ranges::lower_bound(cache, range.first, keys_cmp{}, key_proj);
+    auto const last =
+        std::ranges::upper_bound(std::ranges::subrange{first, cache.end()},
+                                 range.second, keys_cmp{}, key_proj);
+    return {first - cache.begin(), last - cache.begin()};
+  }
+
 public:
   ~flat_lru_cache() = default;
 
@@ -184,6 +196,12 @@ public:
       auto const cache = cache_view();
       std::get<1>(cache[index]) = cache.size();
     }
+  }
+
+  void invalidate_range(std::pair<Key, Key> range) noexcept {
+    auto const cache = cache_view();
+    for (auto [fi, li] = range_find(range); fi < li; ++fi)
+      std::get<1>(cache[fi]) = cache.size();
   }
 
 private:
