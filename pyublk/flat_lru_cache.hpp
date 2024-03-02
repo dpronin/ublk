@@ -177,10 +177,13 @@ public:
     return evicted_value;
   }
 
+  bool exists(Key key) const noexcept { return lower_bound_find(key).second; }
+
   void invalidate(Key key) noexcept {
-    auto const cache = cache_view();
-    if (auto const [index, exact_match] = lower_bound_find(key); exact_match)
+    if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
+      auto const cache = cache_view();
       std::get<1>(cache[index]) = cache.size();
+    }
   }
 
 private:
