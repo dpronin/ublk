@@ -30,6 +30,9 @@ private:
   mm::uptrwd<std::byte[]> mem_chunk_get() noexcept;
   void mem_chunk_put(mm::uptrwd<std::byte[]> &&) noexcept;
 
+  void cache_full_line_update(uint64_t chunk_id,
+                              mm::uptrwd<std::byte[]> &&mem_chunk) noexcept;
+
 public:
   explicit CachedRWHandler(
       std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache,
@@ -51,7 +54,8 @@ public:
 private:
   std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache_;
   std::unique_ptr<IRWHandler> handler_;
-  std::function<void(uint64_t chunk_id, std::span<std::byte const> chunk)>
+  std::function<void(uint64_t chunk_id, uint64_t chunk_offset,
+                     std::span<std::byte const> chunk)>
       cache_updater_;
   bool write_through_;
   std::function<mm::uptrwd<std::byte[]>()> mem_chunk_generator_;

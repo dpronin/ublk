@@ -40,30 +40,38 @@ void CachedRWHandler::mem_chunk_put(
   mem_chunks_.push(std::move(mem_chunk));
 }
 
+void CachedRWHandler::cache_full_line_update(
+    uint64_t chunk_id, mm::uptrwd<std::byte[]> &&mem_chunk) noexcept {
+  if (auto evicted_value{
+          cache_->update({chunk_id, std::move(mem_chunk)}),
+      }) {
+    assert(evicted_value->second);
+    mem_chunk_put(std::move(evicted_value->second));
+  }
+}
+
 void CachedRWHandler::set_write_through(bool value) noexcept {
   if (value) {
-    cache_updater_ = [this](uint64_t chunk_id,
+    cache_updater_ = [this](uint64_t chunk_id, uint64_t chunk_offset,
                             std::span<std::byte const> chunk) {
-      if (chunk.size() < cache_->item_sz()) {
-        cache_->invalidate(chunk_id);
-      } else {
+      if (!(chunk.size() < cache_->item_sz())) {
+        assert(chunk.size() == cache_->item_sz());
+        assert(0 == chunk_offset);
         auto mem_chunk = mem_chunk_get();
-
+        algo::copy(chunk, mem_chunk_view(mem_chunk));
+        cache_full_line_update(chunk_id, std::move(mem_chunk));
+      } else if (auto cached_chunk = cache_->find_mutable(chunk_id);
+                 !cached_chunk.empty()) {
+        assert(!(chunk_offset + chunk.size() > cached_chunk.size()));
         auto const from{chunk};
-        auto const to{mem_chunk_view(mem_chunk)};
-
+        auto const to{cached_chunk.subspan(chunk_offset, chunk.size())};
         algo::copy(from, to);
-
-        if (auto evicted_value{
-                cache_->update({chunk_id, std::move(mem_chunk)}),
-            }) {
-          assert(evicted_value->second);
-          mem_chunk_put(std::move(evicted_value->second));
-        }
       }
     };
   } else {
-    cache_updater_ = [this](uint64_t chunk_id, std::span<std::byte const> chunk
+    cache_updater_ = [this](uint64_t chunk_id,
+                            uint64_t chunk_offset [[maybe_unused]],
+                            std::span<std::byte const> chunk
                             [[maybe_unused]]) { cache_->invalidate(chunk_id); };
   }
   write_through_ = value;
@@ -95,23 +103,20 @@ int CachedRWHandler::submit(std::shared_ptr<read_query> rq) noexcept {
           [this, chunk_id, chunk_offset, chunk, rq,
            mem_chunk_holder = std::make_shared<decltype(mem_chunk)>(
                std::move(mem_chunk))](read_query const &new_rq) mutable {
-            if (new_rq.err()) {
+            if (new_rq.err()) [[unlikely]] {
               rq->set_err(new_rq.err());
               cache_->invalidate(chunk_id);
               return;
             }
 
-            auto const from{new_rq.buf().subspan(chunk_offset, chunk.size())};
+            auto const from{
+                std::as_bytes(new_rq.buf().subspan(chunk_offset, chunk.size())),
+            };
             auto const to{chunk};
-            algo::copy(std::as_bytes(from), to);
+            algo::copy(from, to);
 
-            if (auto evicted_value{
-                    cache_->update(
-                        {chunk_id, std::move(*mem_chunk_holder.get())}),
-                }) {
-              assert(evicted_value->second);
-              mem_chunk_put(std::move(evicted_value->second));
-            }
+            cache_full_line_update(chunk_id,
+                                   std::move(*mem_chunk_holder.get()));
           });
       if (auto const res{handler_->submit(std::move(new_rq))}) [[unlikely]] {
         cache_->invalidate(chunk_id);
@@ -138,15 +143,16 @@ int CachedRWHandler::submit(std::shared_ptr<write_query> wq) noexcept {
         std::min(cache_->item_sz() - chunk_offset, wq->buf().size() - wb),
     };
     auto chunk_wq{
-        wq->subquery(wb, chunk_sz, wq->offset() + wb,
-                     [this, chunk_id, wq](write_query const &chunk_wq) {
-                       if (chunk_wq.err()) [[unlikely]] {
-                         cache_->invalidate(chunk_id);
-                         wq->set_err(chunk_wq.err());
-                         return;
-                       }
-                       cache_updater_(chunk_id, chunk_wq.buf());
-                     }),
+        wq->subquery(
+            wb, chunk_sz, wq->offset() + wb,
+            [this, chunk_id, chunk_offset, wq](write_query const &chunk_wq) {
+              if (chunk_wq.err()) [[unlikely]] {
+                cache_->invalidate(chunk_id);
+                wq->set_err(chunk_wq.err());
+                return;
+              }
+              cache_updater_(chunk_id, chunk_offset, chunk_wq.buf());
+            }),
     };
 
     if (auto const res{handler_->submit(std::move(chunk_wq))}) [[unlikely]] {
