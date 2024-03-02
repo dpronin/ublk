@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <span>
+#include <stack>
 
 #include "mm/mem_types.hpp"
 
@@ -22,10 +23,12 @@ private:
                               alignof(std::max_align_t)));
 
   template <typename T = std::byte>
-  auto cached_chunk_view(
-      mm::uptrwd<std::byte[]> const &cached_chunk) const noexcept {
-    return to_span_of<T>({cached_chunk.get(), cache_->item_sz()});
+  auto mem_chunk_view(mm::uptrwd<std::byte[]> const &mem_chunk) const noexcept {
+    return to_span_of<T>({mem_chunk.get(), cache_->item_sz()});
   }
+
+  mm::uptrwd<std::byte[]> mem_chunk_get() noexcept;
+  void mem_chunk_put(mm::uptrwd<std::byte[]> &&) noexcept;
 
 public:
   explicit CachedRWHandler(
@@ -51,7 +54,8 @@ private:
   std::function<void(uint64_t chunk_id, std::span<std::byte const> chunk)>
       cache_updater_;
   bool write_through_;
-  std::function<mm::uptrwd<std::byte[]>()> cached_chunk_generator_;
+  std::function<mm::uptrwd<std::byte[]>()> mem_chunk_generator_;
+  std::stack<mm::uptrwd<std::byte[]>> mem_chunks_;
 };
 
 } // namespace ublk

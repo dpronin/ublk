@@ -20,8 +20,24 @@ CachedRWHandler::CachedRWHandler(
   assert(cache_);
   assert(handler_);
   set_write_through(write_through);
-  cached_chunk_generator_ =
+  mem_chunk_generator_ =
       mm::get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz());
+}
+
+mm::uptrwd<std::byte[]> CachedRWHandler::mem_chunk_get() noexcept {
+  auto mem_chunk = mm::uptrwd<std::byte[]>{};
+  if (!mem_chunks_.empty()) {
+    mem_chunk = std::move(mem_chunks_.top());
+    mem_chunks_.pop();
+  } else {
+    mem_chunk = mem_chunk_generator_();
+  }
+  return mem_chunk;
+}
+
+void CachedRWHandler::mem_chunk_put(
+    mm::uptrwd<std::byte[]> &&mem_chunk) noexcept {
+  mem_chunks_.push(std::move(mem_chunk));
 }
 
 void CachedRWHandler::set_write_through(bool value) noexcept {
@@ -31,17 +47,19 @@ void CachedRWHandler::set_write_through(bool value) noexcept {
       if (chunk.size() < cache_->item_sz()) {
         cache_->invalidate(chunk_id);
       } else {
-        auto cached_chunk = cached_chunk_generator_();
+        auto mem_chunk = mem_chunk_get();
 
         auto const from{chunk};
-        auto const to{cached_chunk_view(cached_chunk)};
+        auto const to{mem_chunk_view(mem_chunk)};
 
         algo::copy(from, to);
 
-        auto evicted_value{
-            cache_->update({chunk_id, std::move(cached_chunk)}),
-        };
-        assert(evicted_value);
+        if (auto evicted_value{
+                cache_->update({chunk_id, std::move(mem_chunk)}),
+            }) {
+          assert(evicted_value->second);
+          mem_chunk_put(std::move(evicted_value->second));
+        }
       }
     };
   } else {
@@ -70,13 +88,13 @@ int CachedRWHandler::submit(std::shared_ptr<read_query> rq) noexcept {
       auto const to{chunk};
       algo::copy(std::as_bytes(from), to);
     } else {
-      auto new_cached_chunk = cached_chunk_generator_();
-      auto new_cached_chunk_span = cached_chunk_view(new_cached_chunk);
+      auto mem_chunk = mem_chunk_get();
+      auto mem_chunk_span = mem_chunk_view(mem_chunk);
       auto new_rq = read_query::create(
-          new_cached_chunk_span, chunk_id * cache_->item_sz(),
+          mem_chunk_span, chunk_id * cache_->item_sz(),
           [this, chunk_id, chunk_offset, chunk, rq,
-           cached_chunk = std::make_shared<decltype(new_cached_chunk)>(
-               std::move(new_cached_chunk))](read_query const &new_rq) mutable {
+           mem_chunk_holder = std::make_shared<decltype(mem_chunk)>(
+               std::move(mem_chunk))](read_query const &new_rq) mutable {
             if (new_rq.err()) {
               rq->set_err(new_rq.err());
               cache_->invalidate(chunk_id);
@@ -87,9 +105,13 @@ int CachedRWHandler::submit(std::shared_ptr<read_query> rq) noexcept {
             auto const to{chunk};
             algo::copy(std::as_bytes(from), to);
 
-            auto evicted_value{
-                cache_->update({chunk_id, std::move(*cached_chunk.get())})};
-            assert(evicted_value);
+            if (auto evicted_value{
+                    cache_->update(
+                        {chunk_id, std::move(*mem_chunk_holder.get())}),
+                }) {
+              assert(evicted_value->second);
+              mem_chunk_put(std::move(evicted_value->second));
+            }
           });
       if (auto const res{handler_->submit(std::move(new_rq))}) [[unlikely]] {
         cache_->invalidate(chunk_id);
