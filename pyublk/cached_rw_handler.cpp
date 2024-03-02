@@ -114,8 +114,10 @@ int CachedRWHandler::submit(std::shared_ptr<read_query> rq) noexcept {
             auto const to{chunk};
             algo::copy(from, to);
 
-            cache_full_line_update(chunk_id,
-                                   std::move(*mem_chunk_holder.get()));
+            if (!cache_->exists(chunk_id)) {
+              cache_full_line_update(chunk_id,
+                                     std::move(*mem_chunk_holder.get()));
+            }
           });
       if (auto const res{handler_->submit(std::move(new_rq))}) [[unlikely]] {
         cache_->invalidate(chunk_id);
@@ -141,6 +143,7 @@ int CachedRWHandler::submit(std::shared_ptr<write_query> wq) noexcept {
     auto const chunk_sz{
         std::min(cache_->item_sz() - chunk_offset, wq->buf().size() - wb),
     };
+
     auto chunk_wq{
         wq->subquery(
             wb, chunk_sz, wq->offset() + wb,
