@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <concepts>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -103,7 +104,7 @@ private:
     std::get<1>(cache[cache_item_id]) = 0;
   }
 
-  std::pair<size_t, bool> lower_bound_find(Key key) const noexcept {
+  std::pair<size_t, bool> lower_bound_find_index(Key key) const noexcept {
     auto const cache = cache_view();
     auto const value_it =
         std::ranges::lower_bound(cache, key, keys_cmp{}, key_proj);
@@ -138,8 +139,22 @@ public:
   uint64_t item_sz() const noexcept { return cache_item_sz_; }
   uint64_t len() const noexcept { return cache_view().size(); }
 
+  std::pair<Key, std::span<T const>> lower_bound_find(Key key) const noexcept {
+    auto const cache = cache_view();
+    if (auto const [index, _] = lower_bound_find_index(key);
+        cache.size() != index) {
+      touch(index);
+      return {
+          std::get<0>(cache[index]),
+          cache_value_view(std::get<2>(cache[index])),
+      };
+    }
+    return {std::numeric_limits<T>::max(), {}};
+  }
+
   std::span<T const> find(Key key) const noexcept {
-    if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
+    if (auto const [index, exact_match] = lower_bound_find_index(key);
+        exact_match) {
       touch(index);
       return cache_value_view(std::get<2>(cache_view()[index]));
     }
@@ -156,7 +171,7 @@ public:
 
     auto const cache = cache_view();
 
-    auto [index, exact_match] = lower_bound_find(value.first);
+    auto [index, exact_match] = lower_bound_find_index(value.first);
     if (!exact_match) {
       if (!(index < cache.size()) || is_valid(cache[index])) {
         auto value_it = cache.begin() + index;
@@ -189,10 +204,13 @@ public:
     return evicted_value;
   }
 
-  bool exists(Key key) const noexcept { return lower_bound_find(key).second; }
+  bool exists(Key key) const noexcept {
+    return lower_bound_find_index(key).second;
+  }
 
   void invalidate(Key key) noexcept {
-    if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
+    if (auto const [index, exact_match] = lower_bound_find_index(key);
+        exact_match) {
       auto const cache = cache_view();
       std::get<1>(cache[index]) = cache.size();
     }
