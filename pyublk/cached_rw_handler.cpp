@@ -13,6 +13,28 @@
 
 namespace ublk {
 
+CachedRWHandler::mem_chunk_pool::mem_chunk_pool(
+    std::function<mm::uptrwd<std::byte[]>()> generator)
+    : generator_(std::move(generator)) {
+  assert(generator_);
+}
+
+mm::uptrwd<std::byte[]> CachedRWHandler::mem_chunk_pool::get() noexcept {
+  auto chunk = mm::uptrwd<std::byte[]>{};
+  if (!free_chunks_.empty()) {
+    chunk = std::move(free_chunks_.top());
+    free_chunks_.pop();
+  } else {
+    chunk = generator_();
+  }
+  return chunk;
+}
+
+void CachedRWHandler::mem_chunk_pool::put(
+    mm::uptrwd<std::byte[]> &&mem_chunk) noexcept {
+  free_chunks_.push(std::move(mem_chunk));
+}
+
 CachedRWHandler::CachedRWHandler(
     std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache,
     std::unique_ptr<IRWHandler> handler, bool write_through /* = true*/)
@@ -20,24 +42,8 @@ CachedRWHandler::CachedRWHandler(
   assert(cache_);
   assert(handler_);
   set_write_through(write_through);
-  mem_chunk_generator_ =
-      mm::get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz());
-}
-
-mm::uptrwd<std::byte[]> CachedRWHandler::mem_chunk_get() noexcept {
-  auto mem_chunk = mm::uptrwd<std::byte[]>{};
-  if (!mem_chunks_.empty()) {
-    mem_chunk = std::move(mem_chunks_.top());
-    mem_chunks_.pop();
-  } else {
-    mem_chunk = mem_chunk_generator_();
-  }
-  return mem_chunk;
-}
-
-void CachedRWHandler::mem_chunk_put(
-    mm::uptrwd<std::byte[]> &&mem_chunk) noexcept {
-  mem_chunks_.push(std::move(mem_chunk));
+  mem_chunk_pool_ = std::make_unique<mem_chunk_pool>(
+      mm::get_unique_bytes_generator(kCachedChunkAlignment, cache_->item_sz()));
 }
 
 void CachedRWHandler::cache_full_line_update(
@@ -45,7 +51,7 @@ void CachedRWHandler::cache_full_line_update(
   if (auto evicted_value{cache_->update({chunk_id, std::move(mem_chunk)})})
       [[likely]] {
     assert(evicted_value->second);
-    mem_chunk_put(std::move(evicted_value->second));
+    mem_chunk_pool_->put(std::move(evicted_value->second));
   }
 }
 
@@ -56,7 +62,10 @@ void CachedRWHandler::set_write_through(bool value) noexcept {
       if (!(chunk.size() < cache_->item_sz())) {
         assert(chunk.size() == cache_->item_sz());
         assert(0 == chunk_offset);
-        auto mem_chunk = mem_chunk_get();
+
+        auto mem_chunk = mem_chunk_pool_->get();
+        assert(mem_chunk);
+
         algo::copy(chunk, mem_chunk_view(mem_chunk));
         cache_full_line_update(chunk_id, std::move(mem_chunk));
       } else if (auto cached_chunk = cache_->find_mutable(chunk_id);
@@ -95,7 +104,9 @@ int CachedRWHandler::submit(std::shared_ptr<read_query> rq) noexcept {
       auto const to{chunk};
       algo::copy(std::as_bytes(from), to);
     } else {
-      auto mem_chunk = mem_chunk_get();
+      auto mem_chunk = mem_chunk_pool_->get();
+      assert(mem_chunk);
+
       auto mem_chunk_span = mem_chunk_view(mem_chunk);
       auto new_rq = read_query::create(
           mem_chunk_span, chunk_id * cache_->item_sz(),

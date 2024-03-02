@@ -27,8 +27,24 @@ private:
     return to_span_of<T>({mem_chunk.get(), cache_->item_sz()});
   }
 
-  mm::uptrwd<std::byte[]> mem_chunk_get() noexcept;
-  void mem_chunk_put(mm::uptrwd<std::byte[]> &&) noexcept;
+  class mem_chunk_pool {
+  public:
+    explicit mem_chunk_pool(std::function<mm::uptrwd<std::byte[]>()> generator);
+    ~mem_chunk_pool() = default;
+
+    mem_chunk_pool(mem_chunk_pool const &) = delete;
+    mem_chunk_pool &operator=(mem_chunk_pool const &) = delete;
+
+    mem_chunk_pool(mem_chunk_pool &&) = delete;
+    mem_chunk_pool &operator=(mem_chunk_pool &&) = delete;
+
+    mm::uptrwd<std::byte[]> get() noexcept;
+    void put(mm::uptrwd<std::byte[]> &&) noexcept;
+
+  private:
+    std::function<mm::uptrwd<std::byte[]>()> generator_;
+    std::stack<mm::uptrwd<std::byte[]>> free_chunks_;
+  };
 
   void cache_full_line_update(uint64_t chunk_id,
                               mm::uptrwd<std::byte[]> &&mem_chunk) noexcept;
@@ -58,8 +74,7 @@ private:
                      std::span<std::byte const> chunk)>
       cache_updater_;
   bool write_through_;
-  std::function<mm::uptrwd<std::byte[]>()> mem_chunk_generator_;
-  std::stack<mm::uptrwd<std::byte[]>> mem_chunks_;
+  std::unique_ptr<mem_chunk_pool> mem_chunk_pool_;
 };
 
 } // namespace ublk
