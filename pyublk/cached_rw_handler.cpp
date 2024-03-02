@@ -59,28 +59,22 @@ private:
   std::stack<ublk::mm::uptrwd<std::byte[]>> free_chunks_;
 };
 
-class CachedRWHandlerBase : public ublk::IRWHandler {
+class CachedRWIHandler : public ublk::IRWHandler {
 public:
-  CachedRWHandlerBase(
+  explicit CachedRWIHandler(
       std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache,
       std::shared_ptr<ublk::IRWHandler> handler,
-      std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept
-      : cache_(std::move(cache)), handler_(std::move(handler)),
-        mem_chunk_pool_(std::move(mem_chunk_pool)) {
-    assert(cache_);
-    assert(handler_);
-    assert(mem_chunk_pool_);
-  }
-  ~CachedRWHandlerBase() override = default;
+      std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept;
+  ~CachedRWIHandler() override = default;
 
-  CachedRWHandlerBase(CachedRWHandlerBase const &) = delete;
-  CachedRWHandlerBase &operator=(CachedRWHandlerBase const &) = delete;
+  CachedRWIHandler(CachedRWIHandler const &) = delete;
+  CachedRWIHandler &operator=(CachedRWIHandler const &) = delete;
 
-  CachedRWHandlerBase(CachedRWHandlerBase &&) = delete;
-  CachedRWHandlerBase &operator=(CachedRWHandlerBase &&) = delete;
+  CachedRWIHandler(CachedRWIHandler &&) = delete;
+  CachedRWIHandler &operator=(CachedRWIHandler &&) = delete;
 
   int submit(std::shared_ptr<ublk::read_query> rq) noexcept override;
-  int submit(std::shared_ptr<ublk::write_query> rq) noexcept override = 0;
+  int submit(std::shared_ptr<ublk::write_query> wq) noexcept override;
 
 protected:
   template <typename T = std::byte>
@@ -103,7 +97,18 @@ protected:
   std::shared_ptr<mem_chunk_pool> mem_chunk_pool_;
 };
 
-int CachedRWHandlerBase::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
+CachedRWIHandler::CachedRWIHandler(
+    std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache,
+    std::shared_ptr<ublk::IRWHandler> handler,
+    std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept
+    : cache_(std::move(cache)), handler_(std::move(handler)),
+      mem_chunk_pool_(std::move(mem_chunk_pool)) {
+  assert(cache_);
+  assert(handler_);
+  assert(mem_chunk_pool_);
+}
+
+int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
   assert(rq);
 
   auto chunk_id{rq->offset() / cache_->item_sz()};
@@ -156,30 +161,6 @@ int CachedRWHandlerBase::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
   return 0;
 }
 
-class CachedRWIHandler : public CachedRWHandlerBase {
-public:
-  explicit CachedRWIHandler(
-      std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache,
-      std::shared_ptr<ublk::IRWHandler> handler,
-      std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept;
-  ~CachedRWIHandler() override = default;
-
-  CachedRWIHandler(CachedRWIHandler const &) = delete;
-  CachedRWIHandler &operator=(CachedRWIHandler const &) = delete;
-
-  CachedRWIHandler(CachedRWIHandler &&) = delete;
-  CachedRWIHandler &operator=(CachedRWIHandler &&) = delete;
-
-  int submit(std::shared_ptr<ublk::write_query> wq) noexcept override;
-};
-
-CachedRWIHandler::CachedRWIHandler(
-    std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache,
-    std::shared_ptr<ublk::IRWHandler> handler,
-    std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept
-    : CachedRWHandlerBase(std::move(cache), std::move(handler),
-                          std::move(mem_chunk_pool)) {}
-
 int CachedRWIHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
 
@@ -215,12 +196,9 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
   return 0;
 }
 
-class CachedRWTHandler : public CachedRWHandlerBase {
+class CachedRWTHandler : public CachedRWIHandler {
 public:
-  explicit CachedRWTHandler(
-      std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache,
-      std::shared_ptr<ublk::IRWHandler> handler,
-      std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept;
+  using CachedRWIHandler::CachedRWIHandler;
   ~CachedRWTHandler() override = default;
 
   CachedRWTHandler(CachedRWTHandler const &) = delete;
@@ -238,13 +216,6 @@ private:
   std::vector<std::pair<uint64_t, std::shared_ptr<ublk::write_query>>>
       wqs_pending_;
 };
-
-CachedRWTHandler::CachedRWTHandler(
-    std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache,
-    std::shared_ptr<ublk::IRWHandler> handler,
-    std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept
-    : CachedRWHandlerBase(std::move(cache), std::move(handler),
-                          std::move(mem_chunk_pool)) {}
 
 int CachedRWTHandler::process(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
