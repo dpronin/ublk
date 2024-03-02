@@ -1,18 +1,13 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
-#include <functional>
 #include <memory>
-#include <span>
-#include <stack>
-
-#include "mm/mem_types.hpp"
 
 #include "flat_lru_cache.hpp"
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
-#include "span.hpp"
 
 namespace ublk {
 
@@ -21,33 +16,6 @@ private:
   constexpr static inline auto kCachedChunkAlignment = kSectorSz;
   static_assert(is_aligned_to(kCachedChunkAlignment,
                               alignof(std::max_align_t)));
-
-  template <typename T = std::byte>
-  auto mem_chunk_view(mm::uptrwd<std::byte[]> const &mem_chunk) const noexcept {
-    return to_span_of<T>({mem_chunk.get(), cache_->item_sz()});
-  }
-
-  class mem_chunk_pool {
-  public:
-    explicit mem_chunk_pool(std::function<mm::uptrwd<std::byte[]>()> generator);
-    ~mem_chunk_pool() = default;
-
-    mem_chunk_pool(mem_chunk_pool const &) = delete;
-    mem_chunk_pool &operator=(mem_chunk_pool const &) = delete;
-
-    mem_chunk_pool(mem_chunk_pool &&) = delete;
-    mem_chunk_pool &operator=(mem_chunk_pool &&) = delete;
-
-    mm::uptrwd<std::byte[]> get() noexcept;
-    void put(mm::uptrwd<std::byte[]> &&) noexcept;
-
-  private:
-    std::function<mm::uptrwd<std::byte[]>()> generator_;
-    std::stack<mm::uptrwd<std::byte[]>> free_chunks_;
-  };
-
-  void cache_full_line_update(uint64_t chunk_id,
-                              mm::uptrwd<std::byte[]> &&mem_chunk) noexcept;
 
 public:
   explicit CachedRWHandler(
@@ -58,8 +26,8 @@ public:
   CachedRWHandler(CachedRWHandler const &) = delete;
   CachedRWHandler &operator=(CachedRWHandler const &) = delete;
 
-  CachedRWHandler(CachedRWHandler &&) = default;
-  CachedRWHandler &operator=(CachedRWHandler &&) = default;
+  CachedRWHandler(CachedRWHandler &&) = delete;
+  CachedRWHandler &operator=(CachedRWHandler &&) = delete;
 
   void set_write_through(bool value) noexcept;
   bool write_through() const noexcept;
@@ -68,13 +36,8 @@ public:
   int submit(std::shared_ptr<write_query> wq) noexcept override;
 
 private:
-  std::unique_ptr<flat_lru_cache<uint64_t, std::byte>> cache_;
-  std::unique_ptr<IRWHandler> handler_;
-  std::function<void(uint64_t chunk_id, uint64_t chunk_offset,
-                     std::span<std::byte const> chunk)>
-      cache_updater_;
-  bool write_through_;
-  std::unique_ptr<mem_chunk_pool> mem_chunk_pool_;
+  std::shared_ptr<IRWHandler> handler_;
+  std::array<std::shared_ptr<IRWHandler>, 2> handlers_;
 };
 
 } // namespace ublk
