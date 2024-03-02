@@ -42,9 +42,8 @@ void CachedRWHandler::mem_chunk_put(
 
 void CachedRWHandler::cache_full_line_update(
     uint64_t chunk_id, mm::uptrwd<std::byte[]> &&mem_chunk) noexcept {
-  if (auto evicted_value{
-          cache_->update({chunk_id, std::move(mem_chunk)}),
-      }) {
+  if (auto evicted_value{cache_->update({chunk_id, std::move(mem_chunk)})})
+      [[likely]] {
     assert(evicted_value->second);
     mem_chunk_put(std::move(evicted_value->second));
   }
