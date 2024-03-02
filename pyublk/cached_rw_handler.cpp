@@ -164,33 +164,24 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
 int CachedRWIHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
 
-  auto chunk_id{wq->offset() / cache_->item_sz()};
-  auto chunk_offset{wq->offset() % cache_->item_sz()};
+  auto const chunk_id_first{wq->offset() / cache_->item_sz()};
+  auto const chunk_id_last{(wq->offset() + wq->buf().size()) / cache_->item_sz()};
 
-  for (size_t wb{0}; wb < wq->buf().size();) {
-    auto const chunk_sz{
-        std::min(cache_->item_sz() - chunk_offset, wq->buf().size() - wb),
-    };
+  auto new_wq{
+      wq->subquery(0, wq->buf().size(), wq->offset(),
+                   [this, chunk_id_first, chunk_id_last,
+                    wq](ublk::write_query const &chunk_wq) {
+                     cache_->invalidate_range({chunk_id_first, chunk_id_last});
+                     if (chunk_wq.err()) [[unlikely]] {
+                       wq->set_err(chunk_wq.err());
+                       return;
+                     }
+                   }),
+  };
 
-    auto chunk_wq{
-        wq->subquery(wb, chunk_sz, wq->offset() + wb,
-                     [this, chunk_id, wq](ublk::write_query const &chunk_wq) {
-                       cache_->invalidate(chunk_id);
-                       if (chunk_wq.err()) [[unlikely]] {
-                         wq->set_err(chunk_wq.err());
-                         return;
-                       }
-                     }),
-    };
-
-    if (auto const res{handler_->submit(std::move(chunk_wq))}) [[unlikely]] {
-      cache_->invalidate(chunk_id);
-      return res;
-    }
-
-    ++chunk_id;
-    chunk_offset = 0;
-    wb += chunk_sz;
+  if (auto const res{handler_->submit(std::move(new_wq))}) [[unlikely]] {
+    cache_->invalidate_range({chunk_id_first, chunk_id_last});
+    return res;
   }
 
   return 0;
