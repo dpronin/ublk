@@ -5,7 +5,7 @@
 
 #include <functional>
 #include <memory>
-#include <queue>
+#include <utility>
 #include <vector>
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
@@ -88,7 +88,7 @@ protected:
 private:
   boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
   boost::dynamic_bitset<uint64_t> stripe_write_lock_state_;
-  std::queue<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
+  std::vector<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
 };
 
 } // namespace ublk::raidsp
