@@ -149,7 +149,7 @@ public:
           cache_value_view(std::get<2>(cache[index])),
       };
     }
-    return {std::numeric_limits<Key>::max(), {}};
+    return {std::numeric_limits<T>::max(), {}};
   }
 
   std::span<T const> find(Key key) const noexcept {
