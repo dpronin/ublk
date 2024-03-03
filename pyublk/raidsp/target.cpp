@@ -386,9 +386,10 @@ int Target::process(uint64_t stripe_id,
 
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
+  assert(0 != wq->buf().size());
 
   for (auto const stripe_id_last{
-           (wq->offset() + wq->buf().size()) / stripe_data_sz_,
+           div_round_up(wq->offset() + wq->buf().size(), stripe_data_sz_) - 1,
        };
        auto *bs : {
            &stripe_parity_coherency_state_,
