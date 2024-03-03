@@ -43,74 +43,76 @@ public:
   }
 
 private:
-  using cache_item_t = std::tuple<Key, uint64_t, mm::uptrwd<T[]>>;
+  using cache_item_t = std::pair<Key, mm::uptrwd<T[]>>;
+  using cache_item_ref_t = uint64_t;
 
-  static inline constexpr auto key_proj = [](auto &&value) noexcept {
-    return std::get<0>(std::forward<decltype(value)>(value));
-  };
+  static inline constexpr auto key_proj =
+      [](cache_item_t const &value) noexcept { return value.first; };
   using keys_cmp = std::less<>;
+#ifndef NDEBUG
   using keys_eq = std::equal_to<>;
+#endif
 
-  auto cache_view() const noexcept {
-    return std::span{cache_.get(), cache_len_};
-  }
-
-  bool is_valid(cache_item_t const &cache_item) const noexcept {
-    return std::get<1>(cache_item) != cache_view().size();
-  }
+  auto cache_view() const noexcept { return std::span{cache_.get(), len()}; }
 
   auto cache_value_view(mm::uptrwd<T[]> const &cache_value) const noexcept {
     return std::span{
         cache_value.get(),
-        cache_item_sz_,
+        item_sz(),
     };
+  }
+
+  bool is_valid(size_t index) const noexcept {
+    assert(index < len());
+    return cache_refs_[index] != len();
   }
 
   explicit flat_lru_cache(std::unique_ptr<mm::uptrwd<T[]>[]> storage,
                           uint64_t storage_len, uint64_t storage_item_sz)
       : cache_len_(storage_len), cache_item_sz_(storage_item_sz) {
     assert(storage);
-    assert(cache_len_ > 0);
-    assert(cache_item_sz_ > 0);
+    assert(len() > 0);
+    assert(item_sz() > 0);
 
-    cache_ = std::make_unique<cache_item_t[]>(cache_len_);
+    cache_ = std::make_unique<cache_item_t[]>(len());
 
-    std::ranges::transform(
-        std::span{storage.get(), storage_len}, cache_.get(),
-        [this, key_init = Key{}](auto &storage_item) mutable -> cache_item_t {
+    std::transform(
+        storage.get(), storage.get() + storage_len, cache_.get(),
+        [key_init = Key{}](auto &storage_item) mutable -> cache_item_t {
           return {
               Key{key_init++},
-              cache_len_,
               std::move(storage_item),
           };
         });
 
     assert(std::ranges::all_of(cache_view(), [](auto const &cache_item) {
-      return static_cast<bool>(std::get<2>(cache_item));
+      return static_cast<bool>(cache_item.second);
     }));
+
+    cache_refs_ = std::make_unique<cache_item_ref_t[]>(len());
+    std::fill_n(cache_refs_.get(), len(), len());
   }
 
-  void touch(size_t cache_item_id) const noexcept {
-    auto const cache = cache_view();
+  void touch(size_t index) const noexcept {
+    assert(index != len());
 
-    assert(cache_item_id != cache.size());
-
-    auto const eo = std::get<1>(cache[cache_item_id]);
-    for (auto &cache_item : cache_view()) {
-      if (auto &o = std::get<1>(cache_item); o < eo)
+    auto const eo = cache_refs_[index];
+    for (size_t i = 0; i < len(); ++i) {
+      if (auto &o = cache_refs_[i]; o < eo)
         ++o;
     }
-    std::get<1>(cache[cache_item_id]) = 0;
+    cache_refs_[index] = 0;
   }
 
   std::pair<size_t, bool> lower_bound_find(Key key) const noexcept {
     auto const cache = cache_view();
     auto const value_it =
         std::ranges::lower_bound(cache, key, keys_cmp{}, key_proj);
+    size_t const index = value_it - cache.begin();
     return {
-        value_it - cache.begin(),
+        index,
         cache.end() != value_it && key == key_proj(*value_it) &&
-            is_valid(*value_it),
+            is_valid(index),
     };
   }
 
@@ -136,12 +138,12 @@ public:
   flat_lru_cache &operator=(flat_lru_cache &&) = default;
 
   uint64_t item_sz() const noexcept { return cache_item_sz_; }
-  uint64_t len() const noexcept { return cache_view().size(); }
+  uint64_t len() const noexcept { return cache_len_; }
 
   std::span<T const> find(Key key) const noexcept {
     if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
       touch(index);
-      return cache_value_view(std::get<2>(cache_view()[index]));
+      return cache_value_view(cache_[index].second);
     }
     return {};
   }
@@ -158,24 +160,26 @@ public:
 
     auto [index, exact_match] = lower_bound_find(value.first);
     if (!exact_match) {
-      if (!(index < cache.size()) || is_valid(cache[index])) {
+      if (!(index < cache.size()) || is_valid(index)) {
         auto value_it = cache.begin() + index;
-        if (auto evict_value_it = std::ranges::max_element(
-                cache, keys_cmp{},
-                [](auto const &cache_item) { return std::get<1>(cache_item); });
-            evict_value_it < value_it) {
-          value_it = std::rotate(evict_value_it, evict_value_it + 1, value_it);
+        if (size_t const evict_index =
+                std::max_element(cache_refs_.get(), cache_refs_.get() + len(),
+                                 std::less<>{}) -
+                cache_refs_.get();
+            evict_index < index) {
+          value_it = std::rotate(cache.begin() + evict_index,
+                                 cache.begin() + evict_index + 1, value_it);
         } else {
-          std::rotate(value_it, evict_value_it, evict_value_it + 1);
+          std::rotate(value_it, cache.begin() + evict_index,
+                      cache.begin() + evict_index + 1);
         }
         index = value_it - cache.begin();
       }
     }
 
-    evicted_value.emplace(std::get<0>(cache[index]),
-                          std::move(std::get<2>(cache[index])));
-    std::get<0>(cache[index]) = value.first;
-    std::get<2>(cache[index]) = std::move(value.second);
+    evicted_value.emplace(
+        std::exchange(cache[index].first, value.first),
+        std::exchange(cache[index].second, std::move(value.second)));
     touch(index);
 
 #ifndef NDEBUG
@@ -192,16 +196,13 @@ public:
   bool exists(Key key) const noexcept { return lower_bound_find(key).second; }
 
   void invalidate(Key key) noexcept {
-    if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
-      auto const cache = cache_view();
-      std::get<1>(cache[index]) = cache.size();
-    }
+    if (auto const [index, exact_match] = lower_bound_find(key); exact_match)
+      cache_refs_[index] = len();
   }
 
   void invalidate_range(std::pair<Key, Key> range) noexcept {
-    auto const cache = cache_view();
     for (auto [fi, li] = range_find(range); fi < li; ++fi)
-      std::get<1>(cache[fi]) = cache.size();
+      cache_refs_[fi] = len();
   }
 
 private:
@@ -209,6 +210,7 @@ private:
   uint64_t cache_item_sz_;
 
   std::unique_ptr<cache_item_t[]> cache_;
+  std::unique_ptr<cache_item_ref_t[]> cache_refs_;
 };
 
 } // namespace ublk
