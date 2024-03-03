@@ -163,9 +163,13 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
 
 int CachedRWIHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
+  assert(0 != wq->buf().size());
 
   auto const chunk_id_first{wq->offset() / cache_->item_sz()};
-  auto const chunk_id_last{(wq->offset() + wq->buf().size()) / cache_->item_sz()};
+  auto const chunk_id_last{
+      ublk::div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()) -
+          1,
+  };
 
   auto new_wq{
       wq->subquery(0, wq->buf().size(), wq->offset(),
@@ -273,9 +277,12 @@ int CachedRWTHandler::process(std::shared_ptr<ublk::write_query> wq) noexcept {
 
 int CachedRWTHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
+  assert(0 != wq->buf().size());
 
   if (auto const chunk_id_last{
-          (wq->offset() + wq->buf().size()) / cache_->item_sz(),
+          ublk::div_round_up(wq->offset() + wq->buf().size(),
+                             cache_->item_sz()) -
+              1,
       };
       !(chunk_id_last < chunk_write_lock_state_.size())) [[unlikely]] {
 
