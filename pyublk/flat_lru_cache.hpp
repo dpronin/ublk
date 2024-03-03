@@ -62,9 +62,13 @@ private:
     };
   }
 
+  bool is_valid_ref(cache_item_ref_t refs) const noexcept {
+    return refs != len();
+  }
+
   bool is_valid(size_t index) const noexcept {
     assert(index < len());
-    return cache_refs_[index] != len();
+    return is_valid_ref(cache_refs_[index]);
   }
 
   explicit flat_lru_cache(std::unique_ptr<mm::uptrwd<T[]>[]> storage,
@@ -162,17 +166,26 @@ public:
     if (!exact_match) {
       if (!(index < cache.size()) || is_valid(index)) {
         auto value_it = cache.begin() + index;
-        if (size_t const evict_index =
-                std::max_element(cache_refs_.get(), cache_refs_.get() + len(),
-                                 std::less<>{}) -
-                cache_refs_.get();
-            evict_index < index) {
+
+        size_t evict_index{0};
+        if (is_valid_ref(cache_refs_[evict_index])) {
+          for (size_t i = 1; i < len(); ++i) {
+            if (cache_refs_[evict_index] < cache_refs_[i]) {
+              cache_refs_[evict_index] = cache_refs_[i];
+              if (!is_valid_ref(cache_refs_[evict_index]))
+                break;
+            }
+          }
+        }
+
+        if (evict_index < index) {
           value_it = std::rotate(cache.begin() + evict_index,
                                  cache.begin() + evict_index + 1, value_it);
         } else {
           std::rotate(value_it, cache.begin() + evict_index,
                       cache.begin() + evict_index + 1);
         }
+
         index = value_it - cache.begin();
       }
     }
