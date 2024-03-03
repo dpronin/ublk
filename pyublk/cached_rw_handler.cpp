@@ -20,6 +20,7 @@
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
 #include "span.hpp"
+#include "utility.hpp"
 #include "write_query.hpp"
 
 namespace {
@@ -27,9 +28,12 @@ namespace {
 class mem_chunk_pool {
 public:
   explicit mem_chunk_pool(
-      std::function<ublk::mm::uptrwd<std::byte[]>()> generator) noexcept
-      : generator_(std::move(generator)) {
+      std::function<ublk::mm::uptrwd<std::byte[]>()> generator,
+      size_t alignment, size_t chunk_sz) noexcept
+      : generator_(std::move(generator)), alignment_(alignment),
+        chunk_sz_(chunk_sz) {
     assert(generator_);
+    assert(ublk::is_power_of_2(alignment_));
   }
   ~mem_chunk_pool() = default;
 
@@ -39,6 +43,14 @@ public:
   mem_chunk_pool(mem_chunk_pool &&) = delete;
   mem_chunk_pool &operator=(mem_chunk_pool &&) = delete;
 
+  size_t chunk_alignment() const noexcept { return alignment_; }
+  size_t chunk_sz() const noexcept { return chunk_sz_; }
+
+  template <typename T = std::byte>
+  auto chunk_view(ublk::mm::uptrwd<std::byte[]> const &mem_chunk) noexcept {
+    return ublk::to_span_of<T>({mem_chunk.get(), chunk_sz_});
+  }
+
   ublk::mm::uptrwd<std::byte[]> get() noexcept {
     auto chunk = ublk::mm::uptrwd<std::byte[]>{};
     if (!free_chunks_.empty()) {
@@ -47,15 +59,18 @@ public:
     } else {
       chunk = generator_();
     }
-    return chunk;
-  }
-
-  void put(ublk::mm::uptrwd<std::byte[]> &&chunk) noexcept {
-    free_chunks_.push(std::move(chunk));
+    return {
+        chunk.release(),
+        [this, d = std::move(chunk.get_deleter())](auto *p) mutable {
+          free_chunks_.push({p, std::move(d)});
+        },
+    };
   }
 
 private:
   std::function<ublk::mm::uptrwd<std::byte[]>()> generator_;
+  size_t alignment_;
+  size_t chunk_sz_;
   std::stack<ublk::mm::uptrwd<std::byte[]>> free_chunks_;
 };
 
@@ -77,21 +92,6 @@ public:
   int submit(std::shared_ptr<ublk::write_query> wq) noexcept override;
 
 protected:
-  template <typename T = std::byte>
-  auto mem_chunk_view(ublk::mm::uptrwd<std::byte[]> const &mem_chunk) noexcept {
-    return ublk::to_span_of<T>({mem_chunk.get(), cache_->item_sz()});
-  }
-
-  void
-  cache_full_line_update(uint64_t chunk_id,
-                         ublk::mm::uptrwd<std::byte[]> &&mem_chunk) noexcept {
-    if (auto evicted_value{cache_->update({chunk_id, std::move(mem_chunk)})})
-        [[likely]] {
-      assert(evicted_value->second);
-      mem_chunk_pool_->put(std::move(evicted_value->second));
-    }
-  }
-
   std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache_;
   std::shared_ptr<ublk::IRWHandler> handler_;
   std::shared_ptr<mem_chunk_pool> mem_chunk_pool_;
@@ -128,7 +128,7 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
       auto mem_chunk = mem_chunk_pool_->get();
       assert(mem_chunk);
 
-      auto mem_chunk_span = mem_chunk_view(mem_chunk);
+      auto mem_chunk_span = mem_chunk_pool_->chunk_view(mem_chunk);
       auto new_rq = ublk::read_query::create(
           mem_chunk_span, chunk_id * cache_->item_sz(),
           [this, chunk_id, chunk_offset, chunk, rq,
@@ -144,8 +144,7 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
             ublk::algo::copy(from, to);
 
             if (!cache_->exists(chunk_id)) {
-              cache_full_line_update(chunk_id,
-                                     std::move(*mem_chunk_holder.get()));
+              cache_->update({chunk_id, std::move(*mem_chunk_holder.get())});
             }
           });
       if (auto const res{handler_->submit(std::move(new_rq))}) [[unlikely]] {
@@ -225,9 +224,9 @@ int CachedRWTHandler::process(std::shared_ptr<ublk::write_query> wq) noexcept {
     auto mem_chunk = mem_chunk_pool_->get();
     assert(mem_chunk);
 
-    ublk::algo::copy(chunk, mem_chunk_view(mem_chunk));
+    ublk::algo::copy(chunk, mem_chunk_pool_->chunk_view(mem_chunk));
 
-    cache_full_line_update(chunk_id, std::move(mem_chunk));
+    cache_->update({chunk_id, std::move(mem_chunk)});
   } else if (auto cached_chunk = cache_->find_mutable(chunk_id);
              !cached_chunk.empty()) {
     assert(!(chunk_offset + chunk.size() > cached_chunk.size()));
@@ -238,7 +237,7 @@ int CachedRWTHandler::process(std::shared_ptr<ublk::write_query> wq) noexcept {
     auto mem_chunk = mem_chunk_pool_->get();
     assert(mem_chunk);
 
-    auto mem_chunk_span = mem_chunk_view(mem_chunk);
+    auto mem_chunk_span = mem_chunk_pool_->chunk_view(mem_chunk);
     auto rmwq = ublk::read_query::create(
         mem_chunk_span, chunk_id * cache_->item_sz(),
         [this, chunk_id, chunk_offset, chunk, mem_chunk_span,
@@ -254,7 +253,7 @@ int CachedRWTHandler::process(std::shared_ptr<ublk::write_query> wq) noexcept {
           auto const to{mem_chunk_span.subspan(chunk_offset, chunk.size())};
           ublk::algo::copy(from, to);
 
-          cache_full_line_update(chunk_id, std::move(*mem_chunk_holder.get()));
+          cache_->update({chunk_id, std::move(*mem_chunk_holder.get())});
 
           if (auto const res{handler_->submit(std::move(wq))}) [[unlikely]] {
             cache_->invalidate(chunk_id);
@@ -352,8 +351,10 @@ CachedRWHandler::CachedRWHandler(
 
   auto cache_sp{std::shared_ptr{std::move(cache)}};
   auto handler_sp{std::shared_ptr{std::move(handler)}};
-  auto pool = std::make_shared<mem_chunk_pool>(mm::get_unique_bytes_generator(
-      kCachedChunkAlignment, cache_sp->item_sz()));
+  auto pool = std::make_shared<mem_chunk_pool>(
+      mm::get_unique_bytes_generator(kCachedChunkAlignment,
+                                     cache_sp->item_sz()),
+      kCachedChunkAlignment, cache_sp->item_sz());
 
   handlers_[0] = std::make_shared<CachedRWIHandler>(cache_sp, handler_sp, pool);
   handlers_[1] = std::make_shared<CachedRWTHandler>(cache_sp, handler_sp, pool);
