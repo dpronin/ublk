@@ -142,7 +142,7 @@ public:
   std::pair<Key, std::span<T const>> lower_bound_find(Key key) const noexcept {
     auto const cache = cache_view();
     if (auto const [index, _] = lower_bound_find_index(key);
-        cache.size() != index && is_valid(cache[index])) {
+        cache.size() != index) {
       touch(index);
       return {
           std::get<0>(cache[index]),
