@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 
 #include <algorithm>
@@ -10,9 +11,9 @@
 
 #include <eve/module/algo.hpp>
 
-#include "span.hpp"
-
 #include "concepts.hpp"
+#include "span.hpp"
+#include "utility.hpp"
 
 namespace ublk::algo {
 
@@ -21,12 +22,44 @@ namespace detail {
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void copy_stl(std::span<T const> from, std::span<T> to) noexcept {
-  std::ranges::copy(from, std::begin(to));
+  assert(!(from.size() > to.size()));
+  if constexpr (is_byte<T>) {
+    if (is_aligned_to(reinterpret_cast<uintptr_t>(from.data()),
+                      sizeof(uint64_t)) &&
+        is_aligned_to(from.size(), sizeof(uint64_t)) &&
+        is_aligned_to(reinterpret_cast<uintptr_t>(to.data()),
+                      sizeof(uint64_t)) &&
+        is_aligned_to(to.size(), sizeof(uint64_t))) {
+      std::ranges::copy(to_span_of<uint64_t const>(from),
+                        std::begin(to_span_of<uint64_t>(to)));
+    } else if (is_aligned_to(reinterpret_cast<uintptr_t>(from.data()),
+                             sizeof(uint32_t)) &&
+               is_aligned_to(from.size(), sizeof(uint32_t)) &&
+               is_aligned_to(reinterpret_cast<uintptr_t>(to.data()),
+                             sizeof(uint32_t)) &&
+               is_aligned_to(to.size(), sizeof(uint32_t))) {
+      std::ranges::copy(to_span_of<uint32_t const>(from),
+                        std::begin(to_span_of<uint32_t>(to)));
+    } else if (is_aligned_to(reinterpret_cast<uintptr_t>(from.data()),
+                             sizeof(uint16_t)) &&
+               is_aligned_to(from.size(), sizeof(uint16_t)) &&
+               is_aligned_to(reinterpret_cast<uintptr_t>(to.data()),
+                             sizeof(uint16_t)) &&
+               is_aligned_to(to.size(), sizeof(uint16_t))) {
+      std::ranges::copy(to_span_of<uint16_t const>(from),
+                        std::begin(to_span_of<uint16_t>(to)));
+    } else {
+      std::ranges::copy(from, std::begin(to));
+    }
+  } else {
+    std::ranges::copy(from, std::begin(to));
+  }
 }
 
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void copy_eve(std::span<T const> from, std::span<T> to) noexcept {
+  assert(!(from.size() > to.size()));
   if constexpr (std::is_same_v<T, std::byte>)
     eve::algo::copy(to_span_of<uint8_t const>(from), to_span_of<uint8_t>(to));
   else
