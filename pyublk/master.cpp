@@ -102,6 +102,21 @@ auto backend_device_open(std::filesystem::path const &path) {
               S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 }
 
+std::unique_ptr<flat_lru_cache<uint64_t, std::byte>>
+make_cache(uint64_t cache_len_bytes) {
+  auto cache = std::unique_ptr<flat_lru_cache<uint64_t, std::byte>>{};
+  if (cache_len_bytes) {
+    for (uint64_t cache_item_sz = 1_MiB; !cache && !(cache_item_sz < kSectorSz);
+         cache_item_sz >>= 1) {
+      if (auto const cache_len = cache_len_bytes / cache_item_sz) {
+        cache = flat_lru_cache<uint64_t, std::byte>::create(
+            div_round_up(cache_len_bytes, cache_item_sz), cache_item_sz);
+      }
+    }
+  }
+  return cache;
+}
+
 handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
                               uint64_t cache_len_sectors,
                               bool cache_write_through,
@@ -113,8 +128,7 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
   rw_handler =
       std::make_unique<RWHandler>(std::make_shared<def::ReadHandler>(target),
                                   std::make_shared<def::WriteHandler>(target));
-  if (auto cache = flat_lru_cache<uint64_t, std::byte>::create(
-          cache_len_sectors, kSectorSz)) {
+  if (auto cache = make_cache(sectors_to_bytes(cache_len_sectors))) {
     rw_handler = std::make_unique<CachedRWHandler>(
         std::move(cache), std::move(rw_handler), cache_write_through);
   }
@@ -150,8 +164,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz, uint64_t cache_len_strips,
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid0::ReadHandler>(target),
       std::make_shared<raid0::WriteHandler>(target));
-  if (auto cache = flat_lru_cache<uint64_t, std::byte>::create(cache_len_strips,
-                                                               strip_sz))
+  if (auto cache = make_cache(cache_len_strips * strip_sz))
     rw_handler = std::make_unique<CachedRWHandler>(
         std::move(cache), std::move(rw_handler), cache_write_through);
 
@@ -222,8 +235,7 @@ handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid1::ReadHandler>(target),
       std::make_shared<raid1::WriteHandler>(target));
-  if (auto cache = flat_lru_cache<uint64_t, std::byte>::create(
-          cache_len_sectors, kSectorSz))
+  if (auto cache = make_cache(sectors_to_bytes(cache_len_sectors)))
     rw_handler = std::make_unique<CachedRWHandler>(
         std::move(cache), std::move(rw_handler), cache_write_through);
 
@@ -294,8 +306,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid4::ReadHandler>(target),
       std::make_shared<raid4::WriteHandler>(target));
-  if (auto cache = flat_lru_cache<uint64_t, std::byte>::create(
-          cache_len_stripes, stripe_data_sz))
+  if (auto cache = make_cache(cache_len_stripes * stripe_data_sz))
     rw_handler = std::make_unique<CachedRWHandler>(
         std::move(cache), std::move(rw_handler), cache_write_through);
 
@@ -352,8 +363,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid5::ReadHandler>(target),
       std::make_shared<raid5::WriteHandler>(target));
-  if (auto cache = flat_lru_cache<uint64_t, std::byte>::create(
-          cache_len_stripes, stripe_data_sz))
+  if (auto cache = make_cache(cache_len_stripes * stripe_data_sz))
     rw_handler = std::make_unique<CachedRWHandler>(
         std::move(cache), std::move(rw_handler), cache_write_through);
 
