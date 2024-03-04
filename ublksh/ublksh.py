@@ -266,7 +266,7 @@ class ublksh(Cmd):
             cache_len_sectors = int(args.get('cache_len_sectors', 0))
         except ValueError:
             print(
-                "'cache_len_sectors' given for the default target cannot be"
+                "'cache_len_sectors' given cannot be"
                 " converted to sectors")
             raise
 
@@ -276,8 +276,8 @@ class ublksh(Cmd):
                 args.get('cache_write_through_enable', True))
         except ValueError:
             print(
-                "'cache_write_through_enable' given for the default target "
-                "cannot be converted to True or False")
+                "'cache_write_through_enable' given cannot be converted to"
+                " True or False")
             raise
 
         if cache_len_sectors > 0:
