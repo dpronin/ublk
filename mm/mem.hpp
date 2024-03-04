@@ -11,9 +11,9 @@
 #include <type_traits>
 #include <utility>
 
+#include "utils/page.hpp"
 #include "utils/size_units.hpp"
 #include "utils/utility.hpp"
-#include "utils/page.hpp"
 
 #include "mem_types.hpp"
 
@@ -124,12 +124,18 @@ inline auto get_unique_bytes_generator(size_t alignment, size_t chunk_sz) {
           chunk_sz);
     };
   } else {
-    gen = [=] {
-      return make_unique_bytes(
-          alloc_mode_mmap{
-              !(chunk_sz < 2_MiB) ? (MAP_HUGETLB | (21 << MAP_HUGE_SHIFT)) : 0},
-          chunk_sz);
-    };
+    alloc_mode_mmap mode{0};
+    auto generic_gen = [=] { return make_unique_bytes(mode, chunk_sz); };
+    if (!(chunk_sz < 2_MiB)) {
+      mode.flags = MAP_HUGETLB | (21 << MAP_HUGE_SHIFT);
+      gen = [=] {
+        if (auto huge = make_unique_bytes(mode, chunk_sz))
+          return huge;
+        return generic_gen();
+      };
+    } else {
+      gen = generic_gen;
+    }
   }
   return gen;
 }
