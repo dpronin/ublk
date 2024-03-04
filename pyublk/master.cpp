@@ -17,6 +17,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -118,8 +119,7 @@ make_cache(uint64_t cache_len_bytes) {
 }
 
 handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
-                              uint64_t cache_len_sectors,
-                              bool cache_write_through,
+                              std::optional<cache_cfg> const &cache_cfg,
                               mm::uptrwd<int const> fd) {
   auto target = std::make_shared<def::Target>(io_ctx, std::move(fd));
 
@@ -128,9 +128,13 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
   rw_handler =
       std::make_unique<RWHandler>(std::make_shared<def::ReadHandler>(target),
                                   std::make_shared<def::WriteHandler>(target));
-  if (auto cache = make_cache(sectors_to_bytes(cache_len_sectors))) {
-    rw_handler = std::make_unique<CachedRWHandler>(
-        std::move(cache), std::move(rw_handler), cache_write_through);
+
+  if (cache_cfg) {
+    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
+      rw_handler = std::make_unique<CachedRWHandler>(
+          std::move(cache), std::move(rw_handler),
+          cache_cfg->write_through_enable);
+    }
   }
 
   auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
@@ -142,8 +146,8 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
   };
 }
 
-handlers_ops make_raid0_ops(uint64_t strip_sz, uint64_t cache_len_strips,
-                            bool cache_write_through,
+handlers_ops make_raid0_ops(uint64_t strip_sz,
+                            std::optional<cache_cfg> const &cache_cfg,
                             std::vector<handlers_ops> handlers) {
   std::vector<std::shared_ptr<IRWHandler>> rw_handlers;
   std::ranges::transform(std::move(handlers), std::back_inserter(rw_handlers),
@@ -164,9 +168,14 @@ handlers_ops make_raid0_ops(uint64_t strip_sz, uint64_t cache_len_strips,
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid0::ReadHandler>(target),
       std::make_shared<raid0::WriteHandler>(target));
-  if (auto cache = make_cache(cache_len_strips * strip_sz))
-    rw_handler = std::make_unique<CachedRWHandler>(
-        std::move(cache), std::move(rw_handler), cache_write_through);
+
+  if (cache_cfg) {
+    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
+      rw_handler = std::make_unique<CachedRWHandler>(
+          std::move(cache), std::move(rw_handler),
+          cache_cfg->write_through_enable);
+    }
+  }
 
   auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
 
@@ -178,31 +187,28 @@ handlers_ops make_raid0_ops(uint64_t strip_sz, uint64_t cache_len_strips,
 }
 
 handlers_ops make_raid0_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
-                            uint64_t cache_len_strips, bool cache_write_through,
+                            std::optional<cache_cfg> const &cache_cfg,
                             std::vector<mm::uptrwd<const int>> fds) {
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
-      std::move(fds), std::back_inserter(default_hopss), [&](auto &&fd) {
-        return make_default_ops(io_ctx, 0, false, std::move(fd));
-      });
+      std::move(fds), std::back_inserter(default_hopss),
+      [&](auto &&fd) { return make_default_ops(io_ctx, {}, std::move(fd)); });
 
-  return make_raid0_ops(strip_sz, cache_len_strips, cache_write_through,
-                        std::move(default_hopss));
+  return make_raid0_ops(strip_sz, cache_cfg, std::move(default_hopss));
 }
 
 handlers_ops make_raid0_ops(boost::asio::io_context &io_ctx,
+                            std::optional<cache_cfg> const &cache_cfg,
                             target_raid0_cfg const &raid0) {
   std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid0.paths, std::back_inserter(fd_targets),
                          backend_device_open);
   return make_raid0_ops(io_ctx, sectors_to_bytes(raid0.strip_len_sectors),
-                        raid0.cache_len_strips, raid0.cache_write_through,
-                        std::move(fd_targets));
+                        cache_cfg, std::move(fd_targets));
 }
 
 handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
-                            uint64_t cache_len_sectors,
-                            bool cache_write_through,
+                            std::optional<cache_cfg> const &cache_cfg,
                             std::vector<handlers_ops> handlers) {
   std::vector<std::shared_ptr<IRWHandler>> rw_handlers;
   std::ranges::transform(std::move(handlers), std::back_inserter(rw_handlers),
@@ -235,9 +241,14 @@ handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid1::ReadHandler>(target),
       std::make_shared<raid1::WriteHandler>(target));
-  if (auto cache = make_cache(sectors_to_bytes(cache_len_sectors)))
-    rw_handler = std::make_unique<CachedRWHandler>(
-        std::move(cache), std::move(rw_handler), cache_write_through);
+
+  if (cache_cfg) {
+    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
+      rw_handler = std::make_unique<CachedRWHandler>(
+          std::move(cache), std::move(rw_handler),
+          cache_cfg->write_through_enable);
+    }
+  }
 
   auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
 
@@ -250,40 +261,36 @@ handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
 
 handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
                             uint64_t read_len_sectors_per_fd,
-                            uint64_t cache_len_sectors,
-                            bool cache_write_through,
+                            std::optional<cache_cfg> const &cache_cfg,
                             std::vector<mm::uptrwd<const int>> fds) {
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
-      std::move(fds), std::back_inserter(default_hopss), [&](auto &&fd) {
-        return make_default_ops(io_ctx, 0, false, std::move(fd));
-      });
+      std::move(fds), std::back_inserter(default_hopss),
+      [&](auto &&fd) { return make_default_ops(io_ctx, {}, std::move(fd)); });
 
-  return make_raid1_ops(read_len_sectors_per_fd, cache_len_sectors,
-                        cache_write_through, std::move(default_hopss));
+  return make_raid1_ops(read_len_sectors_per_fd, cache_cfg,
+                        std::move(default_hopss));
 }
 
 handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
+                            std::optional<cache_cfg> const &cache_cfg,
                             target_raid1_cfg const &raid1) {
   std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid1.paths, std::back_inserter(fd_targets),
                          backend_device_open);
-  return make_raid1_ops(io_ctx, raid1.read_len_sectors_per_path,
-                        raid1.cache_len_sectors, raid1.cache_write_through,
+  return make_raid1_ops(io_ctx, raid1.read_len_sectors_per_path, cache_cfg,
                         std::move(fd_targets));
 }
 
 handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
-                            uint64_t cache_len_stripes,
-                            bool cache_write_through,
+                            std::optional<cache_cfg> const &cache_cfg,
                             std::vector<mm::uptrwd<int const>> fds) {
   assert(!(fds.size() < 2));
 
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
-      std::move(fds), std::back_inserter(default_hopss), [&](auto &&fd) {
-        return make_default_ops(io_ctx, 0, false, std::move(fd));
-      });
+      std::move(fds), std::back_inserter(default_hopss),
+      [&](auto &&fd) { return make_default_ops(io_ctx, {}, std::move(fd)); });
 
   std::vector<std::shared_ptr<IRWHandler>> rw_handlers;
   std::ranges::transform(std::move(default_hopss),
@@ -301,14 +308,17 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
   auto rw_handler = std::unique_ptr<IRWHandler>{};
 
-  auto const stripe_data_sz{strip_sz * (fds.size() - 1)};
-
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid4::ReadHandler>(target),
       std::make_shared<raid4::WriteHandler>(target));
-  if (auto cache = make_cache(cache_len_stripes * stripe_data_sz))
-    rw_handler = std::make_unique<CachedRWHandler>(
-        std::move(cache), std::move(rw_handler), cache_write_through);
+
+  if (cache_cfg) {
+    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
+      rw_handler = std::make_unique<CachedRWHandler>(
+          std::move(cache), std::move(rw_handler),
+          cache_cfg->write_through_enable);
+    }
+  }
 
   auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
 
@@ -320,27 +330,25 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 }
 
 handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx,
+                            std::optional<cache_cfg> const &cache_cfg,
                             target_raid4_cfg const &raid4) {
   std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid4.data_paths, std::back_inserter(fd_targets),
                          backend_device_open);
   fd_targets.push_back(backend_device_open(raid4.parity_path));
   return make_raid4_ops(io_ctx, sectors_to_bytes(raid4.strip_len_sectors),
-                        raid4.cache_len_stripes, raid4.cache_write_through,
-                        std::move(fd_targets));
+                        cache_cfg, std::move(fd_targets));
 }
 
 handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
-                            uint64_t cache_len_stripes,
-                            bool cache_write_through,
+                            std::optional<cache_cfg> const &cache_cfg,
                             std::vector<mm::uptrwd<int const>> fds) {
   assert(!(fds.size() < 2));
 
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
-      std::move(fds), std::back_inserter(default_hopss), [&](auto &&fd) {
-        return make_default_ops(io_ctx, 0, false, std::move(fd));
-      });
+      std::move(fds), std::back_inserter(default_hopss),
+      [&](auto &&fd) { return make_default_ops(io_ctx, {}, std::move(fd)); });
 
   std::vector<std::shared_ptr<IRWHandler>> rw_handlers;
   std::ranges::transform(std::move(default_hopss),
@@ -358,14 +366,17 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
   auto rw_handler = std::unique_ptr<IRWHandler>{};
 
-  auto const stripe_data_sz{strip_sz * (fds.size() - 1)};
-
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid5::ReadHandler>(target),
       std::make_shared<raid5::WriteHandler>(target));
-  if (auto cache = make_cache(cache_len_stripes * stripe_data_sz))
-    rw_handler = std::make_unique<CachedRWHandler>(
-        std::move(cache), std::move(rw_handler), cache_write_through);
+
+  if (cache_cfg) {
+    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
+      rw_handler = std::make_unique<CachedRWHandler>(
+          std::move(cache), std::move(rw_handler),
+          cache_cfg->write_through_enable);
+    }
+  }
 
   auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
 
@@ -377,13 +388,13 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 }
 
 handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx,
+                            std::optional<cache_cfg> const &cache_cfg,
                             target_raid5_cfg const &raid5) {
   std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid5.paths, std::back_inserter(fd_targets),
                          backend_device_open);
   return make_raid5_ops(io_ctx, sectors_to_bytes(raid5.strip_len_sectors),
-                        raid5.cache_len_stripes, raid5.cache_write_through,
-                        std::move(fd_targets));
+                        cache_cfg, std::move(fd_targets));
 }
 
 } // namespace
@@ -484,33 +495,32 @@ void Master::create(target_create_param const &param) {
             writer = std::make_shared<inmem::WriteHandler>(target);
           },
           [&](target_default_cfg const &def) {
-            auto ops = make_default_ops(*io_ctx, def.cache_len_sectors,
-                                        def.cache_write_through,
+            auto ops = make_default_ops(*io_ctx, param.cache,
                                         backend_device_open(def.path));
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid0_cfg const &raid0) {
-            auto ops = make_raid0_ops(*io_ctx, raid0);
+            auto ops = make_raid0_ops(*io_ctx, param.cache, raid0);
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid1_cfg const &raid1) {
-            auto ops = make_raid1_ops(*io_ctx, raid1);
+            auto ops = make_raid1_ops(*io_ctx, param.cache, raid1);
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid4_cfg const &raid4) {
-            auto ops = make_raid4_ops(*io_ctx, raid4);
+            auto ops = make_raid4_ops(*io_ctx, param.cache, raid4);
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid5_cfg const &raid5) {
-            auto ops = make_raid5_ops(*io_ctx, raid5);
+            auto ops = make_raid5_ops(*io_ctx, param.cache, raid5);
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
@@ -520,13 +530,12 @@ void Master::create(target_create_param const &param) {
             std::ranges::transform(raid10.raid1s,
                                    std::back_inserter(raid1s_ops),
                                    [&](auto const &raid1) {
-                                     return make_raid1_ops(*io_ctx, raid1);
+                                     return make_raid1_ops(*io_ctx, {}, raid1);
                                    });
 
-            auto ops = make_raid0_ops(
-                sectors_to_bytes(raid10.strip_len_sectors),
-                raid10.cache_len_strips, raid10.cache_write_through,
-                std::move(raid1s_ops));
+            auto ops =
+                make_raid0_ops(sectors_to_bytes(raid10.strip_len_sectors),
+                               param.cache, std::move(raid1s_ops));
 
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
@@ -537,13 +546,12 @@ void Master::create(target_create_param const &param) {
             std::ranges::transform(raid40.raid4s,
                                    std::back_inserter(raid4s_ops),
                                    [&](auto const &raid4) {
-                                     return make_raid4_ops(*io_ctx, raid4);
+                                     return make_raid4_ops(*io_ctx, {}, raid4);
                                    });
 
-            auto ops = make_raid0_ops(
-                sectors_to_bytes(raid40.strip_len_sectors),
-                raid40.cache_len_strips, raid40.cache_write_through,
-                std::move(raid4s_ops));
+            auto ops =
+                make_raid0_ops(sectors_to_bytes(raid40.strip_len_sectors),
+                               param.cache, std::move(raid4s_ops));
 
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
@@ -554,20 +562,19 @@ void Master::create(target_create_param const &param) {
             std::ranges::transform(raid50.raid5s,
                                    std::back_inserter(raid5s_ops),
                                    [&](auto const &raid5) {
-                                     return make_raid5_ops(*io_ctx, raid5);
+                                     return make_raid5_ops(*io_ctx, {}, raid5);
                                    });
 
-            auto ops = make_raid0_ops(
-                sectors_to_bytes(raid50.strip_len_sectors),
-                raid50.cache_len_strips, raid50.cache_write_through,
-                std::move(raid5s_ops));
+            auto ops =
+                make_raid0_ops(sectors_to_bytes(raid50.strip_len_sectors),
+                               param.cache, std::move(raid5s_ops));
 
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
       },
-      param.target_cfg);
+      param.target);
 
   if (!reader)
     reader = std::make_shared<null::ReadHandler>();

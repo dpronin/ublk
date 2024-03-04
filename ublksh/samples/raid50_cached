@@ -1,0 +1,2 @@
+target_create name=raid50_cached capacity_sectors=2097152 cache_len_sectors=65536 type=raid50 strip_len_sectors=256 raid5s="strip_len_sectors=256;paths=0.dat,1.dat,2.dat:strip_len_sectors=256;paths=3.dat,4.dat,5.dat:strip_len_sectors=256;paths=6.dat,7.dat,8.dat:strip_len_sectors=256;paths=9.dat,10.dat,11.dat:strip_len_sectors=256;paths=12.dat,13.dat,14.dat:strip_len_sectors=256;paths=15.dat,16.dat,17.dat:strip_len_sectors=256;paths=18.dat,19.dat,20.dat:strip_len_sectors=256;paths=21.dat,22.dat,23.dat"
+bdev_map bdev_suffix=0 target_name=raid50_cached

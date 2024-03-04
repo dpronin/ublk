@@ -1,0 +1,2 @@
+target_create name=raid10_cached capacity_sectors=2097152 cache_len_sectors=65536 type=raid10 strip_len_sectors=256 raid1s="paths=/dev/nullb0,/dev/nullb1:paths=/dev/nullb2,/dev/nullb3:paths=/dev/nullb4,/dev/nullb5:paths=/dev/nullb6,/dev/nullb7:paths=/dev/nullb8,/dev/nullb9:paths=/dev/nullb10,/dev/nullb11:paths=/dev/nullb12,/dev/nullb13:paths=/dev/nullb14,/dev/nullb15"
+bdev_map bdev_suffix=0 target_name=raid10_cached

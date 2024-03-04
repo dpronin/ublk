@@ -1,2 +1,0 @@
-target_create name=raid50_5cached capacity_sectors=2097152 type=raid50 strip_len_sectors=256 raid5s="strip_len_sectors=256;cache_len_stripes=50;paths=/dev/nullb0,/dev/nullb1,/dev/nullb2:strip_len_sectors=256;cache_len_stripes=50;paths=/dev/nullb3,/dev/nullb4,/dev/nullb5:strip_len_sectors=256;cache_len_stripes=50;paths=/dev/nullb6,/dev/nullb7,/dev/nullb8:strip_len_sectors=256;cache_len_stripes=50;paths=/dev/nullb9,/dev/nullb10,/dev/nullb11"
-bdev_map bdev_suffix=0 target_name=raid50_5cached

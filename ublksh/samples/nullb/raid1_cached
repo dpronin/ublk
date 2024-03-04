@@ -1,0 +1,2 @@
+target_create name=raid1_cached capacity_sectors=2097152 cache_len_sectors=65536 type=raid1 paths=/dev/nullb0,/dev/nullb1,/dev/nullb2,/dev/nullb3
+bdev_map bdev_suffix=0 target_name=raid1_cached

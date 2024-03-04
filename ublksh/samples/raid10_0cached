@@ -1,2 +1,0 @@
-target_create name=raid10_0cached capacity_sectors=2097152 type=raid10 strip_len_sectors=256 cache_len_strips=50 raid1s="paths=0.dat,1.dat:paths=2.dat,3.dat:paths=4.dat,5.dat:paths=6.dat,7.dat:paths=8.dat,9.dat:paths=10.dat,11.dat"
-bdev_map bdev_suffix=0 target_name=raid10_0cached

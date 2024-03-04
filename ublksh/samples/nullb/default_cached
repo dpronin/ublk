@@ -1,2 +1,2 @@
-target_create name=default_cached capacity_sectors=2097152 type=default cache_len_sectors=50 path=/dev/nullb0
+target_create name=default_cached capacity_sectors=2097152 cache_len_sectors=65536 type=default path=/dev/nullb0
 bdev_map bdev_suffix=0 target_name=default_cached
