@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <span>
@@ -95,6 +96,16 @@ protected:
   std::shared_ptr<ublk::flat_lru_cache<uint64_t, std::byte>> cache_;
   std::shared_ptr<ublk::IRWHandler> handler_;
   std::shared_ptr<mem_chunk_pool> mem_chunk_pool_;
+
+  boost::dynamic_bitset<uint64_t> chunk_read_lock_state_;
+
+  struct pending_rq {
+    uint64_t chunk_id;
+    uint64_t chunk_offset;
+    std::span<std::byte> chunk;
+    std::shared_ptr<ublk::read_query> rq;
+  };
+  std::vector<pending_rq> rqs_pending_;
 };
 
 CachedRWIHandler::CachedRWIHandler(
@@ -110,6 +121,17 @@ CachedRWIHandler::CachedRWIHandler(
 
 int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
   assert(rq);
+  assert(0 != rq->buf().size());
+
+  if (auto const chunk_id_last{
+          ublk::div_round_up(rq->offset() + rq->buf().size(),
+                             cache_->item_sz()) -
+              1,
+      };
+      !(chunk_id_last < chunk_read_lock_state_.size())) [[unlikely]] {
+
+    chunk_read_lock_state_.resize(chunk_id_last + 1);
+  }
 
   auto chunk_id{rq->offset() / cache_->item_sz()};
   auto chunk_offset{rq->offset() % cache_->item_sz()};
@@ -125,30 +147,51 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
       auto const to{chunk};
       ublk::algo::copy(from, to);
     } else {
-      auto mem_chunk = mem_chunk_pool_->get();
-      assert(mem_chunk);
+      if (chunk_read_lock_state_.test_set(chunk_id)) [[unlikely]] {
+        rqs_pending_.emplace_back(chunk_id, chunk_offset, chunk, rq);
+      } else {
+        auto mem_chunk = mem_chunk_pool_->get();
+        assert(mem_chunk);
 
-      auto mem_chunk_span = mem_chunk_pool_->chunk_view(mem_chunk);
-      auto new_rq = ublk::read_query::create(
-          mem_chunk_span, chunk_id * cache_->item_sz(),
-          [this, chunk_id, chunk_offset, chunk, rq,
-           mem_chunk_holder = std::make_shared<decltype(mem_chunk)>(
-               std::move(mem_chunk))](ublk::read_query const &new_rq) mutable {
-            if (new_rq.err()) [[unlikely]] {
-              rq->set_err(new_rq.err());
-              return;
-            }
+        auto mem_chunk_span = mem_chunk_pool_->chunk_view(mem_chunk);
 
-            auto const from{new_rq.buf().subspan(chunk_offset, chunk.size())};
-            auto const to{chunk};
-            ublk::algo::copy(from, to);
+        auto chunk_rq = ublk::read_query::create(
+            mem_chunk_span, chunk_id * cache_->item_sz(),
+            [=, this,
+             mem_chunk_holder = std::make_shared<decltype(mem_chunk)>(std::move(
+                 mem_chunk))](ublk::read_query const &new_rq) mutable {
+              if (new_rq.err()) [[unlikely]] {
+                rq->set_err(new_rq.err());
+                return;
+              }
 
-            if (!cache_->exists(chunk_id)) {
-              cache_->update({chunk_id, std::move(*mem_chunk_holder.get())});
-            }
-          });
-      if (auto const res{handler_->submit(std::move(new_rq))}) [[unlikely]] {
-        return res;
+              auto const from{new_rq.buf().subspan(chunk_offset, chunk.size())};
+              auto const to{chunk};
+              ublk::algo::copy(from, to);
+
+              if (!cache_->exists(chunk_id))
+                cache_->update({chunk_id, std::move(*mem_chunk_holder.get())});
+
+              auto rq_it =
+                  std::partition(rqs_pending_.begin(), rqs_pending_.end(),
+                                 [chunk_id](auto const &rq_pend) {
+                                   return chunk_id != rq_pend.chunk_id;
+                                 });
+              for (auto it = rq_it; it != rqs_pending_.end(); ++it) {
+                auto const from{
+                    new_rq.buf().subspan(it->chunk_offset, it->chunk.size())};
+                auto const to{it->chunk};
+                ublk::algo::copy(from, to);
+              }
+
+              rqs_pending_.erase(rq_it, rqs_pending_.end());
+
+              chunk_read_lock_state_.reset(chunk_id);
+            });
+        if (auto const res{handler_->submit(std::move(chunk_rq))})
+            [[unlikely]] {
+          return res;
+        }
       }
     }
 
