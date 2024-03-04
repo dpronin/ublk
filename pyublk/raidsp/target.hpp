@@ -10,10 +10,11 @@
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
+#include "utils/span.hpp"
+
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
-#include "span.hpp"
 #include "write_query.hpp"
 
 namespace ublk::raidsp {

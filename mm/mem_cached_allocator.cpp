@@ -6,8 +6,9 @@
 #include <algorithm>
 #include <utility>
 
+#include "utils/utility.hpp"
+
 #include "mem.hpp"
-#include "utility.hpp"
 
 namespace ublk::mm {
 

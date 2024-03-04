@@ -5,29 +5,7 @@ find_package(Python COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(eve CONFIG REQUIRED)
 
-add_library(ublk_utils INTERFACE
-    algo.hpp
-    concepts.hpp
-    file.hpp
-    math.hpp
-    page.hpp
-    size_units.hpp
-    span.hpp
-    utility.hpp
-)
-add_library(ublk::utils ALIAS ublk_utils)
-
-target_include_directories(ublk_utils INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}
-)
-
-target_link_libraries(ublk_utils INTERFACE
-    eve::eve
-    Boost::system
-)
-
 pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
-    align.hpp
     cached_rw_handler.cpp
     cached_rw_handler.hpp
     cells_holder.hpp
@@ -95,7 +73,6 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     write_handler_interface.hpp
 )
 
-add_subdirectory(mm)
 add_subdirectory(def)
 add_subdirectory(inmem)
 add_subdirectory(null)

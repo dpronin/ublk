@@ -28,9 +28,11 @@
 
 #include "mm/mem_types.hpp"
 
+#include "utils/file.hpp"
+#include "utils/utility.hpp"
+
 #include "cached_rw_handler.hpp"
 #include "cmd_handler_factory.hpp"
-#include "file.hpp"
 #include "genl.hpp"
 #include "rw_handler_interface.hpp"
 #include "slave.hpp"
@@ -54,7 +56,6 @@
 #include "target.hpp"
 #include "target_create_param.hpp"
 #include "ublk_req_handler_interface.hpp"
-#include "utility.hpp"
 #include "write_handler.hpp"
 #include "write_handler_interface.hpp"
 

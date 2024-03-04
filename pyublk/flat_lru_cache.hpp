@@ -16,9 +16,10 @@
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
-#include "concepts.hpp"
+#include "utils/concepts.hpp"
+#include "utils/span.hpp"
+
 #include "sector.hpp"
-#include "span.hpp"
 
 namespace ublk {
 

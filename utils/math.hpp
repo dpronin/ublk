@@ -12,9 +12,8 @@
 #include <eve/module/algo.hpp>
 #include <eve/module/math.hpp>
 
-#include "span.hpp"
-
 #include "concepts.hpp"
+#include "span.hpp"
 
 namespace ublk::math {
 

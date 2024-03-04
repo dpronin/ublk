@@ -48,6 +48,8 @@ if (COVERAGE_ENABLE)
   include(CodeCoverage)
 endif ()
 
+add_subdirectory(utils)
+add_subdirectory(mm)
 add_subdirectory(pyublk)
 
 if (UT_ENABLE)

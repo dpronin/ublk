@@ -2,10 +2,10 @@
 
 #include <cstdint>
 
-#include "algo.hpp"
-#include "math.hpp"
-#include "span.hpp"
-#include "utility.hpp"
+#include "utils/algo.hpp"
+#include "utils/math.hpp"
+#include "utils/span.hpp"
+#include "utils/utility.hpp"
 
 namespace ublk {
 

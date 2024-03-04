@@ -16,12 +16,13 @@
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
-#include "algo.hpp"
+#include "utils/algo.hpp"
+#include "utils/span.hpp"
+#include "utils/utility.hpp"
+
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
-#include "span.hpp"
-#include "utility.hpp"
 #include "write_query.hpp"
 
 namespace {

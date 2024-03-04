@@ -4,10 +4,11 @@
 #include <type_traits>
 #include <utility>
 
-#include "align.hpp"
+#include "utils/align.hpp"
+#include "utils/concepts.hpp"
+
 #include "cfq_base.hpp"
 #include "cfq_pos.hpp"
-#include "concepts.hpp"
 
 namespace ublk {
 

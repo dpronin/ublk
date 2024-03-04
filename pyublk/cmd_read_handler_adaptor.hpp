@@ -14,10 +14,11 @@
 #include <linux/ublkdrv/celld.h>
 #include <linux/ublkdrv/cmd.h>
 
+#include "utils/utility.hpp"
+
 #include "handler_interface.hpp"
 #include "read_req.hpp"
 #include "ublk_req_handler_interface.hpp"
-#include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_read cmd) {
   auto const &base = *ublk::container_of(

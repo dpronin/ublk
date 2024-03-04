@@ -3,9 +3,9 @@
 #include <concepts>
 #include <span>
 
-#include "bench_mem_utility.hpp"
+#include "utils/algo.hpp"
 
-#include "algo.hpp"
+#include "bench_mem_utility.hpp"
 
 namespace ublk::bench {
 

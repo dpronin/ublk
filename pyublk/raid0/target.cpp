@@ -6,9 +6,10 @@
 #include <algorithm>
 #include <utility>
 
+#include "utils/utility.hpp"
+
 #include "read_query.hpp"
 #include "write_query.hpp"
-#include "utility.hpp"
 
 namespace ublk::raid0 {
 

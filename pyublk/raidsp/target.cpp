@@ -12,11 +12,12 @@
 
 #include "mm/mem.hpp"
 
-#include "algo.hpp"
-#include "math.hpp"
+#include "utils/algo.hpp"
+#include "utils/math.hpp"
+#include "utils/utility.hpp"
+
 #include "parity.hpp"
 #include "read_query.hpp"
-#include "utility.hpp"
 #include "write_query.hpp"
 
 namespace ublk::raidsp {

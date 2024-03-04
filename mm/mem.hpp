@@ -11,12 +11,29 @@
 #include <type_traits>
 #include <utility>
 
+#include "utils/size_units.hpp"
+#include "utils/utility.hpp"
+#include "utils/page.hpp"
+
 #include "mem_types.hpp"
-#include "page.hpp"
-#include "size_units.hpp"
-#include "utility.hpp"
 
 namespace ublk::mm {
+
+template <typename Target, typename Source = void>
+mem_t<Target> convert(mem_t<Source> from) {
+  static_assert((std::is_trivial_v<Source> ||
+                 std::is_void_v<Source>)&&std::is_trivial_v<Target>,
+                "Source and Target must be trivial types");
+  using T = std::remove_extent_t<Target>;
+  auto *to = reinterpret_cast<T *>(from.release());
+  return {
+      to,
+      [d = std::move(from.get_deleter())](T *p) {
+        using S = std::remove_extent_t<Source>;
+        d(reinterpret_cast<S *>(p));
+      },
+  };
+}
 
 template <typename Target = void>
 mem_t<Target> mmap(size_t sz, int prot = PROT_READ | PROT_WRITE, int fd = -1,

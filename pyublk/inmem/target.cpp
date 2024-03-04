@@ -8,7 +8,7 @@
 
 #include "mm/mem_types.hpp"
 
-#include "algo.hpp"
+#include "utils/algo.hpp"
 
 namespace ublk::inmem {
 

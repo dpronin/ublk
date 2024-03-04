@@ -13,10 +13,11 @@
 
 #include <linux/ublkdrv/cmd.h>
 
+#include "utils/utility.hpp"
+
 #include "discard_req.hpp"
 #include "handler_interface.hpp"
 #include "ublk_req_handler_interface.hpp"
-#include "utility.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_discard cmd) {
   auto const &base = *ublk::container_of(

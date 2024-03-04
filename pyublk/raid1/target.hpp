@@ -7,9 +7,10 @@
 #include <utility>
 #include <vector>
 
+#include "utils/utility.hpp"
+
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
-#include "utility.hpp"
 
 namespace ublk::raid1 {
 

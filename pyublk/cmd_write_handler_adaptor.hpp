@@ -14,9 +14,10 @@
 #include <linux/ublkdrv/celld.h>
 #include <linux/ublkdrv/cmd.h>
 
+#include "utils/utility.hpp"
+
 #include "handler_interface.hpp"
 #include "ublk_req_handler_interface.hpp"
-#include "utility.hpp"
 #include "write_req.hpp"
 
 inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_write cmd) {
