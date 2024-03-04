@@ -171,7 +171,7 @@ public:
         if (is_valid_ref(cache_refs_[evict_index])) {
           for (size_t i = 1; i < len(); ++i) {
             if (cache_refs_[evict_index] < cache_refs_[i]) {
-              cache_refs_[evict_index] = cache_refs_[i];
+              evict_index = i;
               if (!is_valid_ref(cache_refs_[evict_index]))
                 break;
             }
