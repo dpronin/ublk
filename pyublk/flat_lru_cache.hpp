@@ -93,7 +93,7 @@ private:
       return static_cast<bool>(cache_item.second);
     }));
 
-    cache_refs_ = std::make_unique<cache_item_ref_t[]>(len());
+    cache_refs_ = std::make_unique_for_overwrite<cache_item_ref_t[]>(len());
     std::fill_n(cache_refs_.get(), len(), len());
   }
 
