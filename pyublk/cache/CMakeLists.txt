@@ -1,7 +1,9 @@
 add_library(ublk_cache STATIC
+    flat_lru.hpp
     rw_handler.cpp
     rw_handler.hpp
-    flat_lru.hpp
+    rwi_handler.hpp
+    rwt_handler.hpp
 )
 
 target_include_directories(ublk_cache PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)

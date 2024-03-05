@@ -3,7 +3,10 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <array>
 #include <memory>
+
+#include "utils/utility.hpp"
 
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
