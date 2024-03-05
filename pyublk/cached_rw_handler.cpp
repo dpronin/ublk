@@ -34,8 +34,8 @@ private:
       uint64_t, ublk::mm::allocator::cache_line_aligned_allocator<uint64_t>>;
 
   void extend(uint64_t nr, state_t &lock_state) {
-    if (!(nr < lock_state.size()))
-      lock_state.resize(nr + 1);
+    if (nr > lock_state.size())
+      lock_state.resize(nr);
   }
 
 public:
@@ -183,8 +183,7 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
   assert(0 != rq->buf().size());
 
   chunk_rw_semaphore_.extend(
-      ublk::div_round_up(rq->offset() + rq->buf().size(), cache_->item_sz()) -
-      1);
+      ublk::div_round_up(rq->offset() + rq->buf().size(), cache_->item_sz()));
 
   auto chunk_id{rq->offset() / cache_->item_sz()};
   auto chunk_offset{rq->offset() % cache_->item_sz()};
@@ -372,8 +371,7 @@ int CachedRWTHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(0 != wq->buf().size());
 
   chunk_rw_semaphore_.extend(
-      ublk::div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()) -
-      1);
+      ublk::div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()));
 
   auto chunk_id{wq->offset() / cache_->item_sz()};
   auto chunk_offset{wq->offset() % cache_->item_sz()};
