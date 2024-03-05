@@ -5,6 +5,7 @@ find_package(Boost CONFIG REQUIRED COMPONENT headers system)
 add_library(ublk_utils INTERFACE
     algo.hpp
     align.hpp
+    bitset_rw_semaphore.hpp
     concepts.hpp
     epoll.hpp
     file.hpp

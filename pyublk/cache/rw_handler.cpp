@@ -9,14 +9,14 @@
 #include <memory>
 #include <span>
 #include <utility>
-
-#include <boost/dynamic_bitset/dynamic_bitset.hpp>
+#include <vector>
 
 #include "mm/generic_allocators.hpp"
 #include "mm/mem.hpp"
 #include "mm/mem_chunk_pool.hpp"
 
 #include "utils/algo.hpp"
+#include "utils/bitset_rw_semaphore.hpp"
 #include "utils/utility.hpp"
 
 #include "read_query.hpp"
@@ -25,62 +25,6 @@
 #include "write_query.hpp"
 
 namespace {
-
-class bitset_rw_semaphore final {
-private:
-  using state_t = boost::dynamic_bitset<
-      uint64_t, ublk::mm::allocator::cache_line_aligned_allocator<uint64_t>>;
-
-  void extend(uint64_t nr, state_t &lock_state) {
-    if (nr > lock_state.size())
-      lock_state.resize(nr);
-  }
-
-public:
-  explicit bitset_rw_semaphore(uint64_t preallocate_size = 0)
-      : rlock_state_(preallocate_size, 0,
-                     ublk::mm::allocator::cache_line_aligned<uint64_t>::value),
-        wlock_state_(preallocate_size, 0,
-                     ublk::mm::allocator::cache_line_aligned<uint64_t>::value) {
-  }
-  ~bitset_rw_semaphore() = default;
-
-  bitset_rw_semaphore(bitset_rw_semaphore const &) = delete;
-  bitset_rw_semaphore &operator=(bitset_rw_semaphore const &) = delete;
-
-  bitset_rw_semaphore(bitset_rw_semaphore &&) = delete;
-  bitset_rw_semaphore &operator=(bitset_rw_semaphore &&) = delete;
-
-  void extend(uint64_t nr) noexcept {
-    for (auto *p_lock_state : {&rlock_state_, &wlock_state_})
-      extend(nr, *p_lock_state);
-  }
-
-  bool try_read_lock(uint64_t pos) noexcept {
-    assert(pos < rlock_state_.size());
-    return !rlock_state_.test_set(pos);
-  }
-
-  void read_unlock(uint64_t pos) noexcept {
-    assert(pos < rlock_state_.size());
-    assert(rlock_state_[pos]);
-    rlock_state_.reset(pos);
-  }
-
-  bool try_write_lock(uint64_t pos) noexcept {
-    assert(pos < wlock_state_.size());
-    return !wlock_state_.test_set(pos);
-  }
-
-  void write_unlock(uint64_t pos) noexcept {
-    assert(pos < wlock_state_.size());
-    assert(wlock_state_[pos]);
-    wlock_state_.reset(pos);
-  }
-
-private:
-  state_t rlock_state_, wlock_state_;
-};
 
 class RWIHandler : public ublk::IRWHandler {
 public:
@@ -112,7 +56,9 @@ protected:
   };
   std::vector<pending_rq> rqs_pending_;
 
-  bitset_rw_semaphore chunk_rw_semaphore_;
+  ublk::bitset_rw_semaphore<
+      ublk::mm::allocator::cache_line_aligned_allocator<uint64_t>>
+      chunk_rw_semaphore_;
 };
 
 RWIHandler::RWIHandler(
@@ -120,7 +66,9 @@ RWIHandler::RWIHandler(
     std::shared_ptr<ublk::IRWHandler> handler,
     std::shared_ptr<ublk::mm::mem_chunk_pool> mem_chunk_pool) noexcept
     : cache_(std::move(cache)), handler_(std::move(handler)),
-      mem_chunk_pool_(std::move(mem_chunk_pool)) {
+      mem_chunk_pool_(std::move(mem_chunk_pool)),
+      chunk_rw_semaphore_(
+          0, ublk::mm::allocator::cache_line_aligned<uint64_t>::value) {
   assert(cache_);
   assert(handler_);
   assert(mem_chunk_pool_);
