@@ -8,6 +8,8 @@ class ublksh(Cmd):
     prompt = 'ublksh > '
     master = ublk.Master()
 
+    print("Version {}".format(ublk.version()))
+
     @staticmethod
     def __parse_args__(arg, sep=' '):
         res = []
