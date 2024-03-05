@@ -215,8 +215,8 @@ public:
   }
 
   void invalidate_range(std::pair<Key, Key> range) noexcept {
-    for (auto [fi, li] = range_find(range); fi < li; ++fi)
-      cache_refs_[fi] = len();
+    if (auto [findex, lindex] = range_find(range); findex < lindex)
+      std::fill(cache_refs_.get() + findex, cache_refs_.get() + lindex, len());
   }
 
 private:
