@@ -1,4 +1,3 @@
-find_package(libnl CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENT headers system)
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
@@ -29,7 +28,6 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     cmd_write_handler.hpp
     cmd_write_handler_adaptor.hpp
     discard_handler_interface.hpp
-    epoll.hpp
     factory_interface.hpp
     factory_shared_interface.hpp
     factory_unique_interface.hpp
@@ -37,7 +35,6 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     flush_handler_composite.hpp
     flush_handler_interface.hpp
     for_each_celld.hpp
-    genl.hpp
     handler.cpp
     handler.hpp
     handler_interface.hpp
@@ -86,7 +83,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     spdlog::spdlog
-    libnl::libnl
     Boost::headers
     Boost::system
     ublk::mm

@@ -29,11 +29,11 @@
 #include "mm/mem_types.hpp"
 
 #include "utils/file.hpp"
+#include "utils/genl.hpp"
 #include "utils/utility.hpp"
 
 #include "cached_rw_handler.hpp"
 #include "cmd_handler_factory.hpp"
-#include "genl.hpp"
 #include "rw_handler_interface.hpp"
 #include "slave.hpp"
 

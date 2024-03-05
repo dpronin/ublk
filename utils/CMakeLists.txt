@@ -1,3 +1,4 @@
+find_package(libnl CONFIG REQUIRED)
 find_package(eve CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENT headers system)
 
@@ -5,7 +6,9 @@ add_library(ublk_utils INTERFACE
     algo.hpp
     align.hpp
     concepts.hpp
+    epoll.hpp
     file.hpp
+    genl.hpp
     math.hpp
     page.hpp
     size_units.hpp
@@ -21,4 +24,5 @@ target_include_directories(ublk_utils INTERFACE
 target_link_libraries(ublk_utils INTERFACE
     eve::eve
     Boost::system
+    libnl::libnl
 )
