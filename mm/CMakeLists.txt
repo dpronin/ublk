@@ -2,10 +2,11 @@ add_library(ublk_mm STATIC
     aligned_allocator.hpp
     cache_line_aligned_allocator.hpp
     generic_allocators.hpp
+    mem.hpp
     mem_allocator.hpp
     mem_cached_allocator.cpp
     mem_cached_allocator.hpp
-    mem.hpp
+    mem_chunk_pool.hpp
     mem_pool_allocator.hpp
     mem_types.hpp
     page_aligned_allocator.hpp

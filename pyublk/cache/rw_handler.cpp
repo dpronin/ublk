@@ -8,17 +8,15 @@
 #include <functional>
 #include <memory>
 #include <span>
-#include <stack>
 #include <utility>
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
 #include "mm/generic_allocators.hpp"
 #include "mm/mem.hpp"
-#include "mm/mem_types.hpp"
+#include "mm/mem_chunk_pool.hpp"
 
 #include "utils/algo.hpp"
-#include "utils/span.hpp"
 #include "utils/utility.hpp"
 
 #include "read_query.hpp"
@@ -84,61 +82,12 @@ private:
   state_t rlock_state_, wlock_state_;
 };
 
-class mem_chunk_pool final {
-public:
-  explicit mem_chunk_pool(
-      std::function<ublk::mm::uptrwd<std::byte[]>()> generator,
-      size_t alignment, size_t chunk_sz) noexcept
-      : generator_(std::move(generator)), alignment_(alignment),
-        chunk_sz_(chunk_sz) {
-    assert(generator_);
-    assert(ublk::is_power_of_2(alignment_));
-  }
-  ~mem_chunk_pool() = default;
-
-  mem_chunk_pool(mem_chunk_pool const &) = delete;
-  mem_chunk_pool &operator=(mem_chunk_pool const &) = delete;
-
-  mem_chunk_pool(mem_chunk_pool &&) = delete;
-  mem_chunk_pool &operator=(mem_chunk_pool &&) = delete;
-
-  size_t chunk_alignment() const noexcept { return alignment_; }
-  size_t chunk_sz() const noexcept { return chunk_sz_; }
-
-  template <typename T = std::byte>
-  auto chunk_view(ublk::mm::uptrwd<std::byte[]> const &mem_chunk) noexcept {
-    return ublk::to_span_of<T>({mem_chunk.get(), chunk_sz_});
-  }
-
-  ublk::mm::uptrwd<std::byte[]> get() noexcept {
-    auto chunk = ublk::mm::uptrwd<std::byte[]>{};
-    if (!free_chunks_.empty()) {
-      chunk = std::move(free_chunks_.top());
-      free_chunks_.pop();
-    } else {
-      chunk = generator_();
-    }
-    return {
-        chunk.release(),
-        [this, d = std::move(chunk.get_deleter())](auto *p) mutable {
-          free_chunks_.push({p, std::move(d)});
-        },
-    };
-  }
-
-private:
-  std::function<ublk::mm::uptrwd<std::byte[]>()> generator_;
-  size_t alignment_;
-  size_t chunk_sz_;
-  std::stack<ublk::mm::uptrwd<std::byte[]>> free_chunks_;
-};
-
 class RWIHandler : public ublk::IRWHandler {
 public:
   explicit RWIHandler(
       std::shared_ptr<ublk::cache::flat_lru<uint64_t, std::byte>> cache,
       std::shared_ptr<ublk::IRWHandler> handler,
-      std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept;
+      std::shared_ptr<ublk::mm::mem_chunk_pool> mem_chunk_pool) noexcept;
   ~RWIHandler() override = default;
 
   RWIHandler(RWIHandler const &) = delete;
@@ -153,7 +102,7 @@ public:
 protected:
   std::shared_ptr<ublk::cache::flat_lru<uint64_t, std::byte>> cache_;
   std::shared_ptr<ublk::IRWHandler> handler_;
-  std::shared_ptr<mem_chunk_pool> mem_chunk_pool_;
+  std::shared_ptr<ublk::mm::mem_chunk_pool> mem_chunk_pool_;
 
   struct pending_rq {
     uint64_t chunk_id;
@@ -169,7 +118,7 @@ protected:
 RWIHandler::RWIHandler(
     std::shared_ptr<ublk::cache::flat_lru<uint64_t, std::byte>> cache,
     std::shared_ptr<ublk::IRWHandler> handler,
-    std::shared_ptr<mem_chunk_pool> mem_chunk_pool) noexcept
+    std::shared_ptr<ublk::mm::mem_chunk_pool> mem_chunk_pool) noexcept
     : cache_(std::move(cache)), handler_(std::move(handler)),
       mem_chunk_pool_(std::move(mem_chunk_pool)) {
   assert(cache_);
@@ -436,7 +385,7 @@ RWHandler::RWHandler(std::unique_ptr<flat_lru<uint64_t, std::byte>> cache,
 
   auto cache_sp{std::shared_ptr{std::move(cache)}};
   auto handler_sp{std::shared_ptr{std::move(handler)}};
-  auto pool = std::make_shared<mem_chunk_pool>(
+  auto pool = std::make_shared<mm::mem_chunk_pool>(
       mm::get_unique_bytes_generator(kCachedChunkAlignment,
                                      cache_sp->item_sz()),
       kCachedChunkAlignment, cache_sp->item_sz());
