@@ -195,13 +195,12 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
     };
     auto const chunk{rq->buf().subspan(rb, chunk_sz)};
 
-    if (auto cached_chunk = cache_->find(chunk_id); !cached_chunk.empty()) {
+    if (auto cached_chunk = cache_->find(chunk_id); !cached_chunk.empty())
+        [[likely]] {
       auto const from{cached_chunk.subspan(chunk_offset, chunk.size())};
       auto const to{chunk};
       ublk::algo::copy(from, to);
-    } else if (!chunk_rw_semaphore_.try_read_lock(chunk_id)) [[unlikely]] {
-      rqs_pending_.emplace_back(chunk_id, chunk_offset, chunk, rq);
-    } else {
+    } else if (chunk_rw_semaphore_.try_read_lock(chunk_id)) [[likely]] {
       auto mem_chunk = mem_chunk_pool_->get();
       assert(mem_chunk);
 
@@ -243,6 +242,8 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
       if (auto const res{handler_->submit(std::move(chunk_rq))}) [[unlikely]] {
         return res;
       }
+    } else {
+      rqs_pending_.emplace_back(chunk_id, chunk_offset, chunk, rq);
     }
 
     ++chunk_id;
