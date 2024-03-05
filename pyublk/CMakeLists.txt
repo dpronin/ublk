@@ -5,8 +5,6 @@ find_package(pybind11 CONFIG REQUIRED)
 find_package(eve CONFIG REQUIRED)
 
 pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
-    cached_rw_handler.cpp
-    cached_rw_handler.hpp
     cells_holder.hpp
     cfq_base.hpp
     cfq_popper.hpp
@@ -31,7 +29,6 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     factory_interface.hpp
     factory_shared_interface.hpp
     factory_unique_interface.hpp
-    flat_lru_cache.hpp
     flush_handler_composite.hpp
     flush_handler_interface.hpp
     for_each_celld.hpp
@@ -70,14 +67,15 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     write_handler_interface.hpp
 )
 
+add_subdirectory(cache)
 add_subdirectory(def)
 add_subdirectory(inmem)
 add_subdirectory(null)
 add_subdirectory(raid0)
 add_subdirectory(raid1)
-add_subdirectory(raidsp)
 add_subdirectory(raid4)
 add_subdirectory(raid5)
+add_subdirectory(raidsp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
@@ -85,6 +83,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     spdlog::spdlog
     Boost::headers
     Boost::system
+    ublk::cache
     ublk::mm
     ublk::utils
     ublk::def

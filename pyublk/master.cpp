@@ -32,7 +32,9 @@
 #include "utils/genl.hpp"
 #include "utils/utility.hpp"
 
-#include "cached_rw_handler.hpp"
+#include "cache/cached_rw_handler.hpp"
+#include "cache/flat_lru_cache.hpp"
+
 #include "cmd_handler_factory.hpp"
 #include "rw_handler_interface.hpp"
 #include "slave.hpp"
@@ -46,7 +48,6 @@
 #include "cmd_write_handler.hpp"
 #include "cmd_write_handler_adaptor.hpp"
 #include "discard_handler_interface.hpp"
-#include "flat_lru_cache.hpp"
 #include "flush_handler_composite.hpp"
 #include "flush_handler_interface.hpp"
 #include "read_handler.hpp"
