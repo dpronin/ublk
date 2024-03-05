@@ -2,7 +2,9 @@ add_library(ublk_cache STATIC
     flat_lru.hpp
     rw_handler.cpp
     rw_handler.hpp
+    rwi_handler.cpp
     rwi_handler.hpp
+    rwt_handler.cpp
     rwt_handler.hpp
 )
 
