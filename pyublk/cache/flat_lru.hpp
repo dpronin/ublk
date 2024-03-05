@@ -21,24 +21,23 @@
 
 #include "sector.hpp"
 
-namespace ublk {
+namespace ublk::cache {
 
-template <std::unsigned_integral Key, typename T> class flat_lru_cache {
+template <std::unsigned_integral Key, typename T> class flat_lru {
 public:
-  static std::unique_ptr<flat_lru_cache<Key, T>>
-  create(uint64_t cache_len, uint64_t cache_item_sz) {
-    auto cache = std::unique_ptr<flat_lru_cache<Key, T>>{};
+  static std::unique_ptr<flat_lru<Key, T>> create(uint64_t cache_len,
+                                                  uint64_t cache_item_sz) {
+    auto cache = std::unique_ptr<flat_lru<Key, T>>{};
     if (cache_len && cache_item_sz) {
       auto cache_storage = std::make_unique<mm::uptrwd<T[]>[]>(cache_len);
       std::ranges::generate(
           std::span{cache_storage.get(), cache_len},
           mm::get_unique_bytes_generator(kSectorSz, cache_item_sz));
-      cache =
-          std::unique_ptr<flat_lru_cache<Key, T>>(new flat_lru_cache<Key, T>{
-              std::move(cache_storage),
-              cache_len,
-              cache_item_sz,
-          });
+      cache = std::unique_ptr<flat_lru<Key, T>>(new flat_lru<Key, T>{
+          std::move(cache_storage),
+          cache_len,
+          cache_item_sz,
+      });
     }
     return cache;
   }
@@ -72,8 +71,8 @@ private:
     return is_valid_ref(cache_refs_[index]);
   }
 
-  explicit flat_lru_cache(std::unique_ptr<mm::uptrwd<T[]>[]> storage,
-                          uint64_t storage_len, uint64_t storage_item_sz)
+  explicit flat_lru(std::unique_ptr<mm::uptrwd<T[]>[]> storage,
+                    uint64_t storage_len, uint64_t storage_item_sz)
       : cache_len_(storage_len), cache_item_sz_(storage_item_sz) {
     assert(storage);
     assert(len() > 0);
@@ -134,13 +133,13 @@ private:
   }
 
 public:
-  ~flat_lru_cache() = default;
+  ~flat_lru() = default;
 
-  flat_lru_cache(flat_lru_cache const &) = delete;
-  flat_lru_cache &operator=(flat_lru_cache const &) = delete;
+  flat_lru(flat_lru const &) = delete;
+  flat_lru &operator=(flat_lru const &) = delete;
 
-  flat_lru_cache(flat_lru_cache &&) = default;
-  flat_lru_cache &operator=(flat_lru_cache &&) = default;
+  flat_lru(flat_lru &&) = default;
+  flat_lru &operator=(flat_lru &&) = default;
 
   uint64_t item_sz() const noexcept { return cache_item_sz_; }
   uint64_t len() const noexcept { return cache_len_; }
@@ -227,4 +226,4 @@ private:
   std::unique_ptr<cache_item_ref_t[]> cache_refs_;
 };
 
-} // namespace ublk
+} // namespace ublk::cache
