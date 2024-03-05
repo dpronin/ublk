@@ -4,8 +4,8 @@
 
 #include "utils/align.hpp"
 
-namespace ublk::mm {
+namespace ublk::mm::allocator {
 template <typename T>
 using cache_line_aligned_allocator =
-    class aligned_allocator<T, hardware_destructive_interference_size>;
-} // namespace ublk::mm
+    aligned_allocator<T, hardware_destructive_interference_size>;
+} // namespace ublk::mm::allocator

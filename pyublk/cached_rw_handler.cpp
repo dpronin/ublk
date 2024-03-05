@@ -13,6 +13,7 @@
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
+#include "mm/generic_allocators.hpp"
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
@@ -27,7 +28,63 @@
 
 namespace {
 
-class mem_chunk_pool {
+class bitset_rw_semaphore final {
+private:
+  using state_t = boost::dynamic_bitset<
+      uint64_t, ublk::mm::allocator::cache_line_aligned_allocator<uint64_t>>;
+
+  void extend(uint64_t nr, state_t &lock_state) {
+    if (!(nr < lock_state.size()))
+      lock_state.resize(nr + 1);
+  }
+
+public:
+  explicit bitset_rw_semaphore(uint64_t preallocate_size = 0)
+      : rlock_state_(preallocate_size, 0,
+                     ublk::mm::allocator::cache_line_aligned<uint64_t>::value),
+        wlock_state_(preallocate_size, 0,
+                     ublk::mm::allocator::cache_line_aligned<uint64_t>::value) {
+  }
+  ~bitset_rw_semaphore() = default;
+
+  bitset_rw_semaphore(bitset_rw_semaphore const &) = delete;
+  bitset_rw_semaphore &operator=(bitset_rw_semaphore const &) = delete;
+
+  bitset_rw_semaphore(bitset_rw_semaphore &&) = delete;
+  bitset_rw_semaphore &operator=(bitset_rw_semaphore &&) = delete;
+
+  void extend(uint64_t nr) noexcept {
+    for (auto *p_lock_state : {&rlock_state_, &wlock_state_})
+      extend(nr, *p_lock_state);
+  }
+
+  bool try_read_lock(uint64_t pos) noexcept {
+    assert(pos < rlock_state_.size());
+    return !rlock_state_.test_set(pos);
+  }
+
+  void read_unlock(uint64_t pos) noexcept {
+    assert(pos < rlock_state_.size());
+    assert(rlock_state_[pos]);
+    rlock_state_.reset(pos);
+  }
+
+  bool try_write_lock(uint64_t pos) noexcept {
+    assert(pos < wlock_state_.size());
+    return !wlock_state_.test_set(pos);
+  }
+
+  void write_unlock(uint64_t pos) noexcept {
+    assert(pos < wlock_state_.size());
+    assert(wlock_state_[pos]);
+    wlock_state_.reset(pos);
+  }
+
+private:
+  state_t rlock_state_, wlock_state_;
+};
+
+class mem_chunk_pool final {
 public:
   explicit mem_chunk_pool(
       std::function<ublk::mm::uptrwd<std::byte[]>()> generator,
@@ -98,8 +155,6 @@ protected:
   std::shared_ptr<ublk::IRWHandler> handler_;
   std::shared_ptr<mem_chunk_pool> mem_chunk_pool_;
 
-  boost::dynamic_bitset<uint64_t> chunk_read_lock_state_;
-
   struct pending_rq {
     uint64_t chunk_id;
     uint64_t chunk_offset;
@@ -107,6 +162,8 @@ protected:
     std::shared_ptr<ublk::read_query> rq;
   };
   std::vector<pending_rq> rqs_pending_;
+
+  bitset_rw_semaphore chunk_rw_semaphore_;
 };
 
 CachedRWIHandler::CachedRWIHandler(
@@ -118,21 +175,16 @@ CachedRWIHandler::CachedRWIHandler(
   assert(cache_);
   assert(handler_);
   assert(mem_chunk_pool_);
+  chunk_rw_semaphore_.extend(cache_->len());
 }
 
 int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
   assert(rq);
   assert(0 != rq->buf().size());
 
-  if (auto const chunk_id_last{
-          ublk::div_round_up(rq->offset() + rq->buf().size(),
-                             cache_->item_sz()) -
-              1,
-      };
-      !(chunk_id_last < chunk_read_lock_state_.size())) [[unlikely]] {
-
-    chunk_read_lock_state_.resize(chunk_id_last + 1);
-  }
+  chunk_rw_semaphore_.extend(
+      ublk::div_round_up(rq->offset() + rq->buf().size(), cache_->item_sz()) -
+      1);
 
   auto chunk_id{rq->offset() / cache_->item_sz()};
   auto chunk_offset{rq->offset() % cache_->item_sz()};
@@ -147,7 +199,7 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
       auto const from{cached_chunk.subspan(chunk_offset, chunk.size())};
       auto const to{chunk};
       ublk::algo::copy(from, to);
-    } else if (chunk_read_lock_state_.test_set(chunk_id)) [[unlikely]] {
+    } else if (!chunk_rw_semaphore_.try_read_lock(chunk_id)) [[unlikely]] {
       rqs_pending_.emplace_back(chunk_id, chunk_offset, chunk, rq);
     } else {
       auto mem_chunk = mem_chunk_pool_->get();
@@ -186,7 +238,7 @@ int CachedRWIHandler::submit(std::shared_ptr<ublk::read_query> rq) noexcept {
 
             rqs_pending_.erase(rq_it, rqs_pending_.end());
 
-            chunk_read_lock_state_.reset(chunk_id);
+            chunk_rw_semaphore_.read_unlock(chunk_id);
           });
       if (auto const res{handler_->submit(std::move(chunk_rq))}) [[unlikely]] {
         return res;
@@ -247,7 +299,6 @@ public:
 private:
   int process(std::shared_ptr<ublk::write_query> wq) noexcept;
 
-  boost::dynamic_bitset<uint64_t> chunk_write_lock_state_;
   std::vector<std::pair<uint64_t, std::shared_ptr<ublk::write_query>>>
       wqs_pending_;
 };
@@ -319,15 +370,9 @@ int CachedRWTHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
   assert(0 != wq->buf().size());
 
-  if (auto const chunk_id_last{
-          ublk::div_round_up(wq->offset() + wq->buf().size(),
-                             cache_->item_sz()) -
-              1,
-      };
-      !(chunk_id_last < chunk_write_lock_state_.size())) [[unlikely]] {
-
-    chunk_write_lock_state_.resize(chunk_id_last + 1);
-  }
+  chunk_rw_semaphore_.extend(
+      ublk::div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()) -
+      1);
 
   auto chunk_id{wq->offset() / cache_->item_sz()};
   auto chunk_offset{wq->offset() % cache_->item_sz()};
@@ -359,14 +404,14 @@ int CachedRWTHandler::submit(std::shared_ptr<ublk::write_query> wq) noexcept {
                   std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
                   wqs_pending_.pop_back();
                 } else {
-                  chunk_write_lock_state_.reset(chunk_id);
+                  chunk_rw_semaphore_.write_unlock(chunk_id);
                   finish = true;
                 }
               }
             }),
     };
 
-    if (chunk_write_lock_state_.test_set(chunk_id)) [[unlikely]] {
+    if (!chunk_rw_semaphore_.try_write_lock(chunk_id)) [[unlikely]] {
       wqs_pending_.emplace_back(chunk_id, std::move(chunk_wq));
     } else if (auto const res{process(std::move(chunk_wq))}) {
       return res;

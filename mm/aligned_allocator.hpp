@@ -9,8 +9,9 @@
 #include <memory>
 #include <new>
 
+#include "utils/utility.hpp"
+
 #include "mem_allocator.hpp"
-#include "utility.hpp"
 
 namespace ublk::mm {
 
