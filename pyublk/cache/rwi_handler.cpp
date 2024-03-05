@@ -26,7 +26,6 @@ RWIHandler::RWIHandler(
   assert(cache_);
   assert(handler_);
   assert(mem_chunk_pool_);
-  chunk_rw_semaphore_.extend(cache_->len());
 }
 
 int RWIHandler::submit(std::shared_ptr<read_query> rq) noexcept {
@@ -115,8 +114,7 @@ int RWIHandler::submit(std::shared_ptr<write_query> wq) noexcept {
 
   auto new_wq{
       wq->subquery(0, wq->buf().size(), wq->offset(),
-                   [this, chunk_id_first, chunk_id_last,
-                    wq](write_query const &chunk_wq) {
+                   [=, this](write_query const &chunk_wq) {
                      cache_->invalidate_range({chunk_id_first, chunk_id_last});
                      if (chunk_wq.err()) [[unlikely]] {
                        wq->set_err(chunk_wq.err());
@@ -126,7 +124,6 @@ int RWIHandler::submit(std::shared_ptr<write_query> wq) noexcept {
   };
 
   if (auto const res{handler_->submit(std::move(new_wq))}) [[unlikely]] {
-    cache_->invalidate_range({chunk_id_first, chunk_id_last});
     return res;
   }
 
