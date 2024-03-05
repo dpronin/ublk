@@ -1,0 +1,7 @@
+#pragma once
+
+#include <string_view>
+
+namespace ublk {
+constexpr inline auto kVersion = std::string_view{"@PROJECT_VERSION@"};
+}

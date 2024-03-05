@@ -48,6 +48,9 @@ if (COVERAGE_ENABLE)
   include(CodeCoverage)
 endif ()
 
+configure_file(config.hpp.in ${CMAKE_BINARY_DIR}/config.hpp @ONLY)
+add_compile_options(-include ${CMAKE_BINARY_DIR}/config.hpp)
+
 add_subdirectory(utils)
 add_subdirectory(mm)
 add_subdirectory(pyublk)

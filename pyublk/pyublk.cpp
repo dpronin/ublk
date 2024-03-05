@@ -15,6 +15,8 @@ PYBIND11_MODULE(ublk, m) {
   namespace py = pybind11;
   using namespace py::literals;
 
+  m.def("version", [] { return ublk::kVersion; });
+
   py::class_<std::filesystem::path>(m, "path").def(py::init<std::string>());
   py::implicitly_convertible<std::string, std::filesystem::path>();
 
