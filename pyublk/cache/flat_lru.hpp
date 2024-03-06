@@ -64,7 +64,7 @@ private:
   }
 
   explicit flat_lru(uint64_t len_max, uint64_t item_sz)
-      : cache_len_max_(len_max), item_sz_(item_sz) {
+      : cache_len_max_(len_max), cache_item_sz_(item_sz) {
     assert(this->len_max() > 0);
     assert(this->item_sz() > 0);
 
@@ -113,7 +113,7 @@ public:
   flat_lru(flat_lru &&) = default;
   flat_lru &operator=(flat_lru &&) = default;
 
-  uint64_t item_sz() const noexcept { return item_sz_; }
+  uint64_t item_sz() const noexcept { return cache_item_sz_; }
   uint64_t len_max() const noexcept { return cache_len_max_; }
 
   std::span<T const> find(Key key) const noexcept {
@@ -203,7 +203,7 @@ public:
 
 private:
   uint64_t cache_len_max_;
-  uint64_t item_sz_;
+  uint64_t cache_item_sz_;
 
   std::vector<value_type> cache_;
 };
