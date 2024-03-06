@@ -181,9 +181,15 @@ public:
         if (evict_index < index) {
           value_it = std::rotate(cache.begin() + evict_index,
                                  cache.begin() + evict_index + 1, value_it);
+          std::rotate(cache_refs_.get() + evict_index,
+                      cache_refs_.get() + evict_index + 1,
+                      cache_refs_.get() + index);
         } else {
           std::rotate(value_it, cache.begin() + evict_index,
                       cache.begin() + evict_index + 1);
+          std::rotate(cache_refs_.get() + index,
+                      cache_refs_.get() + evict_index,
+                      cache_refs_.get() + evict_index + 1);
         }
 
         index = value_it - cache.begin();
