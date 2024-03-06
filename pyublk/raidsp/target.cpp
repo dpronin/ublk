@@ -263,26 +263,16 @@ int Target::process(uint64_t stripe_id,
                     return;
                   }
 
-                  auto const chunk{wq->buf()};
-
                   /*
                    * Renew a required chunk of parity of the stripe by
                    * computing a piece of parity from the scratch basing on
                    * the result of old data being XORed with a new data come
                    * in
                    */
-                  math::xor_to(chunk, new_cached_stripe_data_chunk);
+                  math::xor_to(wq->buf(), new_cached_stripe_data_chunk);
                   parity_to(new_cached_stripe_data_chunk,
                             wq->offset() % new_cached_stripe_parity_view.size(),
                             new_cached_stripe_parity_view);
-
-                  auto new_wqd = write_query::create(
-                      chunk, wq->offset(), [wq](write_query const &new_wqd) {
-                        if (new_wqd.err()) [[unlikely]] {
-                          wq->set_err(new_wqd.err());
-                          return;
-                        }
-                      });
 
                   auto new_wqp = write_query::create(
                       new_cached_stripe_parity_view, 0,
@@ -298,10 +288,9 @@ int Target::process(uint64_t stripe_id,
                    * Write Back the chunk including the newly incoming data
                    * and the parity computed and updated
                    */
-                  if (auto const res = stripe_write(
-                          stripe_id, std::move(new_wqd), std::move(new_wqp)))
+                  if (auto const res = stripe_write(stripe_id, std::move(wq),
+                                                    std::move(new_wqp)))
                       [[unlikely]] {
-                    wq->set_err(res);
                     return;
                   }
                 });
