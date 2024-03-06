@@ -422,7 +422,7 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
                     },
                     [](auto const &wq_pend) { return wq_pend.first; });
                 next_wq_it != wqs_pending_.end()) {
-              finish = 0 == process(stripe_id, std::move(next_wq_it->second));
+              finish = 0 == process(stripe_id, next_wq_it->second);
               std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
               wqs_pending_.pop_back();
             } else {
