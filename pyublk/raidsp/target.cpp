@@ -263,7 +263,7 @@ int Target::process(uint64_t stripe_id,
                     return;
                   }
 
-                  auto const chunk{wq->buf().subspan(0, wq->buf().size())};
+                  auto const chunk{wq->buf()};
 
                   /*
                    * Renew a required chunk of parity of the stripe by
