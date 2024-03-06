@@ -26,13 +26,13 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
 #include "utils/file.hpp"
 #include "utils/genl.hpp"
 #include "utils/utility.hpp"
 
-#include "cache/flat_lru.hpp"
 #include "cache/rw_handler.hpp"
 
 #include "cmd_handler_factory.hpp"
@@ -105,21 +105,6 @@ auto backend_device_open(std::filesystem::path const &path) {
               S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 }
 
-std::unique_ptr<cache::flat_lru<uint64_t, std::byte>>
-make_cache(uint64_t cache_len_bytes) {
-  auto cache = std::unique_ptr<cache::flat_lru<uint64_t, std::byte>>{};
-  if (cache_len_bytes) {
-    for (uint64_t cache_item_sz = 1_MiB; !cache && !(cache_item_sz < kSectorSz);
-         cache_item_sz >>= 1) {
-      if (auto const cache_len = cache_len_bytes / cache_item_sz) {
-        cache = cache::flat_lru<uint64_t, std::byte>::create(
-            div_round_up(cache_len_bytes, cache_item_sz), cache_item_sz);
-      }
-    }
-  }
-  return cache;
-}
-
 handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
                               std::optional<cache_cfg> const &cache_cfg,
                               mm::uptrwd<int const> fd) {
@@ -131,15 +116,13 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
       std::make_unique<RWHandler>(std::make_shared<def::ReadHandler>(target),
                                   std::make_shared<def::WriteHandler>(target));
 
-  if (cache_cfg) {
-    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
-      rw_handler = std::make_unique<cache::RWHandler>(
-          std::move(cache), std::move(rw_handler),
-          cache_cfg->write_through_enable);
-    }
+  if (cache_cfg && cache_cfg->len_sectors) {
+    rw_handler = std::make_unique<cache::RWHandler>(
+        cache_cfg->len_sectors, std::move(rw_handler),
+        cache_cfg->write_through_enable);
   }
 
-  auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
+  auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
@@ -171,15 +154,13 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
       std::make_shared<raid0::ReadHandler>(target),
       std::make_shared<raid0::WriteHandler>(target));
 
-  if (cache_cfg) {
-    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
-      rw_handler = std::make_unique<cache::RWHandler>(
-          std::move(cache), std::move(rw_handler),
-          cache_cfg->write_through_enable);
-    }
+  if (cache_cfg && cache_cfg->len_sectors) {
+    rw_handler = std::make_unique<cache::RWHandler>(
+        cache_cfg->len_sectors, std::move(rw_handler),
+        cache_cfg->write_through_enable);
   }
 
-  auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
+  auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
@@ -244,15 +225,13 @@ handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
       std::make_shared<raid1::ReadHandler>(target),
       std::make_shared<raid1::WriteHandler>(target));
 
-  if (cache_cfg) {
-    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
-      rw_handler = std::make_unique<cache::RWHandler>(
-          std::move(cache), std::move(rw_handler),
-          cache_cfg->write_through_enable);
-    }
+  if (cache_cfg && cache_cfg->len_sectors) {
+    rw_handler = std::make_unique<cache::RWHandler>(
+        cache_cfg->len_sectors, std::move(rw_handler),
+        cache_cfg->write_through_enable);
   }
 
-  auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
+  auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
@@ -314,15 +293,13 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
       std::make_shared<raid4::ReadHandler>(target),
       std::make_shared<raid4::WriteHandler>(target));
 
-  if (cache_cfg) {
-    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
-      rw_handler = std::make_unique<cache::RWHandler>(
-          std::move(cache), std::move(rw_handler),
-          cache_cfg->write_through_enable);
-    }
+  if (cache_cfg && cache_cfg->len_sectors) {
+    rw_handler = std::make_unique<cache::RWHandler>(
+        cache_cfg->len_sectors, std::move(rw_handler),
+        cache_cfg->write_through_enable);
   }
 
-  auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
+  auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
@@ -372,15 +349,13 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
       std::make_shared<raid5::ReadHandler>(target),
       std::make_shared<raid5::WriteHandler>(target));
 
-  if (cache_cfg) {
-    if (auto cache = make_cache(sectors_to_bytes(cache_cfg->len_sectors))) {
-      rw_handler = std::make_unique<cache::RWHandler>(
-          std::move(cache), std::move(rw_handler),
-          cache_cfg->write_through_enable);
-    }
+  if (cache_cfg && cache_cfg->len_sectors) {
+    rw_handler = std::make_unique<cache::RWHandler>(
+        cache_cfg->len_sectors, std::move(rw_handler),
+        cache_cfg->write_through_enable);
   }
 
-  auto sp_rw_handler = std::shared_ptr{std::move(rw_handler)};
+  auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),

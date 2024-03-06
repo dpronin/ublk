@@ -11,8 +11,6 @@
 #include "rw_handler_interface.hpp"
 #include "sector.hpp"
 
-#include "flat_lru.hpp"
-
 namespace ublk::cache {
 
 class RWHandler : public IRWHandler {
@@ -22,7 +20,7 @@ private:
                               alignof(std::max_align_t)));
 
 public:
-  explicit RWHandler(std::unique_ptr<flat_lru<uint64_t, std::byte>> cache,
+  explicit RWHandler(uint64_t cache_len_sectors,
                      std::unique_ptr<IRWHandler> handler,
                      bool write_through = true);
   ~RWHandler() override = default;
