@@ -1,11 +1,12 @@
-add_library(ublk_raid1 INTERFACE
+add_library(ublk_raid1 STATIC
     read_handler.hpp
+    target.cpp
     target.hpp
     write_handler.hpp
 )
 
-target_include_directories(ublk_raid1 INTERFACE ${CMAKE_CURRENT_LIST_DIR}/..)
-target_link_libraries(ublk_raid1 INTERFACE
+target_include_directories(ublk_raid1 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
+target_link_libraries(ublk_raid1 PUBLIC
     Boost::system
     ublk::utils
     ublk::mm
