@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <numeric>
 #include <span>
 #include <vector>
 
@@ -118,9 +119,8 @@ TEST_P(RAID4, TestWriting) {
   }
 
   for (size_t i = 0; i < param.strip_sz; ++i) {
-    EXPECT_EQ(std::reduce(storages.begin(),
-                          storages.begin() + storages.size() - 1,
-                          storages.back()[i],
+    EXPECT_EQ(std::reduce(storage_spans.begin(), storage_spans.end() - 1,
+                          storage_spans.end()[-1][i],
                           [i, op = std::bit_xor<>{}](auto &&arg1, auto &&arg2) {
                             using T1 = std::decay_t<decltype(arg1)>;
                             using T2 = std::decay_t<decltype(arg2)>;
