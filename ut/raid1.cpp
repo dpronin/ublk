@@ -3,6 +3,7 @@
 
 #include <cstddef>
 
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <vector>
@@ -23,10 +24,8 @@ public:
 };
 
 TEST(RAID1, TestReading) {
-  std::array<std::shared_ptr<MockRWHandler>, 2> hs = {
-      std::make_shared<MockRWHandler>(),
-      std::make_shared<MockRWHandler>(),
-  };
+  std::array<std::shared_ptr<MockRWHandler>, 2> hs;
+  std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
 
   ublk::raid1::Target tgt{512, {hs.begin(), hs.end()}};
   EXPECT_CALL(*hs[0], submit(An<std::shared_ptr<read_query>>())).Times(4);
@@ -37,10 +36,8 @@ TEST(RAID1, TestReading) {
 }
 
 TEST(RAID1, TestWriting) {
-  std::array<std::shared_ptr<MockRWHandler>, 2> hs = {
-      std::make_shared<MockRWHandler>(),
-      std::make_shared<MockRWHandler>(),
-  };
+  std::array<std::shared_ptr<MockRWHandler>, 2> hs;
+  std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
 
   ublk::raid1::Target tgt{512, {hs.begin(), hs.end()}};
   EXPECT_CALL(*hs[0], submit(An<std::shared_ptr<write_query>>())).Times(1);
