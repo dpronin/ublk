@@ -8,28 +8,40 @@ inline namespace literals {
 
 inline namespace size_units_literals {
 
+constexpr auto inline kKiBShift = 10u;
+
 constexpr auto operator"" _KiB(unsigned long long x) noexcept {
-  return x << 10;
+  return x << kKiBShift;
 }
+
+constexpr auto inline kMiBShift = 20u;
 
 constexpr auto operator"" _MiB(unsigned long long x) noexcept {
-  return x << 20;
+  return x << kMiBShift;
 }
+
+constexpr auto inline kGiBShift = 30u;
 
 constexpr auto operator"" _GiB(unsigned long long x) noexcept {
-  return x << 30;
+  return x << kGiBShift;
 }
+
+constexpr auto inline kTiBShift = 40u;
 
 constexpr auto operator"" _TiB(unsigned long long x) noexcept {
-  return x << 40;
+  return x << kTiBShift;
 }
+
+constexpr auto inline kPiBShift = 50u;
 
 constexpr auto operator"" _PiB(unsigned long long x) noexcept {
-  return x << 50;
+  return x << kPiBShift;
 }
 
+constexpr auto inline kEiBShift = 60u;
+
 constexpr auto operator"" _EiB(unsigned long long x) noexcept {
-  return x << 60;
+  return x << kEiBShift;
 }
 
 constexpr auto operator"" _KB(unsigned long long x) noexcept {
