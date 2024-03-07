@@ -54,4 +54,10 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND COVERAGE_ENABLE)
 
   append_coverage_compiler_flags_to_target(raid1_ut)
   setup_target_for_coverage_gcovr_html(NAME raid1_ut_coverage EXECUTABLE raid1_ut)
+
+  append_coverage_compiler_flags_to_target(raid4_ut)
+  setup_target_for_coverage_gcovr_html(NAME raid4_ut_coverage EXECUTABLE raid4_ut)
+
+  append_coverage_compiler_flags_to_target(raid5_ut)
+  setup_target_for_coverage_gcovr_html(NAME raid5_ut_coverage EXECUTABLE raid5_ut)
 endif ()
