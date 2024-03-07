@@ -47,16 +47,6 @@ TEST_P(RAID5, TestReading) {
     return ut::make_unique_random_bytes(storage_sz);
   });
 
-  auto make_backend_reader = [storage_sz](auto const &storage) {
-    return [&, storage_sz](std::shared_ptr<read_query> rq) {
-      EXPECT_FALSE(rq->buf().empty());
-      EXPECT_LE(rq->buf().size() + rq->offset(), storage_sz);
-      std::copy_n(storage.get() + rq->offset(), rq->buf().size(),
-                  rq->buf().begin());
-      return 0;
-    };
-  };
-
   ublk::raid5::Target tgt{param.strip_sz, {hs.begin(), hs.end()}};
 
   auto const parity_full_cycles{param.stripes_nr / hs.size()};
@@ -66,7 +56,7 @@ TEST_P(RAID5, TestReading) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times((hs.size() - 1) * parity_full_cycles + parity_cycle_rem -
                !(i < (hs.size() - parity_cycle_rem)))
-        .WillRepeatedly(make_backend_reader(storages[i]));
+        .WillRepeatedly(ut::make_inmem_reader({storages[i].get(), storage_sz}));
   }
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
@@ -107,20 +97,11 @@ TEST_P(RAID5, TestWriting) {
     return std::make_unique<std::byte[]>(storage_sz);
   });
 
-  auto make_backend_writer = [storage_sz](auto const &storage) {
-    return [&, storage_sz](std::shared_ptr<write_query> wq) {
-      EXPECT_FALSE(wq->buf().empty());
-      EXPECT_LE(wq->buf().size() + wq->offset(), storage_sz);
-      std::ranges::copy(wq->buf(), storage.get() + wq->offset());
-      return 0;
-    };
-  };
-
   ublk::raid5::Target tgt{param.strip_sz, {hs.begin(), hs.end()}};
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
         .Times(param.stripes_nr)
-        .WillRepeatedly(make_backend_writer(storages[i]));
+        .WillRepeatedly(ut::make_inmem_writer({storages[i].get(), storage_sz}));
   }
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};

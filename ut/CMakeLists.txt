@@ -5,7 +5,12 @@ include(CTest)
 add_library(ublk_ut_helpers INTERFACE
     helpers.hpp
 )
+target_link_libraries(ublk_ut_helpers INTERFACE
+    gtest::gtest
+)
+
 add_library(ublk::ut::helpers ALIAS ublk_ut_helpers)
+
 
 add_executable(raid0_ut
     raid0.cpp
