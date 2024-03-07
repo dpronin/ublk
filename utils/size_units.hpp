@@ -56,10 +56,6 @@ constexpr auto operator"" _EB(unsigned long long x) noexcept {
   return x * 1'000'000'000'000'000'000;
 }
 
-constexpr auto operator"" _sz(unsigned long long x) noexcept {
-  return static_cast<std::size_t>(x);
-}
-
 constexpr auto operator"" _b(unsigned long long x) noexcept {
   return static_cast<std::byte>(x);
 }
