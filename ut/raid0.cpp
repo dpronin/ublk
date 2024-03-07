@@ -133,7 +133,7 @@ TEST_P(RAID0, TestWriting) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(RAID0_Reading, RAID0,
+INSTANTIATE_TEST_SUITE_P(RAID0_Operations, RAID0,
                          Values(
                              RAID0Param{
                                  .strip_sz = 512,
