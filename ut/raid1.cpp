@@ -65,7 +65,7 @@ TEST_P(RAID1, TestReading) {
 
   for (size_t off = 0; off < buf_span.size();
        off += param.read_block_per_hs_sz) {
-    auto const sid = (off / param.read_block_per_hs_sz) % hs.size();
+    auto const sid{(off / param.read_block_per_hs_sz) % hs.size()};
     auto const s1{
         std::as_bytes(buf_span.subspan(off, param.read_block_per_hs_sz)),
     };

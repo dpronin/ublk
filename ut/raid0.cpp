@@ -61,8 +61,8 @@ TEST_P(RAID0, TestReading) {
   tgt.process(read_query::create(buf_span, 0));
 
   for (size_t off = 0; off < buf_span.size(); off += param.strip_sz) {
-    auto const sid = (off / param.strip_sz) % hs.size();
-    auto const soff = off / (param.strip_sz * hs.size()) * param.strip_sz;
+    auto const sid{(off / param.strip_sz) % hs.size()};
+    auto const soff{off / (param.strip_sz * hs.size()) * param.strip_sz};
     auto const s1{std::as_bytes(buf_span.subspan(off, param.strip_sz))};
     auto const s2{storage_spans[sid].subspan(soff, param.strip_sz)};
     EXPECT_THAT(s1, ElementsAreArray(s2));
@@ -102,8 +102,8 @@ TEST_P(RAID0, TestWriting) {
   tgt.process(write_query::create(buf_span, 0));
 
   for (size_t off = 0; off < buf_span.size(); off += param.strip_sz) {
-    auto const sid = (off / param.strip_sz) % hs.size();
-    auto const soff = off / (param.strip_sz * hs.size()) * param.strip_sz;
+    auto const sid{(off / param.strip_sz) % hs.size()};
+    auto const soff{off / (param.strip_sz * hs.size()) * param.strip_sz};
     auto const s1{buf_span.subspan(off, param.strip_sz)};
     auto const s2{
         std::as_bytes(storage_spans[sid].subspan(soff, param.strip_sz)),
