@@ -44,10 +44,6 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Release" OR ${CMAKE_BUILD_TYPE} MATCHES "RelWit
   set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
 endif()
 
-if (COVERAGE_ENABLE)
-  include(CodeCoverage)
-endif ()
-
 configure_file(config.hpp.in ${CMAKE_BINARY_DIR}/config.hpp @ONLY)
 add_compile_options(-include ${CMAKE_BINARY_DIR}/config.hpp)
 

@@ -20,3 +20,8 @@ target_link_libraries(ublk_def PUBLIC
 set_property(TARGET ublk_def PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::def ALIAS ublk_def)
+
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND COVERAGE_ENABLE)
+  include(CodeCoverage)
+  append_coverage_compiler_flags_to_target(ublk_def)
+endif ()

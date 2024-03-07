@@ -46,3 +46,12 @@ target_link_libraries(raid5_ut PRIVATE
 )
 
 add_test(NAME RAID5 COMMAND raid5_ut)
+
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND COVERAGE_ENABLE)
+  include(CodeCoverage)
+  append_coverage_compiler_flags_to_target(raid0_ut)
+  setup_target_for_coverage_gcovr_html(NAME raid0_ut_coverage EXECUTABLE raid0_ut)
+
+  append_coverage_compiler_flags_to_target(raid1_ut)
+  setup_target_for_coverage_gcovr_html(NAME raid1_ut_coverage EXECUTABLE raid1_ut)
+endif ()

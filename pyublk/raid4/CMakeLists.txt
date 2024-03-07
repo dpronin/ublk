@@ -15,3 +15,8 @@ target_link_libraries(ublk_raid4 PUBLIC
 set_property(TARGET ublk_raid4 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::raid4 ALIAS ublk_raid4)
+
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND COVERAGE_ENABLE)
+  include(CodeCoverage)
+  append_coverage_compiler_flags_to_target(ublk_raid4)
+endif ()
