@@ -76,7 +76,7 @@ TEST_P(RAID1, TestReading) {
         std::as_bytes(buf_span.subspan(off, param.read_block_per_hs_sz)),
     };
     auto const s2{storage_spans[sid].subspan(off, param.read_block_per_hs_sz)};
-    EXPECT_TRUE(std::ranges::equal(s1, s2));
+    EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 }
 
@@ -116,7 +116,7 @@ TEST_P(RAID1, TestWriting) {
                            })) {
     auto const s1{buf_span};
     auto const s2{storage_span};
-    EXPECT_TRUE(std::ranges::equal(s1, s2));
+    EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 }
 

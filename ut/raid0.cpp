@@ -71,7 +71,7 @@ TEST_P(RAID0, TestReading) {
     auto const soff = off / (param.strip_sz * hs.size()) * param.strip_sz;
     auto const s1{std::as_bytes(buf_span.subspan(off, param.strip_sz))};
     auto const s2{storage_spans[sid].subspan(soff, param.strip_sz)};
-    EXPECT_TRUE(std::ranges::equal(s1, s2));
+    EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 }
 
@@ -113,7 +113,7 @@ TEST_P(RAID0, TestWriting) {
     auto const s2{
         std::as_bytes(storage_spans[sid].subspan(soff, param.strip_sz)),
     };
-    EXPECT_TRUE(std::ranges::equal(s1, s2));
+    EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 }
 

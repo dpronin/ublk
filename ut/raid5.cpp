@@ -85,7 +85,7 @@ TEST_P(RAID5, TestReading) {
     auto const soff = stripe_id * param.strip_sz;
     auto const s1{std::as_bytes(buf_span.subspan(off, param.strip_sz))};
     auto const s2{storage_spans[sid].subspan(soff, param.strip_sz)};
-    EXPECT_TRUE(std::ranges::equal(s1, s2));
+    EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 }
 
@@ -136,7 +136,7 @@ TEST_P(RAID5, TestWriting) {
     auto const s2{
         std::as_bytes(storage_spans[sid].subspan(soff, param.strip_sz)),
     };
-    EXPECT_TRUE(std::ranges::equal(s1, s2));
+    EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 
   for (size_t i = 0; i < param.strip_sz; ++i) {
