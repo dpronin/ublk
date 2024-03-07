@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+#include <bit>
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -36,13 +38,29 @@ make_cache(uint64_t cache_len_bytes) {
   return cache;
 }
 
+size_t qbin_index_get(std::unsigned_integral auto qsz, size_t qbin_index_min,
+                      size_t qbin_index_max) noexcept {
+  size_t qbin_index = 0;
+  if (!(qsz < ublk::kSectorSz)) {
+    auto const qszshift{
+        static_cast<size_t>(std::numeric_limits<decltype(qsz)>::digits -
+                            std::countl_zero(qsz)) -
+            1,
+    };
+    qbin_index = std::min(qszshift - ublk::kSectorShift, qbin_index_max);
+  }
+  return qbin_index_min + qbin_index;
+}
+
 } // namespace
 
 namespace ublk::cache {
 
 RWHandler::RWHandler(uint64_t cache_len_sectors,
                      std::unique_ptr<IRWHandler> handler,
-                     bool write_through /* = true*/) {
+                     bool write_through /* = true*/)
+    : qbins_{} {
+
   auto cache_sp{
       std::shared_ptr{make_cache(sectors_to_bytes(cache_len_sectors))},
   };
@@ -68,10 +86,12 @@ bool RWHandler::write_through() const noexcept {
 }
 
 int RWHandler::submit(std::shared_ptr<read_query> rq) noexcept {
+  ++qbins_[qbin_index_get(rq->buf().size(), 0, qbins_.size() - 1)];
   return handler_->submit(std::move(rq));
 }
 
 int RWHandler::submit(std::shared_ptr<write_query> wq) noexcept {
+  ++qbins_[qbin_index_get(wq->buf().size(), 0, qbins_.size() - 1)];
   return handler_->submit(std::move(wq));
 }
 
