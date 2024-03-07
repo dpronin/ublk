@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <random>
 #include <span>
 #include <vector>
 
@@ -16,6 +15,8 @@
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
 #include "write_query.hpp"
+
+#include "helpers.hpp"
 
 using namespace ublk;
 using namespace testing;
@@ -43,12 +44,7 @@ TEST_P(RAID0, TestReading) {
   std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz = param.strip_sz * param.stripes_nr;
   std::ranges::generate(storages, [storage_sz] {
-    auto storage{std::make_unique_for_overwrite<std::byte[]>(storage_sz)};
-    std::generate_n(storage.get(), storage_sz,
-                    [rd = std::random_device{}] mutable {
-                      return static_cast<std::byte>(rd());
-                    });
-    return storage;
+    return ut::make_unique_random_bytes(storage_sz);
   });
 
   auto make_backend_reader = [storage_sz](auto const &storage) {
@@ -69,7 +65,7 @@ TEST_P(RAID0, TestReading) {
   }
 
   auto const buf_sz{hs.size() * param.strip_sz * param.stripes_nr};
-  auto buf{std::make_unique<std::byte[]>(buf_sz)};
+  auto const buf{std::make_unique<std::byte[]>(buf_sz)};
   auto const buf_span{std::span{buf.get(), buf_sz}};
 
   tgt.process(read_query::create(buf_span, 0));
@@ -113,11 +109,8 @@ TEST_P(RAID0, TestWriting) {
         .WillRepeatedly(make_backend_writer(storages[i]));
   }
 
-  auto const buf_sz = hs.size() * param.strip_sz * param.stripes_nr;
-  auto buf = std::make_unique_for_overwrite<std::byte[]>(buf_sz);
-  std::generate_n(buf.get(), buf_sz, [rd = std::random_device{}] mutable {
-    return static_cast<std::byte>(rd());
-  });
+  auto const buf_sz{hs.size() * param.strip_sz * param.stripes_nr};
+  auto const buf{ut::make_unique_random_bytes(buf_sz)};
   auto const buf_span = std::as_bytes(std::span{buf.get(), buf_sz});
 
   tgt.process(write_query::create(buf_span, 0));
