@@ -6,6 +6,7 @@
 #include <array>
 #include <memory>
 
+#include "utils/size_units.hpp"
 #include "utils/utility.hpp"
 
 #include "rw_handler_interface.hpp"
@@ -40,6 +41,8 @@ public:
 private:
   std::shared_ptr<IRWHandler> handler_;
   std::array<std::shared_ptr<IRWHandler>, 2> handlers_;
+
+  std::array<uint64_t, kMiBShift - kSectorShift + 1> qbins_;
 };
 
 } // namespace ublk::cache
