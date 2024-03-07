@@ -9,11 +9,11 @@ namespace ublk {
 constexpr inline uint64_t kSectorShift = 9;
 constexpr inline uint64_t kSectorSz = 1 << kSectorShift;
 
-auto sectors_to_bytes(std::unsigned_integral auto x) noexcept {
+constexpr auto sectors_to_bytes(std::unsigned_integral auto x) noexcept {
   return x << kSectorShift;
 }
 
-auto bytes_to_sectors(std::unsigned_integral auto x) noexcept {
+constexpr auto bytes_to_sectors(std::unsigned_integral auto x) noexcept {
   return x >> kSectorShift;
 }
 
