@@ -11,9 +11,16 @@
 #include <span>
 
 #include "read_query.hpp"
+#include "rw_handler_interface.hpp"
 #include "write_query.hpp"
 
 namespace ublk::ut {
+
+class MockRWHandler : public IRWHandler {
+public:
+  MOCK_METHOD(int, submit, (std::shared_ptr<read_query>), (noexcept));
+  MOCK_METHOD(int, submit, (std::shared_ptr<write_query>), (noexcept));
+};
 
 inline std::unique_ptr<std::byte[]> make_unique_random_bytes(size_t sz) {
   auto storage{std::make_unique_for_overwrite<std::byte[]>(sz)};

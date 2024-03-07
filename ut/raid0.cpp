@@ -13,19 +13,12 @@
 #include "raid0/target.hpp"
 
 #include "read_query.hpp"
-#include "rw_handler_interface.hpp"
 #include "write_query.hpp"
 
 #include "helpers.hpp"
 
 using namespace ublk;
 using namespace testing;
-
-class MockRWHandler : public IRWHandler {
-public:
-  MOCK_METHOD(int, submit, (std::shared_ptr<read_query>), (noexcept));
-  MOCK_METHOD(int, submit, (std::shared_ptr<write_query>), (noexcept));
-};
 
 struct RAID0Param {
   size_t strip_sz;
@@ -38,8 +31,9 @@ using RAID0 = TestWithParam<RAID0Param>;
 TEST_P(RAID0, TestReading) {
   auto const &param{GetParam()};
 
-  std::vector<std::shared_ptr<MockRWHandler>> hs{param.hs_nr};
-  std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
+  std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
+  std::ranges::generate(hs,
+                        [] { return std::make_shared<ut::MockRWHandler>(); });
 
   std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz{param.strip_sz * param.stripes_nr};
@@ -78,8 +72,9 @@ TEST_P(RAID0, TestReading) {
 TEST_P(RAID0, TestWriting) {
   auto const &param{GetParam()};
 
-  std::vector<std::shared_ptr<MockRWHandler>> hs{param.hs_nr};
-  std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
+  std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
+  std::ranges::generate(hs,
+                        [] { return std::make_shared<ut::MockRWHandler>(); });
 
   std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz{param.strip_sz * param.stripes_nr};
