@@ -3,14 +3,15 @@
 #include <cassert>
 #include <cerrno>
 
-#include <concepts>
 #include <span>
 
 #include <linux/ublkdrv/celld.h>
 
+#include "utils/concepts.hpp"
+
 namespace ublk {
 
-constexpr auto for_each_celld = []<typename T /*std::same_as<std::byte> T*/>(
+constexpr auto for_each_celld = []<is_byte T>(
                                     std::unsigned_integral auto offset,
                                     std::unsigned_integral auto celldn,
                                     std::unsigned_integral auto cellds_nr,
