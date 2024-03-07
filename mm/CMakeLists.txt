@@ -14,8 +14,8 @@ add_library(ublk_mm STATIC
     pool_allocators.hpp
 )
 
-target_include_directories(ublk_mm PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
-target_link_libraries(ublk_mm PRIVATE
+target_include_directories(ublk_mm PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
+target_link_libraries(ublk_mm PUBLIC
     ublk::utils
 )
 set_property(TARGET ublk_mm PROPERTY POSITION_INDEPENDENT_CODE ON)

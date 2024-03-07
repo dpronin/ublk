@@ -1,9 +1,25 @@
 find_package(GTest CONFIG REQUIRED)
 
-add_executable(${PROJECT_NAME}_ut
-    main.cpp
+include(CTest)
+
+add_executable(raid0_ut
+    raid0.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_ut PRIVATE
+target_link_libraries(raid0_ut PRIVATE
     gtest::gtest
+    ublk::raid0
 )
+
+add_test(NAME RAID0 COMMAND raid0_ut)
+
+add_executable(raid1_ut
+    raid1.cpp
+)
+
+target_link_libraries(raid1_ut PRIVATE
+    gtest::gtest
+    ublk::raid1
+)
+
+add_test(NAME RAID1 COMMAND raid1_ut)

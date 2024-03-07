@@ -5,8 +5,8 @@ add_library(ublk_raidsp STATIC
     target.hpp
 )
 
-target_include_directories(ublk_raidsp PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
-target_link_libraries(ublk_raidsp PRIVATE
+target_include_directories(ublk_raidsp PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
+target_link_libraries(ublk_raidsp PUBLIC
     Boost::system
     ublk::utils
     ublk::mm

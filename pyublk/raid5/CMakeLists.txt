@@ -5,8 +5,8 @@ add_library(ublk_raid5 STATIC
     write_handler.hpp
 )
 
-target_include_directories(ublk_raid5 PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
-target_link_libraries(ublk_raid5 PRIVATE
+target_include_directories(ublk_raid5 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
+target_link_libraries(ublk_raid5 PUBLIC
     Boost::system
     ublk::utils
     ublk::raidsp

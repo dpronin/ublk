@@ -8,8 +8,8 @@ add_library(ublk_def STATIC
     write_handler.hpp
 )
 
-target_include_directories(ublk_def PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
-target_link_libraries(ublk_def PRIVATE
+target_include_directories(ublk_def PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
+target_link_libraries(ublk_def PUBLIC
     ublk::utils
     ublk::mm
     liburing::liburing

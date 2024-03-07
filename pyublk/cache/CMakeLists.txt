@@ -8,7 +8,7 @@ add_library(ublk_cache STATIC
     rwt_handler.hpp
 )
 
-target_include_directories(ublk_cache PRIVATE ${CMAKE_CURRENT_LIST_DIR}/..)
+target_include_directories(ublk_cache PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
 target_link_libraries(ublk_cache PRIVATE
     Boost::headers
     Boost::system
