@@ -27,7 +27,7 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       hs_(std::move(hs)) {
   assert(is_power_of_2(strip_sz_));
   assert(is_multiple_of(strip_sz_, kCachedStripeAlignment));
-  assert(!(hs_.size() < 2));
+  assert(!(hs_.size() < 3));
   assert(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
