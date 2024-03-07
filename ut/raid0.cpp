@@ -42,16 +42,22 @@ TEST_P(RAID0, TestReading) {
   std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
 
   std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
-  auto const storage_sz = param.strip_sz * param.stripes_nr;
+  auto const storage_sz{param.strip_sz * param.stripes_nr};
   std::ranges::generate(storages, [storage_sz] {
     return ut::make_unique_random_bytes(storage_sz);
   });
+
+  std::vector<std::span<std::byte const>> storage_spans{storages.size()};
+  std::ranges::transform(
+      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
+        return std::span<std::byte const>{storage.get(), storage_sz};
+      });
 
   ublk::raid0::Target tgt{param.strip_sz, {hs.begin(), hs.end()}};
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times(param.stripes_nr)
-        .WillRepeatedly(ut::make_inmem_reader({storages[i].get(), storage_sz}));
+        .WillRepeatedly(ut::make_inmem_reader(storage_spans[i]));
   }
 
   auto const buf_sz{hs.size() * param.strip_sz * param.stripes_nr};
@@ -64,9 +70,7 @@ TEST_P(RAID0, TestReading) {
     auto const sid = (off / param.strip_sz) % hs.size();
     auto const soff = off / (param.strip_sz * hs.size()) * param.strip_sz;
     auto const s1{std::as_bytes(buf_span.subspan(off, param.strip_sz))};
-    auto const s2{
-        std::as_bytes(std::span{storages[sid].get() + soff, param.strip_sz}),
-    };
+    auto const s2{storage_spans[sid].subspan(soff, param.strip_sz)};
     EXPECT_TRUE(std::ranges::equal(s1, s2));
   }
 }
@@ -83,16 +87,22 @@ TEST_P(RAID0, TestWriting) {
     return std::make_unique<std::byte[]>(storage_sz);
   });
 
+  std::vector<std::span<std::byte>> storage_spans{storages.size()};
+  std::ranges::transform(
+      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
+        return std::span<std::byte>{storage.get(), storage_sz};
+      });
+
   ublk::raid0::Target tgt{param.strip_sz, {hs.begin(), hs.end()}};
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
         .Times(param.stripes_nr)
-        .WillRepeatedly(ut::make_inmem_writer({storages[i].get(), storage_sz}));
+        .WillRepeatedly(ut::make_inmem_writer(storage_spans[i]));
   }
 
   auto const buf_sz{hs.size() * param.strip_sz * param.stripes_nr};
   auto const buf{ut::make_unique_random_bytes(buf_sz)};
-  auto const buf_span = std::as_bytes(std::span{buf.get(), buf_sz});
+  auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
   tgt.process(write_query::create(buf_span, 0));
 
@@ -101,7 +111,7 @@ TEST_P(RAID0, TestWriting) {
     auto const soff = off / (param.strip_sz * hs.size()) * param.strip_sz;
     auto const s1{buf_span.subspan(off, param.strip_sz)};
     auto const s2{
-        std::as_bytes(std::span{storages[sid].get() + soff, param.strip_sz}),
+        std::as_bytes(storage_spans[sid].subspan(soff, param.strip_sz)),
     };
     EXPECT_TRUE(std::ranges::equal(s1, s2));
   }
