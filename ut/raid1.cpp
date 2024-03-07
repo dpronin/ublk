@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <ranges>
 #include <span>
 #include <vector>
 
@@ -47,13 +48,19 @@ TEST_P(RAID1, TestReading) {
     return ut::make_unique_random_bytes(storage_sz);
   });
 
+  std::vector<std::span<std::byte const>> storage_spans{storages.size()};
+  std::ranges::transform(
+      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
+        return std::span<std::byte const>{storage.get(), storage_sz};
+      });
+
   auto const reads_nr{div_round_up(storage_sz, param.read_block_per_hs_sz)};
 
   ublk::raid1::Target tgt{param.read_block_per_hs_sz, {hs.begin(), hs.end()}};
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times(reads_nr / hs.size() + (i < (reads_nr % hs.size())))
-        .WillRepeatedly(ut::make_inmem_reader({storages[i].get(), storage_sz}));
+        .WillRepeatedly(ut::make_inmem_reader(storage_spans[i]));
   }
 
   auto const buf_sz{param.hs_storage_sz};
@@ -66,11 +73,9 @@ TEST_P(RAID1, TestReading) {
        off += param.read_block_per_hs_sz) {
     auto const sid = (off / param.read_block_per_hs_sz) % hs.size();
     auto const s1{
-        std::as_bytes(buf_span.subspan(off, param.read_block_per_hs_sz))};
-    auto const s2{
-        std::as_bytes(
-            std::span{storages[sid].get() + off, param.read_block_per_hs_sz}),
+        std::as_bytes(buf_span.subspan(off, param.read_block_per_hs_sz)),
     };
+    auto const s2{storage_spans[sid].subspan(off, param.read_block_per_hs_sz)};
     EXPECT_TRUE(std::ranges::equal(s1, s2));
   }
 }
@@ -87,11 +92,17 @@ TEST_P(RAID1, TestWriting) {
     return std::make_unique<std::byte[]>(storage_sz);
   });
 
+  std::vector<std::span<std::byte>> storage_spans{storages.size()};
+  std::ranges::transform(
+      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
+        return std::span<std::byte>{storage.get(), storage_sz};
+      });
+
   ublk::raid1::Target tgt{param.read_block_per_hs_sz, {hs.begin(), hs.end()}};
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
         .Times(1)
-        .WillRepeatedly(ut::make_inmem_writer({storages[i].get(), storage_sz}));
+        .WillRepeatedly(ut::make_inmem_writer(storage_spans[i]));
   }
 
   auto const buf_sz{storage_sz};
@@ -100,11 +111,11 @@ TEST_P(RAID1, TestWriting) {
 
   tgt.process(write_query::create(buf_span, 0));
 
-  for (auto const &storage : storages) {
+  for (auto storage_span : storage_spans | std::views::transform([](auto s) {
+                             return std::as_bytes(s);
+                           })) {
     auto const s1{buf_span};
-    auto const s2{
-        std::as_bytes(std::span{storage.get(), storage_sz}),
-    };
+    auto const s2{storage_span};
     EXPECT_TRUE(std::ranges::equal(s1, s2));
   }
 }
