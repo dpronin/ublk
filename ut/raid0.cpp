@@ -35,18 +35,19 @@ struct RAID0Param {
 using RAID0 = TestWithParam<RAID0Param>;
 
 TEST_P(RAID0, TestReading) {
-  auto const &param = GetParam();
+  auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<MockRWHandler>> hs{param.hs_nr};
   std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages_{hs.size()};
+  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz = param.strip_sz * param.stripes_nr;
-  std::ranges::generate(storages_, [storage_sz] {
-    std::random_device rd{};
-    auto storage = std::make_unique_for_overwrite<std::byte[]>(storage_sz);
+  std::ranges::generate(storages, [storage_sz] {
+    auto storage{std::make_unique_for_overwrite<std::byte[]>(storage_sz)};
     std::generate_n(storage.get(), storage_sz,
-                    [&] { return static_cast<std::byte>(rd()); });
+                    [rd = std::random_device{}] mutable {
+                      return static_cast<std::byte>(rd());
+                    });
     return storage;
   });
 
@@ -64,12 +65,12 @@ TEST_P(RAID0, TestReading) {
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times(param.stripes_nr)
-        .WillRepeatedly(make_backend_reader(storages_[i]));
+        .WillRepeatedly(make_backend_reader(storages[i]));
   }
 
-  auto const buf_sz = hs.size() * param.strip_sz * param.stripes_nr;
-  auto buf = std::make_unique<std::byte[]>(buf_sz);
-  auto const buf_span = std::span{buf.get(), buf_sz};
+  auto const buf_sz{hs.size() * param.strip_sz * param.stripes_nr};
+  auto buf{std::make_unique<std::byte[]>(buf_sz)};
+  auto const buf_span{std::span{buf.get(), buf_sz}};
 
   tgt.process(read_query::create(buf_span, 0));
 
@@ -78,21 +79,21 @@ TEST_P(RAID0, TestReading) {
     auto const soff = off / (param.strip_sz * hs.size()) * param.strip_sz;
     auto const s1{std::as_bytes(buf_span.subspan(off, param.strip_sz))};
     auto const s2{
-        std::as_bytes(std::span{storages_[sid].get() + soff, param.strip_sz}),
+        std::as_bytes(std::span{storages[sid].get() + soff, param.strip_sz}),
     };
     EXPECT_TRUE(std::ranges::equal(s1, s2));
   }
 }
 
 TEST_P(RAID0, TestWriting) {
-  auto const &param = GetParam();
+  auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<MockRWHandler>> hs{param.hs_nr};
   std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages_{hs.size()};
+  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz{param.strip_sz * param.stripes_nr};
-  std::ranges::generate(storages_, [storage_sz] {
+  std::ranges::generate(storages, [storage_sz] {
     return std::make_unique<std::byte[]>(storage_sz);
   });
 
@@ -109,15 +110,14 @@ TEST_P(RAID0, TestWriting) {
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
         .Times(param.stripes_nr)
-        .WillRepeatedly(make_backend_writer(storages_[i]));
+        .WillRepeatedly(make_backend_writer(storages[i]));
   }
-
-  std::random_device rd{};
 
   auto const buf_sz = hs.size() * param.strip_sz * param.stripes_nr;
   auto buf = std::make_unique_for_overwrite<std::byte[]>(buf_sz);
-  std::generate_n(buf.get(), buf_sz,
-                  [&] { return static_cast<std::byte>(rd()); });
+  std::generate_n(buf.get(), buf_sz, [rd = std::random_device{}] mutable {
+    return static_cast<std::byte>(rd());
+  });
   auto const buf_span = std::as_bytes(std::span{buf.get(), buf_sz});
 
   tgt.process(write_query::create(buf_span, 0));
@@ -127,7 +127,7 @@ TEST_P(RAID0, TestWriting) {
     auto const soff = off / (param.strip_sz * hs.size()) * param.strip_sz;
     auto const s1{buf_span.subspan(off, param.strip_sz)};
     auto const s2{
-        std::as_bytes(std::span{storages_[sid].get() + soff, param.strip_sz}),
+        std::as_bytes(std::span{storages[sid].get() + soff, param.strip_sz}),
     };
     EXPECT_TRUE(std::ranges::equal(s1, s2));
   }

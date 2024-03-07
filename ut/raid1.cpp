@@ -35,18 +35,19 @@ struct RAID1Param {
 using RAID1 = TestWithParam<RAID1Param>;
 
 TEST_P(RAID1, TestReading) {
-  auto const &param = GetParam();
+  auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<MockRWHandler>> hs{param.hs_nr};
   std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages_{hs.size()};
+  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz{param.hs_storage_sz};
-  std::ranges::generate(storages_, [storage_sz] {
-    std::random_device rd{};
+  std::ranges::generate(storages, [storage_sz] {
     auto storage = std::make_unique_for_overwrite<std::byte[]>(storage_sz);
     std::generate_n(storage.get(), storage_sz,
-                    [&] { return static_cast<std::byte>(rd()); });
+                    [rd = std::random_device{}] mutable {
+                      return static_cast<std::byte>(rd());
+                    });
     return storage;
   });
 
@@ -66,7 +67,7 @@ TEST_P(RAID1, TestReading) {
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times(reads_nr / hs.size() + (i < (reads_nr % hs.size())))
-        .WillRepeatedly(make_backend_reader(storages_[i]));
+        .WillRepeatedly(make_backend_reader(storages[i]));
   }
 
   auto const buf_sz{param.hs_storage_sz};
@@ -82,21 +83,21 @@ TEST_P(RAID1, TestReading) {
         std::as_bytes(buf_span.subspan(off, param.read_block_per_hs_sz))};
     auto const s2{
         std::as_bytes(
-            std::span{storages_[sid].get() + off, param.read_block_per_hs_sz}),
+            std::span{storages[sid].get() + off, param.read_block_per_hs_sz}),
     };
     EXPECT_TRUE(std::ranges::equal(s1, s2));
   }
 }
 
 TEST_P(RAID1, TestWriting) {
-  auto const &param = GetParam();
+  auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<MockRWHandler>> hs{param.hs_nr};
   std::ranges::generate(hs, [] { return std::make_shared<MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages_{hs.size()};
+  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz{param.hs_storage_sz};
-  std::ranges::generate(storages_, [storage_sz] {
+  std::ranges::generate(storages, [storage_sz] {
     return std::make_unique<std::byte[]>(storage_sz);
   });
 
@@ -113,20 +114,19 @@ TEST_P(RAID1, TestWriting) {
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
         .Times(1)
-        .WillRepeatedly(make_backend_writer(storages_[i]));
+        .WillRepeatedly(make_backend_writer(storages[i]));
   }
-
-  std::random_device rd{};
 
   auto const buf_sz{storage_sz};
   auto buf{std::make_unique_for_overwrite<std::byte[]>(buf_sz)};
-  std::generate_n(buf.get(), buf_sz,
-                  [&] { return static_cast<std::byte>(rd()); });
+  std::generate_n(buf.get(), buf_sz, [rd = std::random_device{}] mutable {
+    return static_cast<std::byte>(rd());
+  });
   auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
   tgt.process(write_query::create(buf_span, 0));
 
-  for (auto const &storage : storages_) {
+  for (auto const &storage : storages) {
     auto const s1{buf_span};
     auto const s2{
         std::as_bytes(std::span{storage.get(), storage_sz}),
