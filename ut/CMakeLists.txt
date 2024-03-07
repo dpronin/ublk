@@ -34,3 +34,14 @@ target_link_libraries(raid4_ut PRIVATE
 )
 
 add_test(NAME RAID4 COMMAND raid4_ut)
+
+add_executable(raid5_ut
+    raid5.cpp
+)
+
+target_link_libraries(raid5_ut PRIVATE
+    gtest::gtest
+    ublk::raid5
+)
+
+add_test(NAME RAID5 COMMAND raid5_ut)
