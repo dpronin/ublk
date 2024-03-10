@@ -12,7 +12,8 @@ private:
   using state_t = boost::dynamic_bitset<Block, Allocator>;
 
 public:
-  explicit bitset_locker(size_t preallocate_size = 0, Allocator const alloc = {})
+  explicit bitset_locker(size_t preallocate_size = 0,
+                         Allocator const &alloc = {})
       : lk_state_(preallocate_size, 0, alloc) {}
   ~bitset_locker() = default;
 
@@ -42,6 +43,8 @@ public:
     assert(lk_state_[pos]);
     lk_state_.reset(pos);
   }
+
+  size_t size() const noexcept { return lk_state_.size(); }
 
 private:
   state_t lk_state_;
