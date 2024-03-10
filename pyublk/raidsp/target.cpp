@@ -294,7 +294,7 @@ int Target::process(uint64_t stripe_id,
                     return;
                   }
                 });
-            if (auto const res = read_stripe_data(
+            if (auto const res = read_stripe_parity(
                     stripe_id, std::move(new_rpq))) [[unlikely]] {
               wq->set_err(res);
               return;
