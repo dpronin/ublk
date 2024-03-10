@@ -39,6 +39,7 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
 
 int Target::read_data_skip_parity(uint64_t stripe_id_from,
                                   std::shared_ptr<read_query> rq) noexcept {
+  assert(!rq->buf().empty());
   assert(rq->offset() < stripe_data_sz_);
 
   auto stripe_id{stripe_id_from};
@@ -80,15 +81,20 @@ int Target::read_data_skip_parity(uint64_t stripe_id_from,
 
 int Target::read_stripe_data(uint64_t stripe_id_from,
                              std::shared_ptr<read_query> rq) noexcept {
+  assert(!rq->buf().empty());
   assert(!(rq->offset() + rq->buf().size() > stripe_data_sz_));
+
   return read_data_skip_parity(stripe_id_from, std::move(rq));
 }
 
 int Target::read_stripe_parity(uint64_t stripe_id,
                                std::shared_ptr<read_query> rq) noexcept {
-  assert(!(rq->buf().size() < strip_sz_));
+  assert(!rq->buf().empty());
+  assert(!(rq->offset() + rq->buf().size() > strip_sz_));
+
   auto const parity_id = stripe_id_to_parity_id(stripe_id);
   assert(parity_id < hs_.size());
+
   return hs_[parity_id]->submit(
       rq->subquery(0, std::min(strip_sz_, rq->buf().size()),
                    stripe_id * strip_sz_, [rq](read_query const &new_rq) {
