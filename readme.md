@@ -104,7 +104,7 @@ kernel, see [ublkdrv](https://github.com/dpronin/ublkdrv). Build the module, ins
 
 ## Working with ublksh
 
-You could see many examples in the [directory](ublksh/samples) for configuring different types of RAIDs, mirros and inmem storages
+You could see many examples in the [directory](ublksh/samples) for configuring different types of RAIDs, mirrors and inmem storages
 
 ### Examples of assembling block devices
 
@@ -214,14 +214,14 @@ ublksh > target_destroy name=raid0_example
 
 Make sure that you have _null_blk_ module built in the kernel or existing in the out-of-the-box list of modules.
 
-At first, check your kernel config out, if it has been built in the kernel image, by accessing to proc's file system node:
+At first, check your kernel config out if it has been built in the kernel image by accessing to proc's file system node:
 
 ```bash
 $ zcat /proc/config.gz| grep -i null_b
 CONFIG_BLK_DEV_NULL_BLK=m
 ```
 
-Then, check if your system has knowledge about how to load _null_blk_ kernel module:
+Then, check if your system has knowledge how to load _null_blk_ kernel module:
 
 ```bash
 $ modinfo null_blk
