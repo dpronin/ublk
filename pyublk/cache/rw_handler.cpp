@@ -50,10 +50,8 @@ RWHandler::RWHandler(uint64_t cache_len_sectors,
 
   auto handler_sp{std::shared_ptr{std::move(handler)}};
 
-  auto pool = std::make_shared<mm::mem_chunk_pool>(
-      mm::get_unique_bytes_generator(kCachedChunkAlignment,
-                                     cache_sp->item_sz()),
-      kCachedChunkAlignment, cache_sp->item_sz());
+  auto pool = std::make_shared<mm::mem_chunk_pool>(kCachedChunkAlignment,
+                                                   cache_sp->item_sz());
 
   handlers_[0] = std::make_shared<RWIHandler>(cache_sp, handler_sp, pool);
   handlers_[1] = std::make_shared<RWTHandler>(cache_sp, handler_sp, pool);

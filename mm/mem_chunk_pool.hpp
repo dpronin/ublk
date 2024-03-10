@@ -6,6 +6,7 @@
 #include <functional>
 #include <stack>
 
+#include "mem.hpp"
 #include "mem_types.hpp"
 
 #include "utils/span.hpp"
@@ -15,12 +16,13 @@ namespace ublk::mm {
 
 class mem_chunk_pool final {
 public:
-  explicit mem_chunk_pool(std::function<uptrwd<std::byte[]>()> generator,
-                          size_t alignment, size_t chunk_sz) noexcept
-      : generator_(std::move(generator)), alignment_(alignment),
-        chunk_sz_(chunk_sz) {
-    assert(generator_);
+  explicit mem_chunk_pool(size_t alignment, size_t chunk_sz) noexcept
+      : alignment_(alignment), chunk_sz_(chunk_sz) {
     assert(is_power_of_2(alignment_));
+    assert(chunk_sz_);
+
+    generator_ = get_unique_bytes_generator(alignment_, chunk_sz_);
+    assert(generator_);
   }
   ~mem_chunk_pool() = default;
 

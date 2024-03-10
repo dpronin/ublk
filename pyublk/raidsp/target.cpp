@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "mm/generic_allocators.hpp"
-#include "mm/mem.hpp"
 
 #include "utils/algo.hpp"
 #include "utils/math.hpp"
@@ -34,13 +33,9 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
   stripe_pool_ = std::make_unique<mm::mem_chunk_pool>(
-      mm::get_unique_bytes_generator(kCachedStripeAlignment,
-                                     stripe_data_sz_ + strip_sz_),
       kCachedStripeAlignment, stripe_data_sz_ + strip_sz_);
-
-  stripe_parity_pool_ = std::make_unique<mm::mem_chunk_pool>(
-      mm::get_unique_bytes_generator(kCachedParityAlignment, strip_sz_),
-      kCachedParityAlignment, strip_sz_);
+  stripe_parity_pool_ =
+      std::make_unique<mm::mem_chunk_pool>(kCachedParityAlignment, strip_sz_);
 }
 
 int Target::read_data_skip_parity(uint64_t stripe_id_from,
