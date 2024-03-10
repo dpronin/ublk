@@ -33,10 +33,14 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
   assert(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
-  cached_stripe_generator_ = mm::get_unique_bytes_generator(
+  stripe_pool_ = std::make_unique<mm::mem_chunk_pool>(
+      mm::get_unique_bytes_generator(kCachedStripeAlignment,
+                                     stripe_data_sz_ + strip_sz_),
       kCachedStripeAlignment, stripe_data_sz_ + strip_sz_);
-  cached_stripe_parity_generator_ =
-      mm::get_unique_bytes_generator(kCachedStripeAlignment, strip_sz_);
+
+  stripe_parity_pool_ = std::make_unique<mm::mem_chunk_pool>(
+      mm::get_unique_bytes_generator(kCachedParityAlignment, strip_sz_),
+      kCachedParityAlignment, strip_sz_);
 }
 
 int Target::read_data_skip_parity(uint64_t stripe_id_from,
@@ -208,7 +212,7 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
 
 int Target::full_stripe_write_process(
     uint64_t stripe_id_at, std::shared_ptr<write_query> wqd) noexcept {
-  auto cached_stripe_parity = cached_stripe_parity_generator_();
+  auto cached_stripe_parity = stripe_parity_allocate();
   auto cached_stripe_parity_view =
       std::span{cached_stripe_parity.get(), strip_sz_};
 
@@ -241,11 +245,9 @@ int Target::process(uint64_t stripe_id,
    * intend to partially modify the stripe
    */
   if (wq->buf().size() < stripe_data_sz_) {
-    auto new_cached_stripe = cached_stripe_generator_();
-    auto new_cached_stripe_data_view =
-        cached_stripe_data_view(new_cached_stripe);
-    auto new_cached_stripe_parity_view =
-        cached_stripe_parity_view(new_cached_stripe);
+    auto new_cached_stripe = stripe_allocate();
+    auto new_cached_stripe_data_view = stripe_data_view(new_cached_stripe);
+    auto new_cached_stripe_parity_view = stripe_parity_view(new_cached_stripe);
 
     if (stripe_parity_coherency_state_[stripe_id]) [[likely]] {
       auto const new_cached_stripe_data_chunk =

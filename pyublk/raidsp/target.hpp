@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -14,6 +13,7 @@
 #include "utils/span.hpp"
 
 #include "mm/cache_line_aligned_allocator.hpp"
+#include "mm/mem_chunk_pool.hpp"
 
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
@@ -35,24 +35,30 @@ protected:
   static_assert(is_aligned_to(kCachedStripeAlignment,
                               alignof(std::max_align_t)));
 
+  constexpr static inline auto kCachedParityAlignment = kSectorSz;
+  static_assert(is_aligned_to(kCachedParityAlignment,
+                              alignof(std::max_align_t)));
+
   template <typename T = std::byte>
-  auto cached_stripe_view(
-      mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
-    return to_span_of<T>({cached_stripe.get(), stripe_data_sz_ + strip_sz_});
+  auto stripe_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return to_span_of<T>(stripe_pool_->chunk_view(stripe));
   }
 
   template <typename T = std::byte>
-  auto cached_stripe_data_view(
-      mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
-    return to_span_of<T>(
-        cached_stripe_view(cached_stripe).subspan(0, stripe_data_sz_));
+  auto stripe_data_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return to_span_of<T>(stripe_view(stripe).subspan(0, stripe_data_sz_));
   }
 
   template <typename T = std::byte>
-  auto cached_stripe_parity_view(
-      mm::uptrwd<std::byte[]> const &cached_stripe) const noexcept {
-    return to_span_of<T>(
-        cached_stripe_view(cached_stripe).subspan(stripe_data_sz_));
+  auto
+  stripe_parity_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return to_span_of<T>(stripe_view(stripe).subspan(stripe_data_sz_));
+  }
+
+  auto stripe_allocate() const noexcept { return stripe_pool_->get(); }
+
+  auto stripe_parity_allocate() const noexcept {
+    return stripe_parity_pool_->get();
   }
 
   int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
@@ -88,8 +94,10 @@ protected:
   std::vector<std::shared_ptr<IRWHandler>> hs_;
   bitset_locker<uint64_t, mm::allocator::cache_line_aligned_allocator<uint64_t>>
       stripe_w_locker_;
-  std::function<mm::uptrwd<std::byte[]>()> cached_stripe_generator_;
-  std::function<mm::uptrwd<std::byte[]>()> cached_stripe_parity_generator_;
+
+  mutable std::unique_ptr<mm::mem_chunk_pool> stripe_pool_;
+  mutable std::unique_ptr<mm::mem_chunk_pool> stripe_parity_pool_;
+
   boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
   std::vector<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
 };
