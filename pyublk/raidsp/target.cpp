@@ -124,7 +124,11 @@ Target::stripe_id_to_handlers(uint64_t stripe_id) {
 int Target::stripe_write(uint64_t stripe_id_at,
                          std::shared_ptr<write_query> wqd,
                          std::shared_ptr<write_query> wqp) noexcept {
+  assert(wqd);
+  assert(!wqd->buf().empty());
   assert(!(wqd->offset() + wqd->buf().size() > stripe_data_sz_));
+  assert(wqp);
+  assert(!wqp->buf().empty());
   assert(!(wqp->offset() + wqp->buf().size() > strip_sz_));
 
   auto combined_completer_guard = std::shared_ptr<std::nullptr_t>{
@@ -179,6 +183,7 @@ int Target::stripe_write(uint64_t stripe_id_at,
 int Target::stripe_write(uint64_t stripe_id_at,
                          std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
+  assert(!wq->buf().empty());
   assert(!(wq->buf().size() < (stripe_data_sz_ + strip_sz_)));
   auto completer = [wq](write_query const &new_wq) {
     if (new_wq.err()) [[unlikely]] {
@@ -193,6 +198,7 @@ int Target::stripe_write(uint64_t stripe_id_at,
 
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
   assert(rq);
+  assert(!rq->buf().empty());
 
   return read_data_skip_parity(rq->offset() / stripe_data_sz_,
                                rq->subquery(0, rq->buf().size(),
@@ -233,6 +239,8 @@ int Target::full_stripe_write_process(
 
 int Target::process(uint64_t stripe_id,
                     std::shared_ptr<write_query> wq) noexcept {
+  assert(wq);
+  assert(!wq->buf().empty());
   assert(!(wq->offset() + wq->buf().size() > stripe_data_sz_));
 
   /*
