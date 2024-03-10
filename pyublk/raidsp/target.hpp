@@ -10,7 +10,10 @@
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
+#include "utils/bitset_locker.hpp"
 #include "utils/span.hpp"
+
+#include "mm/cache_line_aligned_allocator.hpp"
 
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
@@ -83,12 +86,11 @@ protected:
   uint64_t strip_sz_;
   uint64_t stripe_data_sz_;
   std::vector<std::shared_ptr<IRWHandler>> hs_;
+  bitset_locker<uint64_t, mm::allocator::cache_line_aligned_allocator<uint64_t>>
+      stripe_w_locker_;
   std::function<mm::uptrwd<std::byte[]>()> cached_stripe_generator_;
   std::function<mm::uptrwd<std::byte[]>()> cached_stripe_parity_generator_;
-
-private:
   boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
-  boost::dynamic_bitset<uint64_t> stripe_write_lock_state_;
   std::vector<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
 };
 

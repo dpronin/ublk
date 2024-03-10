@@ -10,6 +10,7 @@
 #include <span>
 #include <utility>
 
+#include "mm/generic_allocators.hpp"
 #include "mm/mem.hpp"
 
 #include "utils/algo.hpp"
@@ -24,7 +25,8 @@ namespace ublk::raidsp {
 
 Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
     : strip_sz_(strip_sz), stripe_data_sz_(strip_sz_ * (hs.size() - 1)),
-      hs_(std::move(hs)) {
+      hs_(std::move(hs)),
+      stripe_w_locker_(0, mm::allocator::cache_line_aligned<uint64_t>::value) {
   assert(is_power_of_2(strip_sz_));
   assert(is_multiple_of(strip_sz_, kCachedStripeAlignment));
   assert(!(hs_.size() < 3));
@@ -382,18 +384,11 @@ int Target::process(uint64_t stripe_id,
 
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
-  assert(0 != wq->buf().size());
+  assert(!wq->buf().empty());
 
-  for (auto const stripe_id_last{
-           div_round_up(wq->offset() + wq->buf().size(), stripe_data_sz_) - 1,
-       };
-       auto *bs : {
-           &stripe_parity_coherency_state_,
-           &stripe_write_lock_state_,
-       }) {
-    if (!(stripe_id_last < bs->size())) [[unlikely]]
-      bs->resize(stripe_id_last + 1);
-  }
+  stripe_w_locker_.extend(
+      div_round_up(wq->offset() + wq->buf().size(), stripe_data_sz_));
+  stripe_parity_coherency_state_.resize(stripe_w_locker_.size());
 
   auto stripe_id{wq->offset() / stripe_data_sz_};
   auto stripe_offset{wq->offset() % stripe_data_sz_};
@@ -421,12 +416,13 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
               std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
               wqs_pending_.pop_back();
             } else {
-              stripe_write_lock_state_.reset(stripe_id);
+              stripe_w_locker_.unlock(stripe_id);
               finish = true;
             }
           }
         });
-    if (stripe_write_lock_state_.test_set(stripe_id)) [[unlikely]] {
+
+    if (!stripe_w_locker_.try_lock(stripe_id)) [[unlikely]] {
       wqs_pending_.emplace_back(stripe_id, std::move(new_wq));
     } else if (auto const res{process(stripe_id, std::move(new_wq))})
         [[unlikely]] {
