@@ -35,17 +35,11 @@ TEST_P(RAID0, TestReading) {
   std::ranges::generate(hs,
                         [] { return std::make_shared<ut::MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz{param.strip_sz * param.stripes_nr};
-  std::ranges::generate(storages, [storage_sz] {
-    return ut::make_unique_random_bytes(storage_sz);
-  });
-
-  std::vector<std::span<std::byte const>> storage_spans{storages.size()};
-  std::ranges::transform(
-      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
-        return std::span<std::byte const>{storage.get(), storage_sz};
-      });
+  auto const storages{
+      ut::make_randomized_storages<std::byte const>(storage_sz, hs.size()),
+  };
+  auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
   ublk::raid0::Target tgt{param.strip_sz, {hs.begin(), hs.end()}};
   for (size_t i = 0; i < hs.size(); ++i) {
@@ -76,19 +70,13 @@ TEST_P(RAID0, TestWriting) {
   std::ranges::generate(hs,
                         [] { return std::make_shared<ut::MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
   auto const storage_sz{param.strip_sz * param.stripes_nr};
-  std::ranges::generate(storages, [storage_sz] {
-    return std::make_unique<std::byte[]>(storage_sz);
-  });
+  auto const storages{
+      ut::make_zeroed_storages<std::byte>(storage_sz, hs.size()),
+  };
+  auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
-  std::vector<std::span<std::byte>> storage_spans{storages.size()};
-  std::ranges::transform(
-      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
-        return std::span<std::byte>{storage.get(), storage_sz};
-      });
-
-  ublk::raid0::Target tgt{param.strip_sz, {hs.begin(), hs.end()}};
+  auto tgt{ublk::raid0::Target{param.strip_sz, {hs.begin(), hs.end()}}};
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
         .Times(param.stripes_nr)

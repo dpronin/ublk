@@ -36,21 +36,21 @@ TEST_P(RAID1, TestReading) {
   std::ranges::generate(hs,
                         [] { return std::make_shared<ut::MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
-  auto const storage_sz{param.hs_storage_sz};
-  std::ranges::generate(storages, [storage_sz] {
-    return ut::make_unique_random_bytes(storage_sz);
-  });
+  auto const storages{
+      ut::make_randomized_storages<std::byte const>(param.hs_storage_sz,
+                                                    hs.size()),
+  };
+  auto const storage_spans{
+      ut::make_storage_spans(storages, param.hs_storage_sz),
+  };
 
-  std::vector<std::span<std::byte const>> storage_spans{storages.size()};
-  std::ranges::transform(
-      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
-        return std::span<std::byte const>{storage.get(), storage_sz};
-      });
+  auto const reads_nr{
+      div_round_up(param.hs_storage_sz, param.read_block_per_hs_sz),
+  };
 
-  auto const reads_nr{div_round_up(storage_sz, param.read_block_per_hs_sz)};
-
-  ublk::raid1::Target tgt{param.read_block_per_hs_sz, {hs.begin(), hs.end()}};
+  auto tgt{
+      ublk::raid1::Target{param.read_block_per_hs_sz, {hs.begin(), hs.end()}},
+  };
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times(reads_nr / hs.size() + (i < (reads_nr % hs.size())))
@@ -81,26 +81,23 @@ TEST_P(RAID1, TestWriting) {
   std::ranges::generate(hs,
                         [] { return std::make_shared<ut::MockRWHandler>(); });
 
-  std::vector<std::unique_ptr<std::byte[]>> storages{hs.size()};
-  auto const storage_sz{param.hs_storage_sz};
-  std::ranges::generate(storages, [storage_sz] {
-    return std::make_unique<std::byte[]>(storage_sz);
-  });
+  auto const storages{
+      ut::make_zeroed_storages<std::byte>(param.hs_storage_sz, hs.size()),
+  };
+  auto const storage_spans{
+      ut::make_storage_spans(storages, param.hs_storage_sz),
+  };
 
-  std::vector<std::span<std::byte>> storage_spans{storages.size()};
-  std::ranges::transform(
-      storages, storage_spans.begin(), [storage_sz](auto const &storage) {
-        return std::span<std::byte>{storage.get(), storage_sz};
-      });
-
-  ublk::raid1::Target tgt{param.read_block_per_hs_sz, {hs.begin(), hs.end()}};
+  auto tgt{
+      ublk::raid1::Target{param.read_block_per_hs_sz, {hs.begin(), hs.end()}},
+  };
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
         .Times(1)
         .WillRepeatedly(ut::make_inmem_writer(storage_spans[i]));
   }
 
-  auto const buf_sz{storage_sz};
+  auto const buf_sz{param.hs_storage_sz};
   auto const buf{ut::make_unique_random_bytes(buf_sz)};
   auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 

@@ -9,6 +9,7 @@
 #include <memory>
 #include <random>
 #include <span>
+#include <vector>
 
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
@@ -50,5 +51,34 @@ inline auto make_inmem_reader(std::span<std::byte const> storage) noexcept {
     return 0;
   };
 };
+
+template <is_byte T>
+inline auto
+make_storage_spans(std::vector<std::unique_ptr<T[]>> const &storages,
+                   size_t storage_sz) {
+  std::vector<std::span<T>> storage_spans{storages.size()};
+  std::ranges::transform(storages, storage_spans.begin(),
+                         [storage_sz](auto const &storage) -> std::span<T> {
+                           return {storage.get(), storage_sz};
+                         });
+  return storage_spans;
+}
+
+template <is_byte T>
+inline auto make_randomized_storages(size_t storage_sz, size_t nr) {
+  std::vector<std::unique_ptr<T[]>> storages{nr};
+  std::ranges::generate(storages, [storage_sz] {
+    return ut::make_unique_random_bytes(storage_sz);
+  });
+  return storages;
+}
+
+template <is_byte T>
+inline auto make_zeroed_storages(size_t storage_sz, size_t nr) {
+  std::vector<std::unique_ptr<T[]>> storages{nr};
+  std::ranges::generate(
+      storages, [storage_sz] { return std::make_unique<T[]>(storage_sz); });
+  return storages;
+}
 
 } // namespace ublk::ut
