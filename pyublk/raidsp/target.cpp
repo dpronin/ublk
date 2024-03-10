@@ -132,9 +132,7 @@ int Target::stripe_write(uint64_t stripe_id_at,
       nullptr,
       [=, this](std::nullptr_t *) {
         if (!wqd->err() && !wqp->err()) [[likely]] {
-          if (!(stripe_id_at < stripe_parity_coherency_state_.size()))
-              [[unlikely]]
-            stripe_parity_coherency_state_.resize(stripe_id_at + 1);
+          assert(stripe_id_at < stripe_parity_coherency_state_.size());
           stripe_parity_coherency_state_.set(stripe_id_at);
         }
       },
