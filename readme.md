@@ -123,13 +123,14 @@ Then we will see __/dev/ublk-0__ as a target block device:
 ```bash
 $ lsblk
 NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+...
 ublk-0      252:0    0     4G  0 disk
 ...
 ```
 
 ##### Check it out with performing IO operations
 
-Let's perform IO operations to check it out.
+Let us perform IO operations to check it out.
 
 Let us do it with dd utility performing sequential write operations thoughout all the block device:
 
@@ -141,7 +142,7 @@ Let us do it with dd utility performing sequential write operations thoughout al
 4294967296 bytes (4.3 GB, 4.0 GiB) copied, 14.3623 s, 299 MB/s
 ```
 
-Let's us risk to do sequential read operations by means of fio utility:
+Let us us risk to do sequential read operations by means of fio utility:
 
 ```markdown
 # fio --filename=/dev/ublk-0 --direct=1 --rw=read --bs=4k --ioengine=libaio --iodepth=32 --numjobs=1 --group_reporting --name=ublk-raid0-example-read-test --eta-newline=1 --readonly
@@ -210,7 +211,7 @@ ublksh > target_destroy name=raid0_example
 
 #### Building RAID1 upon nullb devices
 
-##### Checking and loading null_blk kernel module
+##### Checking and loading _null_blk_ kernel module
 
 Make sure that you have _null_blk_ module built in the kernel or existing in the out-of-the-box list of modules.
 
@@ -284,13 +285,14 @@ Then we will see __/dev/ublk-0__ as a target block device:
 ```bash
 $ lsblk
 NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+...
 ublk-0      252:0    0     6G  0 disk
 ...
 ```
 
 ##### Check it out with performing IO operations
 
-Let's perform IO operations to check it out.
+Let us perform IO operations to check it out.
 
 Let us do it with dd utility performing sequential write operations thoughout all the block device:
 
@@ -393,7 +395,7 @@ As we see, __RAID1__ benefits from uniformly distributing read IO operations amo
 
 ##### Removing RAID1 device
 
-To unload __/dev/ublk-1__ device perform unmapping the block device from the ublk's target:
+To unload __/dev/ublk-0__ device perform unmapping the block device from the ublk's target:
 
 ```bash
 ublksh > bdev_unmap bdev_suffix=0
@@ -411,4 +413,264 @@ If you finish working with _nullb\*_ devices you may remove the module from kern
 
 ```markdown
 # rmmod null_blk
+```
+
+#### Building RAID5 upon loop devices and use RAID built for deploying ext4 file system upon it
+
+##### Checking and loading loop kernel module
+
+Make sure that you have _loop_ module built in the kernel or existing in the out-of-the-box list of modules.
+
+At first, check your kernel config out if it has been built in the kernel image by accessing to proc's file system node:
+
+```bash
+$ zcat /proc/config.gz| grep -i loop
+CONFIG_BLK_DEV_LOOP=m
+CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
+...
+```
+
+Then, check if your system has knowledge how to load _loop_ kernel module:
+
+```bash
+$ modinfo loop
+filename:       /lib/modules/6.7.5/kernel/drivers/block/loop.ko
+license:        GPL
+alias:          block-major-7-*
+alias:          char-major-10-237
+alias:          devname:loop-control
+vermagic:       6.7.5 SMP preempt mod_unload
+name:           loop
+intree:         Y
+depends:
+parm:           hw_queue_depth:Queue depth for each hardware queue. Default: 128
+parm:           max_part:Maximum number of partitions per loop device (int)
+parm:           max_loop:Maximum number of loop devices
+```
+
+Then, insert the _loop_ module with specific list of parameters before proceeding with building
+RAID5:
+
+```markdown
+# modprobe loop
+```
+
+##### Preparing loop devices
+
+__RAID5__ requires __at least 3 devices__ on backend, let us prepare 3 loop devices mapped to regular files 200MiB capable apiece:
+
+At first, prepare 3 files with fixed required size:
+
+```bash
+$ for i in 0 1 2; do dd if=/dev/zero of=$i.dat bs=1M count=200 oflag=direct; done
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 0.118051 s, 1.8 GB/s
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 0.111347 s, 1.9 GB/s
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 0.107954 s, 1.9 GB/s
+$ ls {0..2}.dat
+0.dat  1.dat  2.dat
+```
+
+Then, we setup loop devices, each being mapped to its own file created above:
+
+```markdown
+# for i in 0 1 2; do losetup /dev/loop$i $i.dat; done
+```
+
+List block devices to ensure loop devices exist:
+
+```bash
+$ lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+loop0         7:0    0   200M  0 loop
+loop1         7:1    0   200M  0 loop
+loop2         7:2    0   200M  0 loop
+...
+```
+
+Ok. Now we are ready to build __RAID5__ on these loop devices
+
+##### Building RAID5
+
+This example of __RAID5__ will be based on _loop_-based devices on backend, the RAID is going to be __400MiB__ capable, with __32KiB__ strip long, devices on backend will be __/dev/loop0__, __/dev/loop1__, __/dev/loop2__:
+
+```bash
+ublksh > target_create name=raid5_example capacity_sectors=819200 type=raid5 strip_len_sectors=64 paths=/dev/loop0,/dev/loop1,/dev/loop2
+ublksh > bdev_map bdev_suffix=0 target_name=raid5_example
+```
+
+Then we will see __/dev/ublk-0__ as a target block device:
+
+```bash
+$ lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+...
+ublk-0      252:0    0   400M  0 disk
+...
+```
+
+##### Deploying ext4 file system upon RAID5 just built
+
+Run making file system on block device representing our RAID5 assembled above:
+
+```markdown
+# mkfs.ext4 /dev/ublk-0
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 409600 1k blocks and 102400 inodes
+Filesystem UUID: 9c6e1318-89c4-47fc-bbf5-dcd2870ec854
+Superblock backups stored on blocks:
+  8193, 24577, 40961, 57345, 73729, 204801, 221185, 401409
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (8192 blocks): done
+Writing superblocks and filesystem accounting information: done
+```
+
+Then, we need to mount the file system to a new mountpoint:
+
+```markdown
+# mkdir -p raid5ext4mp
+# mount /dev/ublk-0 raid5ext4mp
+# mount | grep raid5ext4mp
+/dev/ublk-0 on .../raid5ext4mp type ext4 (rw,relatime)
+# df -h | grep -i /dev/ublk-0
+/dev/ublk-0        365M          14K  341M            1% .../raid5ext4mp
+```
+
+We see 365MiB capable a new file system mounted to our mountpoint
+
+##### Check it out with performing IO operations
+
+Let us perform IO operations to check it out.
+
+For the beginning we try to use dd utility performing sequential write operations to a file from the file system we have built upon __RAID5__. We're going to write 200MiB of data, each block being 4KiB long at a time of write IO:
+
+```markdown
+# dd if=/dev/random of=raid5ext4mp/a.dat oflag=direct bs=4K count=51200 status=progress
+202997760 bytes (203 MB, 194 MiB) copied, 17 s, 11.9 MB/s
+51200+0 records in
+51200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 17.5307 s, 12.0 MB/s
+```
+
+If we take a look at _iostat_'s measurements while _dd_ is working we will see IO progress at block devices:
+
+```bash
+$ iostat -ym 1
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           8,86    0,00    6,71   11,39    0,00   73,04
+
+Device             tps    MB_read/s    MB_wrtn/s    MB_dscd/s    MB_read    MB_wrtn    MB_dscd
+loop0          4052,00        36,73        35,00         0,00         36         34          0
+loop1          4153,00        36,96        35,20         0,00         36         35          0
+loop2          4195,00        36,83        34,96         0,00         36         34          0
+ublk-0         2836,00         0,00        11,04         0,00          0         11          0
+...
+```
+
+Let us do IO write operations by means of fio utility and see how it would go. The most important thing here is that we want to check if data corruption takes place, therefore fio is going to be configured with data verification option. File size will be constrained to 100MiB for this test, write operations will be randomly distributed within these 100MiB space, see:
+
+```markdown
+# fio --filename=raid5ext4mp/b.dat --filesize=100M --direct=1 --rw=randrw --bs=16K --ioengine=libaio --iodepth=8 --numjobs=1 --group_reporting --name=ublk-raid5ext4-example-write-verify-test --eta-newline=1 --verify=xxhash
+ublk-raid5ext4-example-write-verify-test: (g=0): rw=randrw, bs=(R) 16.0KiB-16.0KiB, (W) 16.0KiB-16.0KiB, (T) 16.0KiB-16.0KiB, ioengine=libaio, iodepth=8
+fio-3.34
+Starting 1 process
+ublk-raid5ext4-example-write-verify-test: Laying out IO file (1 file / 100MiB)
+Jobs: 1 (f=1): [V(1)][-.-%][r=44.4MiB/s,w=25.2MiB/s][r=2841,w=1615 IOPS][eta 00m:00s]
+ublk-raid5ext4-example-write-verify-test: (groupid=0, jobs=1): err= 0: pid=96967: Sun Mar 10 18:26:43 2024
+  read: IOPS=3078, BW=48.1MiB/s (50.4MB/s)(100MiB/2079msec)
+    slat (nsec): min=1839, max=56681, avg=4639.17, stdev=3793.38
+    clat (usec): min=72, max=5532, avg=829.30, stdev=745.32
+     lat (usec): min=75, max=5537, avg=833.94, stdev=746.49
+    clat percentiles (usec):
+     |  1.00th=[  106],  5.00th=[  147], 10.00th=[  186], 20.00th=[  258],
+     | 30.00th=[  318], 40.00th=[  371], 50.00th=[  437], 60.00th=[  676],
+     | 70.00th=[ 1123], 80.00th=[ 1516], 90.00th=[ 2008], 95.00th=[ 2343],
+     | 99.00th=[ 2966], 99.50th=[ 3261], 99.90th=[ 3752], 99.95th=[ 4015],
+     | 99.99th=[ 5538]
+   bw (  KiB/s): min=22848, max=26400, per=50.84%, avg=25040.00, stdev=1602.24, samples=4
+   iops        : min= 1428, max= 1650, avg=1565.00, stdev=100.14, samples=4
+  write: IOPS=1676, BW=26.2MiB/s (27.5MB/s)(51.1MiB/1950msec); 0 zone resets
+    slat (usec): min=8, max=103, avg=15.47, stdev= 6.84
+    clat (usec): min=823, max=11038, avg=3426.30, stdev=1051.88
+     lat (usec): min=846, max=11050, avg=3441.77, stdev=1051.70
+    clat percentiles (usec):
+     |  1.00th=[ 1401],  5.00th=[ 1876], 10.00th=[ 2212], 20.00th=[ 2573],
+     | 30.00th=[ 2868], 40.00th=[ 3097], 50.00th=[ 3359], 60.00th=[ 3621],
+     | 70.00th=[ 3851], 80.00th=[ 4228], 90.00th=[ 4752], 95.00th=[ 5145],
+     | 99.00th=[ 6587], 99.50th=[ 7504], 99.90th=[ 8979], 99.95th=[ 9896],
+     | 99.99th=[11076]
+   bw (  KiB/s): min=24064, max=27616, per=97.50%, avg=26160.00, stdev=1607.77, samples=4
+   iops        : min= 1504, max= 1726, avg=1635.00, stdev=100.49, samples=4
+  lat (usec)   : 100=0.50%, 250=12.17%, 500=23.62%, 750=5.04%, 1000=3.37%
+  lat (msec)   : 2=17.26%, 4=29.50%, 10=8.53%, 20=0.01%
+  cpu          : usr=4.52%, sys=2.60%, ctx=7353, majf=0, minf=103
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=99.9%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=6400,3270,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+
+Run status group 0 (all jobs):
+   READ: bw=48.1MiB/s (50.4MB/s), 48.1MiB/s-48.1MiB/s (50.4MB/s-50.4MB/s), io=100MiB (105MB), run=2079-2079msec
+  WRITE: bw=26.2MiB/s (27.5MB/s), 26.2MiB/s-26.2MiB/s (27.5MB/s-27.5MB/s), io=51.1MiB (53.6MB), run=1950-1950msec
+
+Disk stats (read/write):
+  ublk-0: ios=6088/3270, merge=0/0, ticks=5182/11130, in_queue=16312, util=95.39%
+```
+
+While _fio_ is working run _iostat_ utility to see IO progress at block devices:
+
+```bash
+$ iostat -ym 1
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+          10,68    0,00   20,10    1,38    0,00   67,84
+
+Device             tps    MB_read/s    MB_wrtn/s    MB_dscd/s    MB_read    MB_wrtn    MB_dscd
+loop0          2918,00        24,07        36,54         0,00         24         36          0
+loop1          2904,00        24,30        36,54         0,00         24         36          0
+loop2          2850,00        22,83        35,05         0,00         22         35          0
+ublk-0         1923,00        14,30        66,99         0,00         14         66          0
+```
+
+##### Cleaning everything created earlier up
+
+First of all, you need to unmount the file system from mountpoint _raid5ext4mp_:
+
+```markdown
+# umount raid5ext4mp
+```
+
+Then, to unload __/dev/ublk-0__ device perform unmapping the block device from the ublk's target:
+
+```bash
+ublksh > bdev_unmap bdev_suffix=0
+```
+
+Then you may destroy the target by giving its name:
+
+```bash
+ublksh > target_destroy name=raid5_example
+```
+
+Then, you may detach loop devices from the files backing them:
+
+```markdown
+# for i in 0 1 2; do losetup -d /dev/loop$i; done
+```
+
+Then, if you need, backing files __0.dat__, __1.dat__ and __2.dat__ may be removed
+
+> :information_source: If you want to recover everything up and again see files generated by IO tests done above you could build the same RAID5 with the same configuration of RAID itself and loop devices from the start, then mount already existing file system again (skip making file system phase, otherwise you will wipe everything off) and see that nothing has been broken and file system has stayed consistent and contained the files __a.dat__ and __b.dat__
+
+Finally, unload __loop__ devices driver if required:
+
+```markdown
+# rmmod loop
 ```
