@@ -27,14 +27,8 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
     auto const chunk_sz{
         std::min(read_len_bytes_per_handler_, rq->buf().size() - rb),
     };
-    auto new_rq = rq->subquery(rb, chunk_sz, rq->offset() + rb,
-                               [rq](read_query const &new_rq) {
-                                 if (new_rq.err()) [[unlikely]] {
-                                   rq->set_err(new_rq.err());
-                                   return;
-                                 }
-                               });
-    if (auto const res = hs_[next_hid_]->submit(std::move(new_rq)))
+    auto new_rq{rq->subquery(rb, chunk_sz, rq->offset() + rb, rq)};
+    if (auto const res{hs_[next_hid_]->submit(std::move(new_rq))})
         [[unlikely]] {
       return res;
     }
@@ -45,7 +39,7 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
 
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
   for (auto const &h : hs_) {
-    if (auto const res = h->submit(wq)) [[unlikely]] {
+    if (auto const res{h->submit(wq)}) [[unlikely]] {
       return res;
     }
   }

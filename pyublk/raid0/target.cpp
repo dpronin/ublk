@@ -35,15 +35,7 @@ int Target::read(uint64_t strip_id_from, uint64_t strip_offset_from,
     auto const qbuf_sz{
         std::min(strip_sz_ - strip_offset, rq->buf().size() - rb),
     };
-    auto new_rq{
-        rq->subquery(rb, qbuf_sz, h_offset,
-                     [rq](read_query const &new_rq) {
-                       if (new_rq.err()) [[unlikely]] {
-                         rq->set_err(new_rq.err());
-                         return;
-                       }
-                     }),
-    };
+    auto new_rq{rq->subquery(rb, qbuf_sz, h_offset, rq)};
     if (auto const res{h->submit(std::move(new_rq))}) [[unlikely]] {
       return res;
     }
@@ -77,15 +69,7 @@ int Target::write(uint64_t strip_id_from, uint64_t strip_offset_from,
     auto const qbuf_sz{
         std::min(strip_sz_ - strip_offset, wq->buf().size() - wb),
     };
-    auto new_wq{
-        wq->subquery(wb, qbuf_sz, h_offset,
-                     [wq](write_query const &new_wq) {
-                       if (new_wq.err()) [[unlikely]] {
-                         wq->set_err(new_wq.err());
-                         return;
-                       }
-                     }),
-    };
+    auto new_wq{wq->subquery(wb, qbuf_sz, h_offset, wq)};
     if (auto const res{h->submit(std::move(new_wq))}) [[unlikely]] {
       return res;
     }

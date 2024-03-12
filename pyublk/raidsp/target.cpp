@@ -58,15 +58,7 @@ int Target::read_data_skip_parity(uint64_t stripe_id_from,
          chunk_sz > 0 && hid < (hs.size() - 1); ++hid, strip_offset = 0) {
       auto const h_offset{stripe_id * strip_sz_ + strip_offset};
       auto const h_sz{std::min(strip_sz_ - strip_offset, chunk_sz)};
-      auto new_rq{
-          rq->subquery(rb, h_sz, h_offset,
-                       [rq](read_query const &new_rq) {
-                         if (new_rq.err()) [[unlikely]] {
-                           rq->set_err(new_rq.err());
-                           return;
-                         }
-                       }),
-      };
+      auto new_rq{rq->subquery(rb, h_sz, h_offset, rq)};
       if (auto const res{hs[hid]->submit(std::move(new_rq))}) [[unlikely]] {
         return res;
       }
@@ -98,14 +90,8 @@ int Target::read_stripe_parity(uint64_t stripe_id,
   auto const parity_id{stripe_id_to_parity_id(stripe_id)};
   assert(parity_id < hs_.size());
 
-  return hs_[parity_id]->submit(
-      rq->subquery(0, std::min(strip_sz_, rq->buf().size()),
-                   stripe_id * strip_sz_, [rq](read_query const &new_rq) {
-                     if (new_rq.err()) [[unlikely]] {
-                       rq->set_err(new_rq.err());
-                       return;
-                     }
-                   }));
+  return hs_[parity_id]->submit(rq->subquery(
+      0, std::min(strip_sz_, rq->buf().size()), stripe_id * strip_sz_, rq));
 }
 
 std::vector<std::shared_ptr<IRWHandler>>
@@ -194,16 +180,8 @@ int Target::stripe_write(uint64_t stripe_id_at,
   assert(wq);
   assert(!wq->buf().empty());
   assert(!(wq->buf().size() < (stripe_data_sz_ + strip_sz_)));
-  auto completer{
-      [wq](write_query const &new_wq) {
-        if (new_wq.err()) [[unlikely]] {
-          wq->set_err(new_wq.err());
-          return;
-        }
-      },
-  };
-  auto wqd{wq->subquery(0, stripe_data_sz_, 0, completer)};
-  auto wqp{wq->subquery(stripe_data_sz_, strip_sz_, 0, completer)};
+  auto wqd{wq->subquery(0, stripe_data_sz_, 0, wq)};
+  auto wqp{wq->subquery(stripe_data_sz_, strip_sz_, 0, wq)};
   return stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
@@ -211,15 +189,9 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
   assert(rq);
   assert(!rq->buf().empty());
 
-  return read_data_skip_parity(rq->offset() / stripe_data_sz_,
-                               rq->subquery(0, rq->buf().size(),
-                                            rq->offset() % stripe_data_sz_,
-                                            [rq](read_query const &new_rq) {
-                                              if (new_rq.err()) [[unlikely]] {
-                                                rq->set_err(new_rq.err());
-                                                return;
-                                              }
-                                            }));
+  return read_data_skip_parity(
+      rq->offset() / stripe_data_sz_,
+      rq->subquery(0, rq->buf().size(), rq->offset() % stripe_data_sz_, rq));
 }
 
 int Target::full_stripe_write_process(

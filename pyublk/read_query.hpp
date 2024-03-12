@@ -51,6 +51,16 @@ public:
                   std::move(completer));
   }
 
+  auto subquery(uint64_t buf_offset, uint64_t buf_sz, uint64_t rq_offset,
+                std::shared_ptr<read_query> parent_rq) const noexcept {
+    return subquery(buf_offset, buf_sz, rq_offset,
+                    [parent_rq = std::move(parent_rq)](read_query const &rq) {
+                      if (rq.err()) [[unlikely]] {
+                        parent_rq->set_err(rq.err());
+                      }
+                    });
+  }
+
   auto buf() noexcept { return buf_; }
   auto buf() const noexcept { return std::span<std::byte const>{buf_}; }
 

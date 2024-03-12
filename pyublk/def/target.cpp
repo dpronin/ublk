@@ -45,13 +45,7 @@ void async_read(boost::asio::random_access_file *raf,
           }
 
           auto new_rq = rq->subquery(bytes_read, rq->buf().size() - bytes_read,
-                                     offset + bytes_read,
-                                     [rq](ublk::read_query const &new_rq) {
-                                       if (new_rq.err()) {
-                                         rq->set_err(new_rq.err());
-                                         return;
-                                       }
-                                     });
+                                     offset + bytes_read, rq);
 
           async_read(raf, std::move(new_rq));
         }
