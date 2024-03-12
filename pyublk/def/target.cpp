@@ -44,8 +44,10 @@ void async_read(boost::asio::random_access_file *raf,
             return;
           }
 
-          auto new_rq = rq->subquery(bytes_read, rq->buf().size() - bytes_read,
-                                     offset + bytes_read, rq);
+          auto new_rq{
+              rq->subquery(bytes_read, rq->buf().size() - bytes_read,
+                           offset + bytes_read, rq),
+          };
 
           async_read(raf, std::move(new_rq));
         }
