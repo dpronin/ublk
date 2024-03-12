@@ -14,6 +14,7 @@
 
 #include "mm/cache_line_aligned_allocator.hpp"
 #include "mm/mem_chunk_pool.hpp"
+#include "mm/mem_types.hpp"
 
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
@@ -46,13 +47,13 @@ protected:
 
   template <typename T = std::byte>
   auto stripe_data_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(stripe_view(stripe).subspan(0, stripe_data_sz_));
+    return to_span_of<T>(stripe_view(stripe).subspan(0, cfg_->stripe_data_sz));
   }
 
   template <typename T = std::byte>
   auto
   stripe_parity_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(stripe_view(stripe).subspan(stripe_data_sz_));
+    return to_span_of<T>(stripe_view(stripe).subspan(cfg_->stripe_data_sz));
   }
 
   auto stripe_allocate() const noexcept { return stripe_pool_->get(); }
@@ -85,12 +86,18 @@ public:
   explicit Target(uint64_t strip_sz,
                   std::vector<std::shared_ptr<IRWHandler>> hs);
 
+  bool is_stripe_parity_coherent(uint64_t stripe_id) const noexcept;
+
   int process(std::shared_ptr<read_query> rq) noexcept;
   int process(std::shared_ptr<write_query> wq) noexcept;
 
 protected:
-  uint64_t strip_sz_;
-  uint64_t stripe_data_sz_;
+  struct cfg_t {
+    uint64_t strip_sz;
+    uint64_t stripe_data_sz;
+  };
+  mm::uptrwd<cfg_t const> cfg_;
+
   std::vector<std::shared_ptr<IRWHandler>> hs_;
   bitset_locker<uint64_t, mm::allocator::cache_line_aligned_allocator<uint64_t>>
       stripe_w_locker_;
