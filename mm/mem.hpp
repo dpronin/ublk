@@ -124,7 +124,7 @@ inline auto get_unique_bytes_generator(size_t alignment, size_t chunk_sz) {
           chunk_sz);
     };
   } else {
-    alloc_mode_mmap mode{0};
+    alloc_mode_mmap mode{.flags = 0};
     auto generic_gen = [=] { return make_unique_bytes(mode, chunk_sz); };
     if (!(chunk_sz < 2_MiB)) {
       mode.flags = MAP_HUGETLB | (21 << MAP_HUGE_SHIFT);
