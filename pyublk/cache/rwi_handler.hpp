@@ -5,10 +5,7 @@
 
 #include <memory>
 
-#include "mm/cache_line_aligned_allocator.hpp"
 #include "mm/mem_chunk_pool.hpp"
-
-#include "utils/bitset_locker.hpp"
 
 #include "rw_handler_interface.hpp"
 
