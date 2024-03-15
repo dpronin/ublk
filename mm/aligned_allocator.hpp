@@ -15,7 +15,8 @@
 
 namespace ublk::mm {
 
-template <typename T, size_t Alignment = alignof(T)> class aligned_allocator {
+template <typename T = void, size_t Alignment = alignof(T)>
+class aligned_allocator {
 public:
   static_assert(is_power_of_2(Alignment), "Alignment must be a power of 2");
   static_assert(alignof(T) <= Alignment,

@@ -3,10 +3,15 @@
 #include <cstddef>
 #include <cstdlib>
 
+#include <algorithm>
 #include <limits>
+#include <memory>
 #include <new>
+#include <utility>
 
-#include "page.hpp"
+#include "utils/page.hpp"
+
+#include "mem_allocator.hpp"
 
 namespace ublk::mm {
 
@@ -18,12 +23,19 @@ public:
 
   using value_type = T;
 
-  page_aligned_allocator() = default;
+  explicit page_aligned_allocator(std::shared_ptr<mem_allocator> a = {})
+      : a_(std::move(a)) {
+    if (!a_)
+      a_ = std::make_shared<mem_allocator>();
+  }
   ~page_aligned_allocator() = default;
 
   template <typename U>
   constexpr explicit page_aligned_allocator(
-      page_aligned_allocator<U> const &other [[maybe_unused]]) noexcept {}
+      [[maybe_unused]] page_aligned_allocator<U> const &other) noexcept
+      : a_(other.underlying_allocator()) {
+    assert(a_);
+  }
 
   page_aligned_allocator(page_aligned_allocator<T> const &) = default;
   page_aligned_allocator(page_aligned_allocator<T> &&) = default;
@@ -35,14 +47,19 @@ public:
     if (auto const alignment = std::max(get_page_size(), alignof(T));
         alignment > 0) {
       if (auto *p =
-              static_cast<T *>(std::aligned_alloc(alignment, sizeof(T) * n)))
+              static_cast<T *>(a_->allocate_aligned(alignment, sizeof(T) * n)))
         return p;
     }
 
     throw std::bad_alloc();
   }
 
-  void deallocate(T *p, size_t n [[maybe_unused]]) noexcept { std::free(p); }
+  void deallocate(T *p, size_t n [[maybe_unused]]) noexcept { a_->free(p); }
+
+  auto const &underlying_allocator() const noexcept { return a_; }
+
+private:
+  std::shared_ptr<mem_allocator> a_;
 };
 
 } // namespace ublk::mm
