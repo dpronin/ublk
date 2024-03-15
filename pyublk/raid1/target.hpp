@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cstdint>
+
 #include <memory>
 #include <vector>
+
+#include "mm/mem_types.hpp"
 
 #include "rw_handler_interface.hpp"
 
@@ -16,7 +20,10 @@ public:
   int process(std::shared_ptr<write_query> wq) noexcept;
 
 private:
-  uint64_t read_len_bytes_per_handler_;
+  struct cfg_t {
+    uint64_t read_len_bytes_per_handler;
+  };
+  mm::uptrwd<cfg_t const> cfg_;
 
   uint32_t next_hid_;
   std::vector<std::shared_ptr<IRWHandler>> hs_;
