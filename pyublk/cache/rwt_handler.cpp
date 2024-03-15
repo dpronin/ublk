@@ -100,32 +100,30 @@ int RWTHandler::submit(std::shared_ptr<write_query> wq) noexcept {
     };
 
     auto chunk_wq{
-        wq->subquery(
-            wb, chunk_sz, wq->offset() + wb,
-            [this, chunk_id, wq](write_query const &chunk_wq) {
-              for (bool finish = false; !finish;) {
-                if (auto next_wq_it = std::ranges::find_if(
-                        wqs_pending_,
-                        [chunk_id](uint64_t wq_chunk_id) {
-                          return chunk_id == wq_chunk_id;
-                        },
-                        [](auto const &wq_pend) { return wq_pend.first; });
-                    next_wq_it != wqs_pending_.end()) {
-                  finish = 0 == process(next_wq_it->second);
-                  std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
-                  wqs_pending_.pop_back();
-                } else {
-                  chunk_w_locker_.unlock(chunk_id);
-                  finish = true;
-                }
+        wq->subquery(wb, chunk_sz, wq->offset() + wb,
+                     [this, chunk_id, wq](write_query const &chunk_wq) {
+                       for (bool finish = false; !finish;) {
+                         if (auto next_wq_it =
+                                 std::ranges::find(wqs_pending_, chunk_id,
+                                                   [](auto const &wq_pend) {
+                                                     return wq_pend.first;
+                                                   });
+                             next_wq_it != wqs_pending_.end()) {
+                           finish = 0 == process(next_wq_it->second);
+                           std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
+                           wqs_pending_.pop_back();
+                         } else {
+                           chunk_w_locker_.unlock(chunk_id);
+                           finish = true;
+                         }
 
-                if (chunk_wq.err()) [[unlikely]] {
-                  cache_->invalidate(chunk_id);
-                  wq->set_err(chunk_wq.err());
-                  return;
-                }
-              }
-            }),
+                         if (chunk_wq.err()) [[unlikely]] {
+                           cache_->invalidate(chunk_id);
+                           wq->set_err(chunk_wq.err());
+                           return;
+                         }
+                       }
+                     }),
     };
 
     if (!chunk_w_locker_.try_lock(chunk_id)) [[unlikely]] {

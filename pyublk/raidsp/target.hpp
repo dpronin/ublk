@@ -95,6 +95,7 @@ protected:
   struct cfg_t {
     uint64_t strip_sz;
     uint64_t stripe_data_sz;
+    uint64_t stripe_sz;
   };
   mm::uptrwd<cfg_t const> cfg_;
 
