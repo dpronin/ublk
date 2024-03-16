@@ -226,10 +226,10 @@ Then, check if your system has knowledge how to load _null_blk_ kernel module:
 
 ```bash
 $ modinfo null_blk
-filename:       /lib/modules/6.7.5/kernel/drivers/block/null_blk/null_blk.ko
+filename:       /lib/modules/6.8.0/kernel/drivers/block/null_blk/null_blk.ko
 author:         Jens Axboe <axboe@kernel.dk>
 license:        GPL
-vermagic:       6.7.5 SMP preempt mod_unload
+vermagic:       6.8.0 SMP preempt mod_unload
 name:           null_blk
 intree:         Y
 depends:        configfs
@@ -434,12 +434,12 @@ Then, check if your system has knowledge how to load _loop_ kernel module:
 
 ```bash
 $ modinfo loop
-filename:       /lib/modules/6.7.5/kernel/drivers/block/loop.ko
+filename:       /lib/modules/6.8.0/kernel/drivers/block/loop.ko
 license:        GPL
 alias:          block-major-7-*
 alias:          char-major-10-237
 alias:          devname:loop-control
-vermagic:       6.7.5 SMP preempt mod_unload
+vermagic:       6.8.0 SMP preempt mod_unload
 name:           loop
 intree:         Y
 depends:
