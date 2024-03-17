@@ -94,46 +94,46 @@ int RWTHandler::submit(std::shared_ptr<write_query> wq) noexcept {
   auto chunk_id{wq->offset() / cache_->item_sz()};
   auto chunk_offset{wq->offset() % cache_->item_sz()};
 
-  for (size_t wb{0}; wb < wq->buf().size();) {
+  for (size_t wb{0}; wb < wq->buf().size(); ++chunk_id, chunk_offset = 0) {
     auto const chunk_sz{
         std::min(cache_->item_sz() - chunk_offset, wq->buf().size() - wb),
     };
 
+    auto chunk_wq_completer{
+        [this, chunk_id, wq](write_query const &chunk_wq) {
+          for (bool finish = false; !finish;) {
+            if (auto next_wq_it = std::ranges::find(
+                    wqs_pending_, chunk_id,
+                    [](auto const &wq_pend) { return wq_pend.first; });
+                next_wq_it != wqs_pending_.end()) {
+              finish = 0 == process(next_wq_it->second);
+              std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
+              wqs_pending_.pop_back();
+            } else {
+              chunk_w_locker_.unlock(chunk_id);
+              finish = true;
+            }
+
+            if (chunk_wq.err()) [[unlikely]] {
+              cache_->invalidate(chunk_id);
+              wq->set_err(chunk_wq.err());
+              return;
+            }
+          }
+        },
+    };
+
     auto chunk_wq{
         wq->subquery(wb, chunk_sz, wq->offset() + wb,
-                     [this, chunk_id, wq](write_query const &chunk_wq) {
-                       for (bool finish = false; !finish;) {
-                         if (auto next_wq_it =
-                                 std::ranges::find(wqs_pending_, chunk_id,
-                                                   [](auto const &wq_pend) {
-                                                     return wq_pend.first;
-                                                   });
-                             next_wq_it != wqs_pending_.end()) {
-                           finish = 0 == process(next_wq_it->second);
-                           std::iter_swap(next_wq_it, wqs_pending_.end() - 1);
-                           wqs_pending_.pop_back();
-                         } else {
-                           chunk_w_locker_.unlock(chunk_id);
-                           finish = true;
-                         }
-
-                         if (chunk_wq.err()) [[unlikely]] {
-                           cache_->invalidate(chunk_id);
-                           wq->set_err(chunk_wq.err());
-                           return;
-                         }
-                       }
-                     }),
+                     std::move(chunk_wq_completer)),
     };
 
     if (!chunk_w_locker_.try_lock(chunk_id)) [[unlikely]] {
       wqs_pending_.emplace_back(chunk_id, std::move(chunk_wq));
-    } else if (auto const res{process(std::move(chunk_wq))}) {
+    } else if (auto const res{process(std::move(chunk_wq))}) [[unlikely]] {
       return res;
     }
 
-    ++chunk_id;
-    chunk_offset = 0;
     wb += chunk_sz;
   }
 
