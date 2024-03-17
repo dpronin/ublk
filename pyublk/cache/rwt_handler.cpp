@@ -22,6 +22,7 @@ RWTHandler::RWTHandler(
 
 int RWTHandler::process(std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
+  assert(!wq->buf().empty());
 
   auto chunk_id{wq->offset() / cache_->item_sz()};
   auto chunk_offset{wq->offset() % cache_->item_sz()};
@@ -86,7 +87,7 @@ int RWTHandler::process(std::shared_ptr<write_query> wq) noexcept {
 
 int RWTHandler::submit(std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
-  assert(0 != wq->buf().size());
+  assert(!wq->buf().empty());
 
   chunk_w_locker_.extend(
       div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()));
