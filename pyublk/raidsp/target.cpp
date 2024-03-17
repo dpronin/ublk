@@ -67,7 +67,7 @@ int Target::read_data_skip_parity(uint64_t stripe_id_from,
         std::min(cfg_->stripe_data_sz - stripe_offset, rq->buf().size() - rb),
     };
 
-    auto hs{stripe_id_to_handlers(stripe_id)};
+    auto hs{handlers_generate(stripe_id)};
 
     for (size_t hid{stripe_offset / cfg_->strip_sz},
          strip_offset = stripe_offset % cfg_->strip_sz;
@@ -112,7 +112,7 @@ int Target::read_stripe_parity(uint64_t stripe_id,
 }
 
 std::vector<std::shared_ptr<IRWHandler>>
-Target::stripe_id_to_handlers(uint64_t stripe_id) {
+Target::handlers_generate(uint64_t stripe_id) {
   std::vector<std::shared_ptr<IRWHandler>> hs;
   hs.reserve(hs_.size());
 
@@ -159,7 +159,7 @@ int Target::stripe_write(uint64_t stripe_id_at,
       },
   };
 
-  auto hs = stripe_id_to_handlers(stripe_id_at);
+  auto hs{handlers_generate(stripe_id_at)};
 
   size_t wb{0};
   for (size_t hid{wqd->offset() / cfg_->strip_sz},

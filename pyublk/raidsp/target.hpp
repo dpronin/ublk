@@ -26,7 +26,7 @@ namespace ublk::raidsp {
 class Target {
 private:
   std::vector<std::shared_ptr<IRWHandler>>
-  stripe_id_to_handlers(uint64_t stripe_id);
+  handlers_generate(uint64_t stripe_id);
 
   int full_stripe_write_process(uint64_t stripe_id_at,
                                 std::shared_ptr<write_query> wq) noexcept;
