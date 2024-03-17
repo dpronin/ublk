@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <algorithm>
+#include <concepts>
 #include <utility>
 
 #include "mm/mem.hpp"
@@ -32,72 +33,44 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
   };
 }
 
-int Target::read(uint64_t strip_id_from, uint64_t strip_offset_from,
-                 std::shared_ptr<read_query> rq) noexcept {
-  auto strip_id{strip_id_from + strip_offset_from / cfg_->strip_sz};
-  auto strip_offset{strip_offset_from % cfg_->strip_sz};
+template <typename T>
+  requires std::same_as<T, write_query> || std::same_as<T, read_query>
+int Target::do_op(std::shared_ptr<T> query) noexcept {
+  assert(query);
+  assert(!query->buf().empty());
 
-  for (size_t rb{0}; rb < rq->buf().size();) {
+  auto strip_id{query->offset() / cfg_->strip_sz};
+  auto strip_offset{query->offset() % cfg_->strip_sz};
+
+  for (size_t submitted_bytes{0}; submitted_bytes < query->buf().size();
+       ++strip_id, strip_offset = 0) {
     auto const strip_id_in_stripe{strip_id % hs_.size()};
     auto const hid{strip_id_in_stripe};
     auto const &h{hs_[hid]};
     auto const stripe_id{strip_id / hs_.size()};
-    auto const h_offset{strip_offset + stripe_id * cfg_->strip_sz};
-    auto const qbuf_sz{
-        std::min(cfg_->strip_sz - strip_offset, rq->buf().size() - rb),
+    auto const subquery_offset{strip_offset + stripe_id * cfg_->strip_sz};
+    auto const subquery_sz{
+        std::min(cfg_->strip_sz - strip_offset,
+                 query->buf().size() - submitted_bytes),
     };
-    auto new_rq{rq->subquery(rb, qbuf_sz, h_offset, rq)};
-    if (auto const res{h->submit(std::move(new_rq))}) [[unlikely]] {
+    auto subquery{
+        query->subquery(submitted_bytes, subquery_sz, subquery_offset, query),
+    };
+    if (auto const res{h->submit(std::move(subquery))}) [[unlikely]] {
       return res;
     }
-    ++strip_id;
-    strip_offset = 0;
-    rb += qbuf_sz;
+    submitted_bytes += subquery_sz;
   }
 
   return 0;
 }
 
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
-  assert(rq);
-
-  auto const strip_id_from = rq->offset() / cfg_->strip_sz;
-  auto const strip_offset_from = rq->offset() % cfg_->strip_sz;
-  return read(strip_id_from, strip_offset_from, std::move(rq));
-}
-
-int Target::write(uint64_t strip_id_from, uint64_t strip_offset_from,
-                  std::shared_ptr<write_query> wq) noexcept {
-  auto strip_id{strip_id_from + strip_offset_from / cfg_->strip_sz};
-  auto strip_offset{strip_offset_from % cfg_->strip_sz};
-
-  for (size_t wb{0}; wb < wq->buf().size();) {
-    auto const strip_id_in_stripe{strip_id % hs_.size()};
-    auto const hid{strip_id_in_stripe};
-    auto const &h{hs_[hid]};
-    auto const stripe_id{strip_id / hs_.size()};
-    auto const h_offset{strip_offset + stripe_id * cfg_->strip_sz};
-    auto const qbuf_sz{
-        std::min(cfg_->strip_sz - strip_offset, wq->buf().size() - wb),
-    };
-    auto new_wq{wq->subquery(wb, qbuf_sz, h_offset, wq)};
-    if (auto const res{h->submit(std::move(new_wq))}) [[unlikely]] {
-      return res;
-    }
-    ++strip_id;
-    strip_offset = 0;
-    wb += qbuf_sz;
-  }
-
-  return 0;
+  return do_op(std::move(rq));
 }
 
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-
-  auto const strip_id_from = wq->offset() / cfg_->strip_sz;
-  auto const strip_offset_from = wq->offset() % cfg_->strip_sz;
-  return write(strip_id_from, strip_offset_from, std::move(wq));
+  return do_op(std::move(wq));
 }
 
 } // namespace ublk::raid0

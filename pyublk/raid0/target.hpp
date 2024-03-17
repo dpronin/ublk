@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include <concepts>
 #include <memory>
 #include <vector>
 
@@ -22,10 +23,9 @@ public:
   int process(std::shared_ptr<write_query> wq) noexcept;
 
 private:
-  int read(uint64_t strip_id_from, uint64_t strip_offset_from,
-           std::shared_ptr<read_query> rq) noexcept;
-  int write(uint64_t strip_id_from, uint64_t strip_offset_from,
-            std::shared_ptr<write_query> wq) noexcept;
+  template <typename T>
+    requires std::same_as<T, write_query> || std::same_as<T, read_query>
+  int do_op(std::shared_ptr<T> wq) noexcept;
 
   struct cfg_t {
     uint64_t strip_sz;
