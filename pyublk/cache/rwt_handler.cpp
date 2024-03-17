@@ -113,12 +113,12 @@ int RWTHandler::submit(std::shared_ptr<write_query> wq) noexcept {
               chunk_w_locker_.unlock(chunk_id);
               finish = true;
             }
+          }
 
-            if (chunk_wq.err()) [[unlikely]] {
-              cache_->invalidate(chunk_id);
-              wq->set_err(chunk_wq.err());
-              return;
-            }
+          if (chunk_wq.err()) [[unlikely]] {
+            cache_->invalidate(chunk_id);
+            wq->set_err(chunk_wq.err());
+            return;
           }
         },
     };
