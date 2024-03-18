@@ -8,8 +8,9 @@ add_library(ublk_raid0 STATIC
 target_include_directories(ublk_raid0 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
 target_link_libraries(ublk_raid0 PUBLIC
     Boost::system
-    ublk::utils
+    sml::sml
     ublk::mm
+    ublk::utils
 )
 set_property(TARGET ublk_raid0 PROPERTY POSITION_INDEPENDENT_CODE ON)
 

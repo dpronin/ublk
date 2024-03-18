@@ -76,7 +76,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::headers
     Boost::system
-    sml::sml
     spdlog::spdlog
     ublk::cache
     ublk::def

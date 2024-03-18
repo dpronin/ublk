@@ -8,6 +8,8 @@
 #include <memory>
 #include <utility>
 
+#include <boost/sml.hpp>
+
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
@@ -16,14 +18,21 @@
 #include "read_query.hpp"
 #include "write_query.hpp"
 
-namespace ublk::raid0 {
+using namespace ublk;
 
-class Target::impl {
+namespace {
+
+class r0 {
 public:
-  explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs);
+  explicit r0(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs);
 
-  int process(std::shared_ptr<read_query> rq) noexcept;
-  int process(std::shared_ptr<write_query> wq) noexcept;
+  int process(std::shared_ptr<read_query> rq) noexcept {
+    return do_op(std::move(rq));
+  }
+
+  int process(std::shared_ptr<write_query> wq) noexcept {
+    return do_op(std::move(wq));
+  }
 
 private:
   template <typename T>
@@ -38,8 +47,7 @@ private:
   std::vector<std::shared_ptr<IRWHandler>> hs_;
 };
 
-Target::impl::impl(uint64_t strip_sz,
-                   std::vector<std::shared_ptr<IRWHandler>> hs)
+r0::r0(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
     : hs_(std::move(hs)) {
   assert(is_power_of_2(strip_sz));
   assert(!hs_.empty());
@@ -58,7 +66,7 @@ Target::impl::impl(uint64_t strip_sz,
 
 template <typename T>
   requires std::same_as<T, write_query> || std::same_as<T, read_query>
-int Target::impl::do_op(std::shared_ptr<T> query) noexcept {
+int r0::do_op(std::shared_ptr<T> query) noexcept {
   assert(query);
   assert(!query->buf().empty());
 
@@ -88,13 +96,53 @@ int Target::impl::do_op(std::shared_ptr<T> query) noexcept {
   return 0;
 }
 
-int Target::impl::process(std::shared_ptr<read_query> rq) noexcept {
-  return do_op(std::move(rq));
-}
+struct ewr {
+  std::shared_ptr<read_query> rq;
+  mutable int r;
+};
 
-int Target::impl::process(std::shared_ptr<write_query> wq) noexcept {
-  return do_op(std::move(wq));
-}
+struct ewq {
+  std::shared_ptr<write_query> wq;
+  mutable int r;
+};
+
+/* clang-format off */
+struct transition_table {
+  auto operator()() noexcept {
+    using namespace boost::sml;
+    return make_transition_table(
+       *"working"_s + event<ewr> / [](ewr const &e, r0& r){ e.r = r.process(std::move(e.rq)); }
+      , "working"_s + event<ewq> / [](ewq const &e, r0& r){ e.r = r.process(std::move(e.wq)); }
+    );
+  }
+};
+/* clang-format on */
+
+} // namespace
+
+namespace ublk::raid0 {
+
+class Target::impl {
+public:
+  explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
+      : r0_(strip_sz, std::move(hs)), fsm_(r0_) {}
+
+  int process(std::shared_ptr<read_query> rq) noexcept {
+    ewr e{.rq = std::move(rq), .r = 0};
+    fsm_.process_event(e);
+    return e.r;
+  }
+
+  int process(std::shared_ptr<write_query> wq) noexcept {
+    ewq e{.wq = std::move(wq), .r = 0};
+    fsm_.process_event(e);
+    return e.r;
+  }
+
+private:
+  r0 r0_;
+  boost::sml::sm<transition_table> fsm_;
+};
 
 Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
     : pimpl_(std::make_unique<impl>(strip_sz, std::move(hs))) {}
