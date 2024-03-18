@@ -74,12 +74,20 @@ private:
   void touch(size_t index) const noexcept {
     assert(index < cache_.size());
 
-    auto const eo = cache_[index].second.refs;
-    for (size_t i = 0; i < len_max(); ++i) {
-      if (auto &o = cache_[i].second.refs; o < eo)
-        ++o;
+    auto const to_refs = [](value_type const &v) -> cache_item_ref_t & {
+      return v.second.refs;
+    };
+
+    auto const less_than = [](cache_item_ref_t eo) {
+      return [=](cache_item_ref_t o) { return o < eo; };
+    };
+
+    for (auto &o : cache_ | std::views::transform(to_refs) |
+                       std::views::filter(less_than(to_refs(cache_[index])))) {
+      ++o;
     }
-    cache_[index].second.refs = 0;
+
+    to_refs(cache_[index]) = 0;
   }
 
   std::pair<size_t, bool> lower_bound_find(Key key) const noexcept {
