@@ -1,10 +1,3 @@
-find_package(spdlog CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENT headers system)
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
-find_package(eve CONFIG REQUIRED)
-find_package(sml CONFIG REQUIRED)
-
 pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     cells_holder.hpp
     cfq_base.hpp

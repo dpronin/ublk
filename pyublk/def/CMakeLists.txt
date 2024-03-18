@@ -1,5 +1,3 @@
-find_package(liburing CONFIG REQUIRED)
-
 add_library(ublk_def STATIC
     flush_handler.hpp
     read_handler.hpp

@@ -1,7 +1,3 @@
-find_package(libnl CONFIG REQUIRED)
-find_package(eve CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENT headers system)
-
 add_library(ublk_utils INTERFACE
     algo.hpp
     align.hpp
