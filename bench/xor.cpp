@@ -1,7 +1,10 @@
 #include <benchmark/benchmark.h>
 
 #include <concepts>
+#include <format>
+#include <ranges>
 #include <span>
+#include <stdexcept>
 
 #include "utils/math.hpp"
 
@@ -16,8 +19,14 @@ template <typename T>
 void xor_bench_with(std::invocable<std::span<T const>, std::span<T>> auto *f,
                     benchmark::State &state) {
   auto const src_sz = static_cast<size_t>(state.range(0));
-  auto src = make_buffer(src_sz);
   auto const dst_sz = static_cast<size_t>(state.range(1));
+
+  if (src_sz % dst_sz)
+    throw std::invalid_argument(std::format(
+        "src_sz must be a multiple of dst_sz, actual src_sz {}, dst_sz {}",
+        src_sz, dst_sz));
+
+  auto src = make_buffer(src_sz);
   auto dst = make_buffer(dst_sz);
   for (auto _ : state) {
     f(
@@ -38,15 +47,25 @@ void xor_bench_with(std::invocable<std::span<T const>, std::span<T>> auto *f,
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void xor_stl_bench(std::span<T const> in, std::span<T> inout) {
-  for (; !in.empty(); in = in.subspan(inout.size()))
-    ublk::math::detail::xor_to_stl(in.subspan(0, inout.size()), inout);
+  for (auto ch_in : in | std::views::chunk(inout.size()))
+    ublk::math::detail::xor_to_stl(
+        std::span<T const>{
+            std::ranges::begin(ch_in),
+            std::ranges::end(ch_in),
+        },
+        inout);
 }
 
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void xor_eve_bench(std::span<T const> in, std::span<T> inout) {
-  for (; !in.empty(); in = in.subspan(inout.size()))
-    ublk::math::detail::xor_to_eve(in.subspan(0, inout.size()), inout);
+  for (auto ch_in : in | std::views::chunk(inout.size()))
+    ublk::math::detail::xor_to_eve(
+        std::span<T const>{
+            std::ranges::begin(ch_in),
+            std::ranges::end(ch_in),
+        },
+        inout);
 }
 
 } // namespace ublk::bench
