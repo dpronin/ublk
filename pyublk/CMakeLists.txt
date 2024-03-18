@@ -3,6 +3,7 @@ find_package(Boost CONFIG REQUIRED COMPONENT headers system)
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(eve CONFIG REQUIRED)
+find_package(sml CONFIG REQUIRED)
 
 pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     cells_holder.hpp
@@ -82,6 +83,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::headers
     Boost::system
+    sml::sml
     spdlog::spdlog
     ublk::cache
     ublk::def
