@@ -82,7 +82,7 @@ int r1::process(std::shared_ptr<write_query> wq) noexcept {
   return 0;
 }
 
-struct ewr {
+struct erq {
   std::shared_ptr<read_query> rq;
   mutable int r;
 };
@@ -97,8 +97,14 @@ struct ewq {
     auto operator()() noexcept {
       using namespace boost::sml;
       return make_transition_table(
-         *"working"_s + event<ewr> / [](ewr const &e, r1& r){ e.r = r.process(std::move(e.rq)); }
-        , "working"_s + event<ewq> / [](ewq const &e, r1& r){ e.r = r.process(std::move(e.wq)); }
+         // online state
+         *"online"_s + event<erq> [ ([](erq const &e, r1& r){ e.r = r.process(std::move(e.rq)); return 0 == e.r; }) ]
+        , "online"_s + event<erq> = "offline"_s
+        , "online"_s + event<ewq> [ ([](ewq const &e, r1& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
+        , "online"_s + event<ewq> = "offline"_s
+         // offline state
+        , "offline"_s + event<erq> / [](erq const &e) { e.r = EFAULT; }
+        , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EFAULT; }
       );
     }
   };
@@ -114,7 +120,7 @@ public:
       : r1_(strip_sz, std::move(hs)), fsm_(r1_) {}
 
   int process(std::shared_ptr<read_query> rq) noexcept {
-    ewr e{.rq = std::move(rq), .r = 0};
+    erq e{.rq = std::move(rq), .r = 0};
     fsm_.process_event(e);
     return e.r;
   }
