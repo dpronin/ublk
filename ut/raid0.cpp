@@ -41,7 +41,7 @@ TEST_P(RAID0, TestReading) {
   };
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
-  ublk::raid0::Target tgt{param.strip_sz, {hs.begin(), hs.end()}};
+  auto tgt{ublk::raid0::Target{param.strip_sz, {hs.begin(), hs.end()}}};
   for (size_t i = 0; i < hs.size(); ++i) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times(param.stripes_nr)
