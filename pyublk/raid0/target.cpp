@@ -23,7 +23,7 @@ using namespace ublk;
 
 namespace {
 
-class r0 {
+class r0 final {
 public:
   explicit r0(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs);
 
@@ -132,7 +132,7 @@ struct transition_table {
 
 namespace ublk::raid0 {
 
-class Target::impl {
+class Target::impl final {
 public:
   explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       : r0_(strip_sz, std::move(hs)), fsm_(r0_) {}

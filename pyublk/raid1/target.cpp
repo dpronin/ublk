@@ -21,7 +21,7 @@ using namespace ublk;
 
 namespace {
 
-class r1 {
+class r1 final {
 public:
   explicit r1(uint64_t read_strip_sz,
               std::vector<std::shared_ptr<IRWHandler>> hs) noexcept;
@@ -95,28 +95,28 @@ struct ewq {
 };
 
 /* clang-format off */
-  struct transition_table {
-    auto operator()() noexcept {
-      using namespace boost::sml;
-      return make_transition_table(
-         // online state
-         *"online"_s + event<erq> [ ([](erq const &e, r1& r){ e.r = r.process(std::move(e.rq)); return 0 == e.r; }) ]
-        , "online"_s + event<erq> = "offline"_s
-        , "online"_s + event<ewq> [ ([](ewq const &e, r1& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
-        , "online"_s + event<ewq> = "offline"_s
-         // offline state
-        , "offline"_s + event<erq> / [](erq const &e) { e.r = EIO; }
-        , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EIO; }
-      );
-    }
-  };
+struct transition_table {
+  auto operator()() noexcept {
+    using namespace boost::sml;
+    return make_transition_table(
+       // online state
+       *"online"_s + event<erq> [ ([](erq const &e, r1& r){ e.r = r.process(std::move(e.rq)); return 0 == e.r; }) ]
+      , "online"_s + event<erq> = "offline"_s
+      , "online"_s + event<ewq> [ ([](ewq const &e, r1& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
+      , "online"_s + event<ewq> = "offline"_s
+       // offline state
+      , "offline"_s + event<erq> / [](erq const &e) { e.r = EIO; }
+      , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EIO; }
+    );
+  }
+};
 /* clang-format on */
 
 } // namespace
 
 namespace ublk::raid1 {
 
-class Target::impl {
+class Target::impl final {
 public:
   explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       : r1_(strip_sz, std::move(hs)), fsm_(r1_) {}
