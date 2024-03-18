@@ -38,7 +38,7 @@ public:
 private:
   template <typename T>
     requires std::same_as<T, write_query> || std::same_as<T, read_query>
-  int do_op(std::shared_ptr<T> wq) noexcept;
+  int do_op(std::shared_ptr<T> query) noexcept;
 
   struct static_cfg {
     uint64_t strip_sz;
