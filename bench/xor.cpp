@@ -47,6 +47,7 @@ void xor_bench_with(std::invocable<std::span<T const>, std::span<T>> auto *f,
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void xor_stl_bench(std::span<T const> in, std::span<T> inout) {
+#ifdef __cpp_lib_ranges_chunk
   for (auto ch_in : in | std::views::chunk(inout.size()))
     ublk::math::detail::xor_to_stl(
         std::span<T const>{
@@ -54,11 +55,16 @@ void xor_stl_bench(std::span<T const> in, std::span<T> inout) {
             std::ranges::end(ch_in),
         },
         inout);
+#else
+  for (; !in.empty(); in = in.subspan(inout.size()))
+    ublk::math::detail::xor_to_stl(in.subspan(0, inout.size()), inout);
+#endif
 }
 
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void xor_eve_bench(std::span<T const> in, std::span<T> inout) {
+#ifdef __cpp_lib_ranges_chunk
   for (auto ch_in : in | std::views::chunk(inout.size()))
     ublk::math::detail::xor_to_eve(
         std::span<T const>{
@@ -66,6 +72,10 @@ void xor_eve_bench(std::span<T const> in, std::span<T> inout) {
             std::ranges::end(ch_in),
         },
         inout);
+#else
+  for (; !in.empty(); in = in.subspan(inout.size()))
+    ublk::math::detail::xor_to_eve(in.subspan(0, inout.size()), inout);
+#endif
 }
 
 } // namespace ublk::bench
