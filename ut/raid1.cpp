@@ -91,10 +91,10 @@ TEST_P(RAID1, TestWriting) {
   auto tgt{
       ublk::raid1::Target{param.read_block_per_hs_sz, {hs.begin(), hs.end()}},
   };
-  for (size_t i = 0; i < hs.size(); ++i) {
-    EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<write_query>>()))
+  for (auto const &[h, storage_span] : std::views::zip(hs, storage_spans)) {
+    EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
         .Times(1)
-        .WillRepeatedly(ut::make_inmem_writer(storage_spans[i]));
+        .WillRepeatedly(ut::make_inmem_writer(storage_span));
   }
 
   auto const buf_sz{param.hs_storage_sz};
