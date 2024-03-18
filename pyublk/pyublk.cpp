@@ -77,7 +77,7 @@ PYBIND11_MODULE(ublk, m) {
             .paths = {},
         };
       }))
-      .def_readwrite("read_strip_len_sectors",
+      .def_readwrite("read_len_sectors_per_path",
                      &ublk::target_raid1_cfg::read_strip_len_sectors)
       .def_readwrite("paths", &ublk::target_raid1_cfg::paths);
 
