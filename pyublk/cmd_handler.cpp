@@ -18,9 +18,10 @@
 namespace ublk {
 
 CmdHandler::CmdHandler(
-      std::span<ublkdrv_celld const> cellds, std::span<std::byte> cells,
-      std::shared_ptr<IHandler<int(ublkdrv_cmd_ack) noexcept>> acknowledger,
-      std::map<ublkdrv_cmd_op, std::shared_ptr<IUblkReqHandler>> const &maphs) : cellds_(cellds), cells_(cells), acknowledger_(std::move(acknowledger)) {
+    std::span<ublkdrv_celld const> cellds, std::span<std::byte> cells,
+    std::shared_ptr<IHandler<int(ublkdrv_cmd_ack) noexcept>> acknowledger,
+    std::map<ublkdrv_cmd_op, std::shared_ptr<IUblkReqHandler>> const &maphs)
+    : cellds_(cellds), cells_(cells), acknowledger_(std::move(acknowledger)) {
   assert(acknowledger_);
 
   /* clang-format off */
@@ -63,7 +64,13 @@ int CmdHandler::handle(ublkdrv_cmd const &cmd) noexcept {
     rq = flush_req::create(cmd, std::move(completer));
     break;
   default:
-    rq = {new req{cmd}, [c = std::move(completer)](req *p){ c(*p); delete p; }};
+    rq = {
+        new req{cmd},
+        [c = std::move(completer)](req *p) {
+          c(*p);
+          delete p;
+        },
+    };
     break;
   }
 
