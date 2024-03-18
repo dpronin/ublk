@@ -5,9 +5,11 @@
 
 #include <algorithm>
 #include <concepts>
+#include <memory>
 #include <utility>
 
 #include "mm/mem.hpp"
+#include "mm/mem_types.hpp"
 
 #include "utils/utility.hpp"
 
@@ -16,7 +18,28 @@
 
 namespace ublk::raid0 {
 
-Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
+class Target::impl {
+public:
+  explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs);
+
+  int process(std::shared_ptr<read_query> rq) noexcept;
+  int process(std::shared_ptr<write_query> wq) noexcept;
+
+private:
+  template <typename T>
+    requires std::same_as<T, write_query> || std::same_as<T, read_query>
+  int do_op(std::shared_ptr<T> wq) noexcept;
+
+  struct cfg_t {
+    uint64_t strip_sz;
+  };
+
+  mm::uptrwd<cfg_t const> cfg_;
+  std::vector<std::shared_ptr<IRWHandler>> hs_;
+};
+
+Target::impl::impl(uint64_t strip_sz,
+                   std::vector<std::shared_ptr<IRWHandler>> hs)
     : hs_(std::move(hs)) {
   assert(is_power_of_2(strip_sz));
   assert(!hs_.empty());
@@ -35,7 +58,7 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
 
 template <typename T>
   requires std::same_as<T, write_query> || std::same_as<T, read_query>
-int Target::do_op(std::shared_ptr<T> query) noexcept {
+int Target::impl::do_op(std::shared_ptr<T> query) noexcept {
   assert(query);
   assert(!query->buf().empty());
 
@@ -65,12 +88,28 @@ int Target::do_op(std::shared_ptr<T> query) noexcept {
   return 0;
 }
 
-int Target::process(std::shared_ptr<read_query> rq) noexcept {
+int Target::impl::process(std::shared_ptr<read_query> rq) noexcept {
   return do_op(std::move(rq));
 }
 
-int Target::process(std::shared_ptr<write_query> wq) noexcept {
+int Target::impl::process(std::shared_ptr<write_query> wq) noexcept {
   return do_op(std::move(wq));
+}
+
+Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
+    : pimpl_(std::make_unique<impl>(strip_sz, std::move(hs))) {}
+
+Target::~Target() noexcept = default;
+
+Target::Target(Target &&) noexcept = default;
+Target &Target::operator=(Target &&) noexcept = default;
+
+int Target::process(std::shared_ptr<read_query> rq) noexcept {
+  return pimpl_->process(std::move(rq));
+}
+
+int Target::process(std::shared_ptr<write_query> wq) noexcept {
+  return pimpl_->process(std::move(wq));
 }
 
 } // namespace ublk::raid0
