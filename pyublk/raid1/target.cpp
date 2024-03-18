@@ -3,18 +3,38 @@
 #include <cassert>
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 
 #include "utils/utility.hpp"
 
 #include "mm/mem.hpp"
+#include "mm/mem_types.hpp"
 
 #include "sector.hpp"
 
 namespace ublk::raid1 {
 
-Target::Target(uint64_t read_len_bytes_per_handler,
-               std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
+class Target::impl {
+public:
+  explicit impl(uint64_t read_len_bytes_per_handler,
+                std::vector<std::shared_ptr<IRWHandler>> hs) noexcept;
+
+  int process(std::shared_ptr<read_query> rq) noexcept;
+  int process(std::shared_ptr<write_query> wq) noexcept;
+
+private:
+  struct cfg_t {
+    uint64_t read_len_bytes_per_handler;
+  };
+  mm::uptrwd<cfg_t const> cfg_;
+
+  uint32_t next_hid_;
+  std::vector<std::shared_ptr<IRWHandler>> hs_;
+};
+
+Target::impl::impl(uint64_t read_len_bytes_per_handler,
+                   std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
     : next_hid_(0), hs_(std::move(hs)) {
   assert(is_multiple_of(read_len_bytes_per_handler, kSectorSz));
   assert(!(hs_.size() < 2));
@@ -31,7 +51,7 @@ Target::Target(uint64_t read_len_bytes_per_handler,
   };
 }
 
-int Target::process(std::shared_ptr<read_query> rq) noexcept {
+int Target::impl::process(std::shared_ptr<read_query> rq) noexcept {
   for (size_t rb{0}; rb < rq->buf().size();
        next_hid_ = (next_hid_ + 1) % hs_.size()) {
     auto const chunk_sz{
@@ -47,7 +67,7 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
   return 0;
 }
 
-int Target::process(std::shared_ptr<write_query> wq) noexcept {
+int Target::impl::process(std::shared_ptr<write_query> wq) noexcept {
   for (auto const &h : hs_) {
     if (auto const res{h->submit(wq)}) [[unlikely]] {
       return res;
@@ -55,5 +75,23 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
   }
   return 0;
 }
+
+Target::Target(uint64_t read_len_bytes_per_handler,
+               std::vector<std::shared_ptr<IRWHandler>> hs)
+    : pimpl_(
+          std::make_unique<impl>(read_len_bytes_per_handler, std::move(hs))) {}
+
+int Target::process(std::shared_ptr<read_query> rq) noexcept {
+  return pimpl_->process(std::move(rq));
+}
+
+int Target::process(std::shared_ptr<write_query> wq) noexcept {
+  return pimpl_->process(std::move(wq));
+}
+
+Target::~Target() noexcept = default;
+
+Target::Target(Target &&) noexcept = default;
+Target &Target::operator=(Target &&) noexcept = default;
 
 } // namespace ublk::raid1
