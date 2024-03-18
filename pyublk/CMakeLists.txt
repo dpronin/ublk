@@ -80,17 +80,17 @@ add_subdirectory(raidsp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    spdlog::spdlog
     Boost::headers
     Boost::system
+    spdlog::spdlog
     ublk::cache
-    ublk::mm
-    ublk::utils
     ublk::def
     ublk::inmem
+    ublk::mm
     ublk::null
     ublk::raid0
     ublk::raid1
     ublk::raid4
     ublk::raid5
+    ublk::utils
 )
