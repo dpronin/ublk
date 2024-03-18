@@ -21,37 +21,39 @@ namespace {
 
 class r1 {
 public:
-  explicit r1(uint64_t read_len_bytes_per_handler,
+  explicit r1(uint64_t read_strip_sz,
               std::vector<std::shared_ptr<IRWHandler>> hs) noexcept;
 
   int process(std::shared_ptr<read_query> rq) noexcept;
   int process(std::shared_ptr<write_query> wq) noexcept;
 
 private:
-  struct cfg_t {
-    uint64_t read_len_bytes_per_handler;
+  struct static_cfg {
+    uint64_t read_strip_sz;
   };
-  mm::uptrwd<cfg_t const> cfg_;
+  mm::uptrwd<static_cfg const> static_cfg_;
 
   uint32_t next_hid_;
   std::vector<std::shared_ptr<IRWHandler>> hs_;
 };
 
-r1::r1(uint64_t read_len_bytes_per_handler,
+r1::r1(uint64_t read_strip_sz,
        std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
     : next_hid_(0), hs_(std::move(hs)) {
-  assert(is_multiple_of(read_len_bytes_per_handler, kSectorSz));
+  assert(is_multiple_of(read_strip_sz, kSectorSz));
   assert(!(hs_.size() < 2));
   assert(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
-  auto cfg =
-      mm::make_unique_aligned<cfg_t>(hardware_destructive_interference_size);
-  cfg->read_len_bytes_per_handler = read_len_bytes_per_handler;
+  auto cfg = mm::make_unique_aligned<static_cfg>(
+      hardware_destructive_interference_size);
+  cfg->read_strip_sz = read_strip_sz;
 
-  cfg_ = {
+  static_cfg_ = {
       cfg.release(),
-      [d = cfg.get_deleter()](cfg_t const *p) { d(const_cast<cfg_t *>(p)); },
+      [d = cfg.get_deleter()](static_cfg const *p) {
+        d(const_cast<static_cfg *>(p));
+      },
   };
 }
 
@@ -59,7 +61,7 @@ int r1::process(std::shared_ptr<read_query> rq) noexcept {
   for (size_t rb{0}; rb < rq->buf().size();
        next_hid_ = (next_hid_ + 1) % hs_.size()) {
     auto const chunk_sz{
-        std::min(cfg_->read_len_bytes_per_handler, rq->buf().size() - rb),
+        std::min(static_cfg_->read_strip_sz, rq->buf().size() - rb),
     };
     auto new_rq{rq->subquery(rb, chunk_sz, rq->offset() + rb, rq)};
     if (auto const res{hs_[next_hid_]->submit(std::move(new_rq))})
@@ -128,10 +130,9 @@ private:
   boost::sml::sm<transition_table> fsm_;
 };
 
-Target::Target(uint64_t read_len_bytes_per_handler,
+Target::Target(uint64_t read_strip_sz,
                std::vector<std::shared_ptr<IRWHandler>> hs)
-    : pimpl_(
-          std::make_unique<impl>(read_len_bytes_per_handler, std::move(hs))) {}
+    : pimpl_(std::make_unique<impl>(read_strip_sz, std::move(hs))) {}
 
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
   return pimpl_->process(std::move(rq));

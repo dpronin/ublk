@@ -73,12 +73,12 @@ PYBIND11_MODULE(ublk, m) {
   py::class_<ublk::target_raid1_cfg>(m, "target_raid1")
       .def(py::init([] -> ublk::target_raid1_cfg {
         return {
-            .read_len_sectors_per_path = 0,
+            .read_strip_len_sectors = 0,
             .paths = {},
         };
       }))
-      .def_readwrite("read_len_sectors_per_path",
-                     &ublk::target_raid1_cfg::read_len_sectors_per_path)
+      .def_readwrite("read_strip_len_sectors",
+                     &ublk::target_raid1_cfg::read_strip_len_sectors)
       .def_readwrite("paths", &ublk::target_raid1_cfg::paths);
 
   py::class_<ublk::target_raid4_cfg>(m, "target_raid4")

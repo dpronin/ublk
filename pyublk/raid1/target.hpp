@@ -11,7 +11,7 @@ namespace ublk::raid1 {
 
 class Target final {
 public:
-  explicit Target(uint64_t read_len_bytes_per_handler,
+  explicit Target(uint64_t read_strip_sz,
                   std::vector<std::shared_ptr<IRWHandler>> hs);
   ~Target() noexcept;
 

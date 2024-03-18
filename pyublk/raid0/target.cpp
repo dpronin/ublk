@@ -39,11 +39,11 @@ private:
     requires std::same_as<T, write_query> || std::same_as<T, read_query>
   int do_op(std::shared_ptr<T> wq) noexcept;
 
-  struct cfg_t {
+  struct static_cfg {
     uint64_t strip_sz;
   };
 
-  mm::uptrwd<cfg_t const> cfg_;
+  mm::uptrwd<static_cfg const> static_cfg_;
   std::vector<std::shared_ptr<IRWHandler>> hs_;
 };
 
@@ -54,13 +54,15 @@ r0::r0(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
   assert(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
-  auto cfg =
-      mm::make_unique_aligned<cfg_t>(hardware_destructive_interference_size);
+  auto cfg = mm::make_unique_aligned<static_cfg>(
+      hardware_destructive_interference_size);
   cfg->strip_sz = strip_sz;
 
-  cfg_ = {
+  static_cfg_ = {
       cfg.release(),
-      [d = cfg.get_deleter()](cfg_t const *p) { d(const_cast<cfg_t *>(p)); },
+      [d = cfg.get_deleter()](static_cfg const *p) {
+        d(const_cast<static_cfg *>(p));
+      },
   };
 }
 
@@ -70,8 +72,8 @@ int r0::do_op(std::shared_ptr<T> query) noexcept {
   assert(query);
   assert(!query->buf().empty());
 
-  auto strip_id{query->offset() / cfg_->strip_sz};
-  auto strip_offset{query->offset() % cfg_->strip_sz};
+  auto strip_id{query->offset() / static_cfg_->strip_sz};
+  auto strip_offset{query->offset() % static_cfg_->strip_sz};
 
   for (size_t submitted_bytes{0}; submitted_bytes < query->buf().size();
        ++strip_id, strip_offset = 0) {
@@ -79,9 +81,10 @@ int r0::do_op(std::shared_ptr<T> query) noexcept {
     auto const hid{strip_id_in_stripe};
     auto const &h{hs_[hid]};
     auto const stripe_id{strip_id / hs_.size()};
-    auto const subquery_offset{strip_offset + stripe_id * cfg_->strip_sz};
+    auto const subquery_offset{strip_offset +
+                               stripe_id * static_cfg_->strip_sz};
     auto const subquery_sz{
-        std::min(cfg_->strip_sz - strip_offset,
+        std::min(static_cfg_->strip_sz - strip_offset,
                  query->buf().size() - submitted_bytes),
     };
     auto subquery{

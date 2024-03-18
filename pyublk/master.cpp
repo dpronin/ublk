@@ -190,7 +190,7 @@ handlers_ops make_raid0_ops(boost::asio::io_context &io_ctx,
                         cache_cfg, std::move(fd_targets));
 }
 
-handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
+handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
                             std::optional<cache_cfg> const &cache_cfg,
                             std::vector<handlers_ops> handlers) {
   std::vector<std::shared_ptr<IRWHandler>> rw_handlers;
@@ -204,20 +204,18 @@ handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
   std::ranges::transform(std::move(handlers), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
-  if (read_len_sectors_per_handler >
+  if (read_strip_len_sectors >
       bytes_to_sectors(std::numeric_limits<uint64_t>::max()))
-    throw std::overflow_error(
-        std::format("read_len_sectors_per_handler {} is too huge",
-                    read_len_sectors_per_handler));
+    throw std::overflow_error(std::format(
+        "read_strip_len_sectors {} is too huge", read_strip_len_sectors));
 
-  auto read_len_bytes_per_handler =
-      sectors_to_bytes(read_len_sectors_per_handler);
-  if (0 == read_len_bytes_per_handler)
-    read_len_bytes_per_handler = sectors_to_bytes(
+  auto read_strip_sz = sectors_to_bytes(read_strip_len_sectors);
+  if (0 == read_strip_sz)
+    read_strip_sz = sectors_to_bytes(
         bytes_to_sectors(std::numeric_limits<uint64_t>::max()));
 
-  auto target = std::make_shared<raid1::Target>(read_len_bytes_per_handler,
-                                                std::move(rw_handlers));
+  auto target =
+      std::make_shared<raid1::Target>(read_strip_sz, std::move(rw_handlers));
 
   auto rw_handler = std::unique_ptr<IRWHandler>{};
 
@@ -241,7 +239,7 @@ handlers_ops make_raid1_ops(uint64_t read_len_sectors_per_handler,
 }
 
 handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
-                            uint64_t read_len_sectors_per_fd,
+                            uint64_t read_strip_len_sectors,
                             std::optional<cache_cfg> const &cache_cfg,
                             std::vector<mm::uptrwd<const int>> fds) {
   std::vector<handlers_ops> default_hopss;
@@ -249,7 +247,7 @@ handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
       std::move(fds), std::back_inserter(default_hopss),
       [&](auto &&fd) { return make_default_ops(io_ctx, {}, std::move(fd)); });
 
-  return make_raid1_ops(read_len_sectors_per_fd, cache_cfg,
+  return make_raid1_ops(read_strip_len_sectors, cache_cfg,
                         std::move(default_hopss));
 }
 
@@ -259,7 +257,7 @@ handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
   std::vector<mm::uptrwd<int const>> fd_targets;
   std::ranges::transform(raid1.paths, std::back_inserter(fd_targets),
                          backend_device_open);
-  return make_raid1_ops(io_ctx, raid1.read_len_sectors_per_path, cache_cfg,
+  return make_raid1_ops(io_ctx, raid1.read_strip_len_sectors, cache_cfg,
                         std::move(fd_targets));
 }
 

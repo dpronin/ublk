@@ -29,7 +29,7 @@ struct target_raid0_cfg {
 };
 
 struct target_raid1_cfg {
-  uint64_t read_len_sectors_per_path;
+  uint64_t read_strip_len_sectors;
   std::vector<std::filesystem::path> paths;
 };
 
