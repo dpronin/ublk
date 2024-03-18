@@ -108,7 +108,7 @@ You could see many examples in the [directory](ublksh/samples) for configuring d
 
 ### Examples of assembling block devices
 
-#### Building RAID0 upon extendible files on backend
+#### Building RAID0 up upon extendible files on backend
 
 This example of __RAID0__ will be based on files on backend and __4GiB__ capable, with
 strip __128KiB__ long and files on backend __f0.dat__, __f1.dat__, __f2.dat__, __f3.dat__:
@@ -142,7 +142,7 @@ Let us do it with dd utility performing sequential write operations thoughout al
 4294967296 bytes (4.3 GB, 4.0 GiB) copied, 14.3623 s, 299 MB/s
 ```
 
-Let us us risk to do sequential read operations by means of fio utility:
+Let us risk to do sequential read operations by means of fio utility:
 
 ```markdown
 # fio --filename=/dev/ublk-0 --direct=1 --rw=read --bs=4k --ioengine=libaio --iodepth=32 --numjobs=1 --group_reporting --name=ublk-raid0-example-read-test --eta-newline=1 --readonly
@@ -209,7 +209,7 @@ Then you may destroy the target by giving its name:
 ublksh > target_destroy name=raid0_example
 ```
 
-#### Building RAID1 upon nullb devices
+#### Building RAID1 up upon nullb devices
 
 ##### Checking and loading _null_blk_ kernel module
 
@@ -262,7 +262,7 @@ parm:           no_sched:No io scheduler (int)
 parm:           virt_boundary:Require a virtual boundary for the device. Default: False (bool)
 ```
 
-Then, insert the _null_blk_ module with specific list of parameters before proceeding with building
+Then, insert _null_blk_ module with specific list of parameters before proceeding with building
 RAID1:
 
 ```markdown
@@ -271,7 +271,7 @@ RAID1:
 
 > :information_source: parameters given for null_blk module could be changed by a user, they may not have exactly the same values as given above. Depending on what a user wants and how they want to build a RAID upon _nullb\*_ devices parameters could vary
 
-##### Building RAID1
+##### Building RAID1 up
 
 This example of __RAID1__ will be based on _nullb\*_ devices on backend, the RAID is going to be __6GiB__ capable, devices on backend will be __/dev/nullb0__, __/dev/nullb1__, __/dev/nullb2__, __/dev/nullb3__, __/dev/nullb4__, __/dev/nullb5__:
 
@@ -415,7 +415,7 @@ If you finish working with _nullb\*_ devices you may remove the module from kern
 # rmmod null_blk
 ```
 
-#### Building RAID5 upon loop devices and use RAID built for deploying ext4 file system upon it
+#### Building RAID5 up upon loop devices and use RAID built for deploying ext4 file system upon it
 
 ##### Checking and loading loop kernel module
 
@@ -495,7 +495,7 @@ loop2         7:2    0   200M  0 loop
 
 Ok. Now we are ready to build __RAID5__ on these loop devices
 
-##### Building RAID5
+##### Building RAID5 up
 
 This example of __RAID5__ will be based on _loop_-based devices on backend, the RAID is going to be __400MiB__ capable, with __32KiB__ strip long, devices on backend will be __/dev/loop0__, __/dev/loop1__, __/dev/loop2__:
 
@@ -543,7 +543,7 @@ Then, we need to mount the file system to a new mountpoint:
 /dev/ublk-0        365M          14K  341M            1% .../raid5ext4mp
 ```
 
-We see 365MiB capable a new file system mounted to our mountpoint
+We see __365MiB__ capable a new file system mounted to our mountpoint
 
 ##### Check it out with performing IO operations
 
