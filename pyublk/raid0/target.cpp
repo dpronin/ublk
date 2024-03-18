@@ -1,6 +1,7 @@
 #include "target.hpp"
 
 #include <cassert>
+#include <cerrno>
 #include <cstdint>
 
 #include <algorithm>
@@ -120,8 +121,8 @@ struct transition_table {
       , "online"_s + event<ewq> [ ([](ewq const &e, r0& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
       , "online"_s + event<ewq> = "offline"_s
        // offline state
-      , "offline"_s + event<erq> / [](erq const &e) { e.r = EFAULT; }
-      , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EFAULT; }
+      , "offline"_s + event<erq> / [](erq const &e) { e.r = EIO; }
+      , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EIO; }
     );
   }
 };
