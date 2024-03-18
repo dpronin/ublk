@@ -1,5 +1,7 @@
 #include <cstddef>
+#include <cstdlib>
 
+#include <algorithm>
 #include <ranges>
 
 #include "mm/mem.hpp"
@@ -15,8 +17,8 @@ inline auto make_buffer(size_t sz) {
   auto const buf_span{std::span{buf.get(), sz}};
   /* initialize a first byte of each page to prevent page faults while
    * benchmarking */
-  for (auto &b : buf_span | std::views::stride(page_size))
-    b = static_cast<std::byte>(std::rand());
+  std::ranges::generate(buf_span | std::views::stride(page_size),
+                        [] { return static_cast<std::byte>(std::rand()); });
   return buf;
 }
 
