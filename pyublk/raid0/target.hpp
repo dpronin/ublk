@@ -5,8 +5,9 @@
 #include <memory>
 #include <vector>
 
-#include "read_query.hpp"
 #include "rw_handler_interface.hpp"
+
+#include "read_query.hpp"
 #include "write_query.hpp"
 
 namespace ublk::raid0 {

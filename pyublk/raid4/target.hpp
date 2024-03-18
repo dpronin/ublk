@@ -7,6 +7,9 @@
 
 #include "rw_handler_interface.hpp"
 
+#include "read_query.hpp"
+#include "write_query.hpp"
+
 namespace ublk::raid4 {
 
 class Target final {
