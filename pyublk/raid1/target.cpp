@@ -6,6 +6,8 @@
 #include <memory>
 #include <utility>
 
+#include <boost/sml.hpp>
+
 #include "utils/utility.hpp"
 
 #include "mm/mem.hpp"
@@ -13,12 +15,14 @@
 
 #include "sector.hpp"
 
-namespace ublk::raid1 {
+using namespace ublk;
 
-class Target::impl {
+namespace {
+
+class r1 {
 public:
-  explicit impl(uint64_t read_len_bytes_per_handler,
-                std::vector<std::shared_ptr<IRWHandler>> hs) noexcept;
+  explicit r1(uint64_t read_len_bytes_per_handler,
+              std::vector<std::shared_ptr<IRWHandler>> hs) noexcept;
 
   int process(std::shared_ptr<read_query> rq) noexcept;
   int process(std::shared_ptr<write_query> wq) noexcept;
@@ -33,8 +37,8 @@ private:
   std::vector<std::shared_ptr<IRWHandler>> hs_;
 };
 
-Target::impl::impl(uint64_t read_len_bytes_per_handler,
-                   std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
+r1::r1(uint64_t read_len_bytes_per_handler,
+       std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
     : next_hid_(0), hs_(std::move(hs)) {
   assert(is_multiple_of(read_len_bytes_per_handler, kSectorSz));
   assert(!(hs_.size() < 2));
@@ -51,7 +55,7 @@ Target::impl::impl(uint64_t read_len_bytes_per_handler,
   };
 }
 
-int Target::impl::process(std::shared_ptr<read_query> rq) noexcept {
+int r1::process(std::shared_ptr<read_query> rq) noexcept {
   for (size_t rb{0}; rb < rq->buf().size();
        next_hid_ = (next_hid_ + 1) % hs_.size()) {
     auto const chunk_sz{
@@ -67,7 +71,7 @@ int Target::impl::process(std::shared_ptr<read_query> rq) noexcept {
   return 0;
 }
 
-int Target::impl::process(std::shared_ptr<write_query> wq) noexcept {
+int r1::process(std::shared_ptr<write_query> wq) noexcept {
   for (auto const &h : hs_) {
     if (auto const res{h->submit(wq)}) [[unlikely]] {
       return res;
@@ -75,6 +79,54 @@ int Target::impl::process(std::shared_ptr<write_query> wq) noexcept {
   }
   return 0;
 }
+
+struct ewr {
+  std::shared_ptr<read_query> rq;
+  mutable int r;
+};
+
+struct ewq {
+  std::shared_ptr<write_query> wq;
+  mutable int r;
+};
+
+/* clang-format off */
+  struct transition_table {
+    auto operator()() noexcept {
+      using namespace boost::sml;
+      return make_transition_table(
+         *"working"_s + event<ewr> / [](ewr const &e, r1& r){ e.r = r.process(std::move(e.rq)); }
+        , "working"_s + event<ewq> / [](ewq const &e, r1& r){ e.r = r.process(std::move(e.wq)); }
+      );
+    }
+  };
+/* clang-format on */
+
+} // namespace
+
+namespace ublk::raid1 {
+
+class Target::impl {
+public:
+  explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
+      : r1_(strip_sz, std::move(hs)), fsm_(r1_) {}
+
+  int process(std::shared_ptr<read_query> rq) noexcept {
+    ewr e{.rq = std::move(rq), .r = 0};
+    fsm_.process_event(e);
+    return e.r;
+  }
+
+  int process(std::shared_ptr<write_query> wq) noexcept {
+    ewq e{.wq = std::move(wq), .r = 0};
+    fsm_.process_event(e);
+    return e.r;
+  }
+
+private:
+  r1 r1_;
+  boost::sml::sm<transition_table> fsm_;
+};
 
 Target::Target(uint64_t read_len_bytes_per_handler,
                std::vector<std::shared_ptr<IRWHandler>> hs)
