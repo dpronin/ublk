@@ -5,7 +5,6 @@
 #include <cstdint>
 
 #include <algorithm>
-#include <iterator>
 #include <memory>
 #include <span>
 #include <utility>
@@ -16,7 +15,6 @@
 
 #include "mm/cache_line_aligned_allocator.hpp"
 #include "mm/generic_allocators.hpp"
-#include "mm/mem.hpp"
 #include "mm/mem_chunk_pool.hpp"
 #include "mm/mem_types.hpp"
 
@@ -26,250 +24,62 @@
 #include "utils/span.hpp"
 #include "utils/utility.hpp"
 
-#include "parity.hpp"
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
-#include "sector.hpp"
 #include "write_query.hpp"
 
-using namespace ublk;
+#include "backend.hpp"
+#include "parity.hpp"
 
 namespace {
 
-class backend {
-public:
-  constexpr static inline auto kAlignmentRequiredMin = kSectorSz;
-  static_assert(is_aligned_to(kAlignmentRequiredMin, kSectorSz));
-
-  struct cfg_t {
-    uint64_t strip_sz;
-    uint64_t stripe_data_sz;
-    uint64_t stripe_sz;
-  };
-
-  explicit backend(uint64_t strip_sz,
-                   std::vector<std::shared_ptr<IRWHandler>> hs,
-                   std::function<uint64_t(uint64_t stripe_id)> const
-                       &stripe_id_to_parity_id);
-  ~backend() = default;
-
-  backend(backend const &) = delete;
-  backend &operator=(backend const &) = delete;
-
-  backend(backend &&) = default;
-  backend &operator=(backend &&) = default;
-
-  int data_skip_parity_read(uint64_t stripe_id_from,
-                            std::shared_ptr<read_query> rq) noexcept;
-
-  int stripe_data_read(uint64_t stripe_id_from,
-                       std::shared_ptr<read_query> rq) noexcept;
-
-  int stripe_parity_read(uint64_t stripe_id_from,
-                         std::shared_ptr<read_query> rq) noexcept;
-
-  int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
-                   std::shared_ptr<write_query> wqp) noexcept;
-
-  cfg_t const &static_cfg() const noexcept { return *static_cfg_; }
-
-private:
-  std::vector<std::shared_ptr<IRWHandler>>
-  handlers_generate(uint64_t stripe_id);
-
-  uint64_t stripe_id_to_parity_id(uint64_t stripe_id) const noexcept {
-    return stripe_id_to_parity_id_(stripe_id);
-  }
-
-  std::vector<std::shared_ptr<IRWHandler>> hs_;
-  std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id_;
-
-  mm::uptrwd<cfg_t const> static_cfg_;
-};
-
-backend::backend(
-    uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
-    std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
-    : hs_(std::move(hs)), stripe_id_to_parity_id_(stripe_id_to_parity_id) {
-  assert(is_power_of_2(strip_sz));
-  assert(is_multiple_of(strip_sz, kSectorSz));
-  assert(!(hs_.size() < 3));
-  assert(std::ranges::all_of(
-      hs_, [](auto const &h) { return static_cast<bool>(h); }));
-  assert(stripe_id_to_parity_id_);
-
-  auto cfg =
-      mm::make_unique_aligned<cfg_t>(hardware_destructive_interference_size);
-  cfg->strip_sz = strip_sz;
-  cfg->stripe_data_sz = cfg->strip_sz * (hs_.size() - 1);
-  cfg->stripe_sz = cfg->stripe_data_sz + cfg->strip_sz;
-
-  static_cfg_ = {
-      cfg.release(),
-      [d = cfg.get_deleter()](cfg_t const *p) { d(const_cast<cfg_t *>(p)); },
-  };
-}
-
-int backend::data_skip_parity_read(uint64_t stripe_id_from,
-                                   std::shared_ptr<read_query> rq) noexcept {
-  assert(!rq->buf().empty());
-  assert(rq->offset() < static_cfg_->stripe_data_sz);
-
-  auto stripe_id{stripe_id_from};
-  auto stripe_offset{rq->offset()};
-
-  for (size_t rb{0}; rb < rq->buf().size();) {
-    auto chunk_sz{
-        std::min(static_cfg_->stripe_data_sz - stripe_offset,
-                 rq->buf().size() - rb),
-    };
-
-    auto hs{handlers_generate(stripe_id)};
-
-    for (size_t hid{stripe_offset / static_cfg_->strip_sz},
-         strip_offset = stripe_offset % static_cfg_->strip_sz;
-         chunk_sz > 0 && hid < (hs.size() - 1); ++hid, strip_offset = 0) {
-      auto const h_offset{stripe_id * static_cfg_->strip_sz + strip_offset};
-      auto const h_sz{std::min(static_cfg_->strip_sz - strip_offset, chunk_sz)};
-      auto new_rq{rq->subquery(rb, h_sz, h_offset, rq)};
-      if (auto const res{hs[hid]->submit(std::move(new_rq))}) [[unlikely]] {
-        return res;
-      }
-      rb += h_sz;
-      chunk_sz -= h_sz;
-    }
-    assert(0 == chunk_sz);
-
-    stripe_offset = 0;
-    ++stripe_id;
-  }
-
-  return 0;
-}
-
-int backend::stripe_data_read(uint64_t stripe_id_from,
-                              std::shared_ptr<read_query> rq) noexcept {
-  assert(!rq->buf().empty());
-  assert(!(rq->offset() + rq->buf().size() > static_cfg_->stripe_data_sz));
-
-  return data_skip_parity_read(stripe_id_from, std::move(rq));
-}
-
-int backend::stripe_parity_read(uint64_t stripe_id,
-                                std::shared_ptr<read_query> rq) noexcept {
-  assert(!rq->buf().empty());
-  assert(!(rq->offset() + rq->buf().size() > static_cfg_->strip_sz));
-
-  auto const parity_id{stripe_id_to_parity_id(stripe_id)};
-  assert(parity_id < hs_.size());
-
-  return hs_[parity_id]->submit(
-      rq->subquery(0, std::min(static_cfg_->strip_sz, rq->buf().size()),
-                   stripe_id * static_cfg_->strip_sz, rq));
-}
-
-std::vector<std::shared_ptr<IRWHandler>>
-backend::handlers_generate(uint64_t stripe_id) {
-  std::vector<std::shared_ptr<IRWHandler>> hs;
-  hs.reserve(hs_.size());
-
-  auto const parity_id{stripe_id_to_parity_id(stripe_id)};
-  assert(parity_id < hs_.size());
-
-  std::copy_n(hs_.begin(), parity_id, std::back_inserter(hs));
-  std::rotate_copy(hs_.begin() + parity_id, hs_.begin() + parity_id + 1,
-                   hs_.end(), std::back_inserter(hs));
-
-  return hs;
-}
-
-int backend::stripe_write(uint64_t stripe_id_at,
-                          std::shared_ptr<write_query> wqd,
-                          std::shared_ptr<write_query> wqp) noexcept {
-  assert(wqd);
-  assert(!wqd->buf().empty());
-  assert(!(wqd->offset() + wqd->buf().size() > static_cfg_->stripe_data_sz));
-  assert(wqp);
-  assert(!wqp->buf().empty());
-  assert(!(wqp->offset() + wqp->buf().size() > static_cfg_->strip_sz));
-
-  auto hs{handlers_generate(stripe_id_at)};
-
-  size_t wb{0};
-  for (size_t hid{wqd->offset() / static_cfg_->strip_sz},
-       strip_offset = wqd->offset() % static_cfg_->strip_sz;
-       wb < wqd->buf().size() && hid < (hs.size() - 1);
-       ++hid, strip_offset = 0) {
-    auto const sq_off{stripe_id_at * static_cfg_->strip_sz + strip_offset};
-    auto const sq_sz{
-        std::min(static_cfg_->strip_sz - strip_offset, wqd->buf().size() - wb),
-    };
-    auto new_wqd{wqd->subquery(wb, sq_sz, sq_off, wqd)};
-    if (auto const res{hs[hid]->submit(std::move(new_wqd))}) [[unlikely]] {
-      wqd->set_err(res);
-      return res;
-    }
-    wb += sq_sz;
-  }
-  assert(!(wb < wqd->buf().size()));
-
-  auto new_wqp{
-      wqp->subquery(0, wqp->buf().size(),
-                    stripe_id_at * static_cfg_->strip_sz + wqp->offset(), wqp),
-  };
-
-  if (auto const res{hs.back()->submit(std::move(new_wqp))}) [[unlikely]] {
-    wqp->set_err(res);
-    return res;
-  }
-
-  return 0;
-}
-
 class rsp {
 public:
-  explicit rsp(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
+  explicit rsp(uint64_t strip_sz,
+               std::vector<std::shared_ptr<ublk::IRWHandler>> hs,
                std::function<uint64_t(uint64_t stripe_id)> const
                    &stripe_id_to_parity_id);
   ~rsp() = default;
 
   bool is_stripe_parity_coherent(uint64_t stripe_id) const noexcept;
 
-  int process(std::shared_ptr<read_query> rq) noexcept;
-  int process(std::shared_ptr<write_query> wq) noexcept;
+  int process(std::shared_ptr<ublk::read_query> rq) noexcept;
+  int process(std::shared_ptr<ublk::write_query> wq) noexcept;
 
 private:
-  int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
-                   std::shared_ptr<write_query> wqp) noexcept;
+  int stripe_write(uint64_t stripe_id_at,
+                   std::shared_ptr<ublk::write_query> wqd,
+                   std::shared_ptr<ublk::write_query> wqp) noexcept;
 
   int full_stripe_write_process(uint64_t stripe_id_at,
-                                std::shared_ptr<write_query> wq) noexcept;
+                                std::shared_ptr<ublk::write_query> wq) noexcept;
 
   constexpr static inline auto kCachedStripeAlignment =
-      backend::kAlignmentRequiredMin;
-  static_assert(is_aligned_to(kCachedStripeAlignment,
-                              alignof(std::max_align_t)));
+      ublk::raidsp::backend::kAlignmentRequiredMin;
+  static_assert(ublk::is_aligned_to(kCachedStripeAlignment,
+                                    alignof(std::max_align_t)));
 
   constexpr static inline auto kCachedParityAlignment =
-      backend::kAlignmentRequiredMin;
-  static_assert(is_aligned_to(kCachedParityAlignment,
-                              alignof(std::max_align_t)));
+      ublk::raidsp::backend::kAlignmentRequiredMin;
+  static_assert(ublk::is_aligned_to(kCachedParityAlignment,
+                                    alignof(std::max_align_t)));
 
   template <typename T = std::byte>
-  auto stripe_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(stripe_pool_->chunk_view(stripe));
-  }
-
-  template <typename T = std::byte>
-  auto stripe_data_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(
-        stripe_view(stripe).subspan(0, be_.static_cfg().stripe_data_sz));
+  auto stripe_view(ublk::mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return ublk::to_span_of<T>(stripe_pool_->chunk_view(stripe));
   }
 
   template <typename T = std::byte>
   auto
-  stripe_parity_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(
+  stripe_data_view(ublk::mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return ublk::to_span_of<T>(
+        stripe_view(stripe).subspan(0, be_.static_cfg().stripe_data_sz));
+  }
+
+  template <typename T = std::byte>
+  auto stripe_parity_view(
+      ublk::mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return ublk::to_span_of<T>(
         stripe_view(stripe).subspan(be_.static_cfg().stripe_data_sz));
   }
 
@@ -279,28 +89,32 @@ private:
     return stripe_parity_pool_->get();
   }
 
-  int process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept;
+  int process(uint64_t stripe_id,
+              std::shared_ptr<ublk::write_query> wq) noexcept;
 
-  backend be_;
+  ublk::raidsp::backend be_;
 
-  bitset_locker<uint64_t, mm::allocator::cache_line_aligned_allocator<uint64_t>>
+  ublk::bitset_locker<
+      uint64_t, ublk::mm::allocator::cache_line_aligned_allocator<uint64_t>>
       stripe_w_locker_;
 
-  std::unique_ptr<mm::mem_chunk_pool> stripe_pool_;
-  std::unique_ptr<mm::mem_chunk_pool> stripe_parity_pool_;
+  std::unique_ptr<ublk::mm::mem_chunk_pool> stripe_pool_;
+  std::unique_ptr<ublk::mm::mem_chunk_pool> stripe_parity_pool_;
 
   boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
-  std::vector<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
+  std::vector<std::pair<uint64_t, std::shared_ptr<ublk::write_query>>>
+      wqs_pending_;
 };
 
 rsp::rsp(
-    uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
+    uint64_t strip_sz, std::vector<std::shared_ptr<ublk::IRWHandler>> hs,
     std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
     : be_(strip_sz, std::move(hs), stripe_id_to_parity_id),
-      stripe_w_locker_(0, mm::allocator::cache_line_aligned<uint64_t>::value) {
-  stripe_pool_ = std::make_unique<mm::mem_chunk_pool>(
+      stripe_w_locker_(
+          0, ublk::mm::allocator::cache_line_aligned<uint64_t>::value) {
+  stripe_pool_ = std::make_unique<ublk::mm::mem_chunk_pool>(
       kCachedStripeAlignment, be_.static_cfg().stripe_sz);
-  stripe_parity_pool_ = std::make_unique<mm::mem_chunk_pool>(
+  stripe_parity_pool_ = std::make_unique<ublk::mm::mem_chunk_pool>(
       kCachedParityAlignment, be_.static_cfg().strip_sz);
 }
 
@@ -309,7 +123,7 @@ bool rsp::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
          stripe_parity_coherency_state_[stripe_id];
 }
 
-int rsp::process(std::shared_ptr<read_query> rq) noexcept {
+int rsp::process(std::shared_ptr<ublk::read_query> rq) noexcept {
   assert(rq);
   assert(!rq->buf().empty());
 
@@ -319,8 +133,9 @@ int rsp::process(std::shared_ptr<read_query> rq) noexcept {
                    rq->offset() % be_.static_cfg().stripe_data_sz, rq));
 }
 
-int rsp::stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
-                      std::shared_ptr<write_query> wqp) noexcept {
+int rsp::stripe_write(uint64_t stripe_id_at,
+                      std::shared_ptr<ublk::write_query> wqd,
+                      std::shared_ptr<ublk::write_query> wqp) noexcept {
   assert(wqd);
   assert(!wqd->buf().empty());
   assert(
@@ -342,8 +157,8 @@ int rsp::stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
 
   auto make_a_new_completer{
       [combined_completer_guard = std::move(combined_completer_guard)](
-          std::shared_ptr<write_query> wq) {
-        return [wq, combined_completer_guard](write_query const &new_wq) {
+          std::shared_ptr<ublk::write_query> wq) {
+        return [wq, combined_completer_guard](ublk::write_query const &new_wq) {
           if (new_wq.err()) [[unlikely]] {
             wq->set_err(new_wq.err());
             return;
@@ -353,29 +168,31 @@ int rsp::stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
   };
 
   auto new_wqd{
-      write_query::create(wqd->buf(), wqd->offset(), make_a_new_completer(wqd)),
+      ublk::write_query::create(wqd->buf(), wqd->offset(),
+                                make_a_new_completer(wqd)),
   };
 
   auto new_wqp{
-      write_query::create(wqp->buf(), wqp->offset(), make_a_new_completer(wqp)),
+      ublk::write_query::create(wqp->buf(), wqp->offset(),
+                                make_a_new_completer(wqp)),
   };
 
   return be_.stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
-int rsp::full_stripe_write_process(uint64_t stripe_id_at,
-                                   std::shared_ptr<write_query> wqd) noexcept {
+int rsp::full_stripe_write_process(
+    uint64_t stripe_id_at, std::shared_ptr<ublk::write_query> wqd) noexcept {
   auto cached_stripe_parity{stripe_parity_allocate()};
   auto cached_stripe_parity_view{
       std::span{cached_stripe_parity.get(), be_.static_cfg().strip_sz},
   };
 
   /* Renew Parity of the stripe */
-  parity_renew(wqd->buf(), cached_stripe_parity_view);
+  ublk::parity_renew(wqd->buf(), cached_stripe_parity_view);
 
   auto wqp_completer{
       [wqd, cached_stripe_parity = std::shared_ptr{std::move(
-                cached_stripe_parity)}](write_query const &new_wqp) {
+                cached_stripe_parity)}](ublk::write_query const &new_wqp) {
         if (new_wqp.err()) [[unlikely]] {
           wqd->set_err(new_wqp.err());
           return;
@@ -384,8 +201,8 @@ int rsp::full_stripe_write_process(uint64_t stripe_id_at,
   };
 
   auto wqp{
-      write_query::create(cached_stripe_parity_view, 0,
-                          std::move(wqp_completer)),
+      ublk::write_query::create(cached_stripe_parity_view, 0,
+                                std::move(wqp_completer)),
   };
 
   /*
@@ -395,7 +212,8 @@ int rsp::full_stripe_write_process(uint64_t stripe_id_at,
   return be_.stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
-int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
+int rsp::process(uint64_t stripe_id,
+                 std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
   assert(!(wq->offset() + wq->buf().size() > be_.static_cfg().stripe_data_sz));
@@ -409,7 +227,7 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
     auto new_cached_stripe_data_view{stripe_data_view(new_cached_stripe)};
     auto new_cached_stripe_parity_view{stripe_parity_view(new_cached_stripe)};
 
-    auto new_rdq = std::shared_ptr<read_query>{};
+    auto new_rdq = std::shared_ptr<ublk::read_query>{};
 
     if (stripe_parity_coherency_state_[stripe_id]) [[likely]] {
       auto const new_cached_stripe_data_chunk{
@@ -419,7 +237,7 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
       auto new_rdq_completer{
           [=, this,
            cached_stripe = std::shared_ptr{std::move(new_cached_stripe)}](
-              read_query const &rdq) mutable {
+              ublk::read_query const &rdq) mutable {
             if (rdq.err()) [[unlikely]] {
               wq->set_err(rdq.err());
               return;
@@ -427,7 +245,7 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
 
             auto new_rpq_completer{
                 [=, this, cached_stripe = std::move(cached_stripe)](
-                    read_query const &rpq) mutable {
+                    ublk::read_query const &rpq) mutable {
                   if (rpq.err()) [[unlikely]] {
                     wq->set_err(rpq.err());
                     return;
@@ -439,16 +257,17 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
                    * the result of old data being XORed with a new data come
                    * in
                    */
-                  math::xor_to(wq->buf(), new_cached_stripe_data_chunk);
-                  parity_to(new_cached_stripe_data_chunk,
-                            wq->offset() % new_cached_stripe_parity_view.size(),
-                            new_cached_stripe_parity_view);
+                  ublk::math::xor_to(wq->buf(), new_cached_stripe_data_chunk);
+                  ublk::parity_to(new_cached_stripe_data_chunk,
+                                  wq->offset() %
+                                      new_cached_stripe_parity_view.size(),
+                                  new_cached_stripe_parity_view);
 
                   auto new_wqp{
-                      write_query::create(
+                      ublk::write_query::create(
                           new_cached_stripe_parity_view, 0,
                           [wq, cached_stripe = std::move(cached_stripe)](
-                              write_query const &new_wqp) {
+                              ublk::write_query const &new_wqp) {
                             if (new_wqp.err()) [[unlikely]] {
                               wq->set_err(new_wqp.err());
                               return;
@@ -470,8 +289,8 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
             };
 
             auto new_rpq{
-                read_query::create(new_cached_stripe_parity_view, 0,
-                                   std::move(new_rpq_completer)),
+                ublk::read_query::create(new_cached_stripe_parity_view, 0,
+                                         std::move(new_rpq_completer)),
             };
 
             if (auto const res{be_.stripe_parity_read(
@@ -482,13 +301,14 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
           },
       };
 
-      new_rdq = read_query::create(new_cached_stripe_data_chunk, wq->offset(),
+      new_rdq =
+          ublk::read_query::create(new_cached_stripe_data_chunk, wq->offset(),
                                    std::move(new_rdq_completer));
     } else {
       auto new_rdq_completer{
           [=, this,
            cached_stripe = std::shared_ptr{std::move(new_cached_stripe)}](
-              read_query const &rdq) mutable {
+              ublk::read_query const &rdq) mutable {
             if (rdq.err()) [[unlikely]] {
               wq->set_err(rdq.err());
               return;
@@ -501,33 +321,33 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
                 new_cached_stripe_data_view.subspan(wq->offset(), chunk.size());
 
             /* Modify the part of the stripe with the new data come in */
-            algo::copy(copy_from, copy_to);
+            ublk::algo::copy(copy_from, copy_to);
 
             /* Renew Parity of the stripe */
-            parity_renew(new_cached_stripe_data_view,
-                         new_cached_stripe_parity_view);
+            ublk::parity_renew(new_cached_stripe_data_view,
+                               new_cached_stripe_parity_view);
 
-            auto wqd_completer = [wq](write_query const &new_wq) {
+            auto wqd_completer = [wq](ublk::write_query const &new_wq) {
               if (new_wq.err()) [[unlikely]] {
                 wq->set_err(new_wq.err());
                 return;
               }
             };
 
-            auto new_wqd = write_query::create(chunk, wq->offset(),
-                                               std::move(wqd_completer));
+            auto new_wqd = ublk::write_query::create(chunk, wq->offset(),
+                                                     std::move(wqd_completer));
 
             auto wqp_completer =
-                [wq, cached_stripe_sp = std::shared_ptr{
-                         std::move(cached_stripe)}](write_query const &new_wq) {
+                [wq, cached_stripe_sp = std::shared_ptr{std::move(
+                         cached_stripe)}](ublk::write_query const &new_wq) {
                   if (new_wq.err()) [[unlikely]] {
                     wq->set_err(new_wq.err());
                     return;
                   }
                 };
 
-            auto new_wqp = write_query::create(new_cached_stripe_parity_view, 0,
-                                               std::move(wqp_completer));
+            auto new_wqp = ublk::write_query::create(
+                new_cached_stripe_parity_view, 0, std::move(wqp_completer));
 
             /*
              * Write Back the chunk including the newly incoming data
@@ -542,8 +362,8 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
           },
       };
 
-      new_rdq = read_query::create(new_cached_stripe_data_view, 0,
-                                   std::move(new_rdq_completer));
+      new_rdq = ublk::read_query::create(new_cached_stripe_data_view, 0,
+                                         std::move(new_rdq_completer));
     }
 
     if (auto const res{be_.stripe_data_read(stripe_id, std::move(new_rdq))})
@@ -564,12 +384,12 @@ int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
   return 0;
 }
 
-int rsp::process(std::shared_ptr<write_query> wq) noexcept {
+int rsp::process(std::shared_ptr<ublk::write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
 
-  stripe_w_locker_.extend(div_round_up(wq->offset() + wq->buf().size(),
-                                       be_.static_cfg().stripe_data_sz));
+  stripe_w_locker_.extend(ublk::div_round_up(wq->offset() + wq->buf().size(),
+                                             be_.static_cfg().stripe_data_sz));
   stripe_parity_coherency_state_.resize(stripe_w_locker_.size());
 
   auto stripe_id{wq->offset() / be_.static_cfg().stripe_data_sz};
@@ -582,7 +402,7 @@ int rsp::process(std::shared_ptr<write_query> wq) noexcept {
     };
 
     auto new_wq_completer{
-        [wq, stripe_id, this](write_query const &new_wq) {
+        [wq, stripe_id, this](ublk::write_query const &new_wq) {
           if (new_wq.err()) [[unlikely]]
             wq->set_err(new_wq.err());
 
@@ -618,12 +438,12 @@ int rsp::process(std::shared_ptr<write_query> wq) noexcept {
 }
 
 struct erq {
-  std::shared_ptr<read_query> rq;
+  std::shared_ptr<ublk::read_query> rq;
   mutable int r;
 };
 
 struct ewq {
-  std::shared_ptr<write_query> wq;
+  std::shared_ptr<ublk::write_query> wq;
   mutable int r;
 };
 
