@@ -207,7 +207,7 @@ public:
   }
 
   void invalidate_range(std::pair<Key, Key> range) noexcept {
-    if (auto [findex, lindex] = range_find(range); findex < lindex)
+    for (auto [findex, lindex] = range_find(range); findex < lindex; ++findex)
       invalidate(cache_[findex]);
   }
 
