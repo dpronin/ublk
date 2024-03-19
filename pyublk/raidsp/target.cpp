@@ -38,15 +38,15 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
   cfg->stripe_data_sz = cfg->strip_sz * (hs_.size() - 1);
   cfg->stripe_sz = cfg->stripe_data_sz + cfg->strip_sz;
 
-  cfg_ = {
+  static_cfg_ = {
       cfg.release(),
       [d = cfg.get_deleter()](cfg_t const *p) { d(const_cast<cfg_t *>(p)); },
   };
 
   stripe_pool_ = std::make_unique<mm::mem_chunk_pool>(kCachedStripeAlignment,
-                                                      cfg_->stripe_sz);
+                                                      static_cfg_->stripe_sz);
   stripe_parity_pool_ = std::make_unique<mm::mem_chunk_pool>(
-      kCachedParityAlignment, cfg_->strip_sz);
+      kCachedParityAlignment, static_cfg_->strip_sz);
 }
 
 bool Target::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
@@ -57,23 +57,24 @@ bool Target::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
 int Target::read_data_skip_parity(uint64_t stripe_id_from,
                                   std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
-  assert(rq->offset() < cfg_->stripe_data_sz);
+  assert(rq->offset() < static_cfg_->stripe_data_sz);
 
   auto stripe_id{stripe_id_from};
   auto stripe_offset{rq->offset()};
 
   for (size_t rb{0}; rb < rq->buf().size();) {
     auto chunk_sz{
-        std::min(cfg_->stripe_data_sz - stripe_offset, rq->buf().size() - rb),
+        std::min(static_cfg_->stripe_data_sz - stripe_offset,
+                 rq->buf().size() - rb),
     };
 
     auto hs{handlers_generate(stripe_id)};
 
-    for (size_t hid{stripe_offset / cfg_->strip_sz},
-         strip_offset = stripe_offset % cfg_->strip_sz;
+    for (size_t hid{stripe_offset / static_cfg_->strip_sz},
+         strip_offset = stripe_offset % static_cfg_->strip_sz;
          chunk_sz > 0 && hid < (hs.size() - 1); ++hid, strip_offset = 0) {
-      auto const h_offset{stripe_id * cfg_->strip_sz + strip_offset};
-      auto const h_sz{std::min(cfg_->strip_sz - strip_offset, chunk_sz)};
+      auto const h_offset{stripe_id * static_cfg_->strip_sz + strip_offset};
+      auto const h_sz{std::min(static_cfg_->strip_sz - strip_offset, chunk_sz)};
       auto new_rq{rq->subquery(rb, h_sz, h_offset, rq)};
       if (auto const res{hs[hid]->submit(std::move(new_rq))}) [[unlikely]] {
         return res;
@@ -93,7 +94,7 @@ int Target::read_data_skip_parity(uint64_t stripe_id_from,
 int Target::read_stripe_data(uint64_t stripe_id_from,
                              std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
-  assert(!(rq->offset() + rq->buf().size() > cfg_->stripe_data_sz));
+  assert(!(rq->offset() + rq->buf().size() > static_cfg_->stripe_data_sz));
 
   return read_data_skip_parity(stripe_id_from, std::move(rq));
 }
@@ -101,14 +102,14 @@ int Target::read_stripe_data(uint64_t stripe_id_from,
 int Target::read_stripe_parity(uint64_t stripe_id,
                                std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
-  assert(!(rq->offset() + rq->buf().size() > cfg_->strip_sz));
+  assert(!(rq->offset() + rq->buf().size() > static_cfg_->strip_sz));
 
   auto const parity_id{stripe_id_to_parity_id(stripe_id)};
   assert(parity_id < hs_.size());
 
   return hs_[parity_id]->submit(
-      rq->subquery(0, std::min(cfg_->strip_sz, rq->buf().size()),
-                   stripe_id * cfg_->strip_sz, rq));
+      rq->subquery(0, std::min(static_cfg_->strip_sz, rq->buf().size()),
+                   stripe_id * static_cfg_->strip_sz, rq));
 }
 
 std::vector<std::shared_ptr<IRWHandler>>
@@ -131,10 +132,10 @@ int Target::stripe_write(uint64_t stripe_id_at,
                          std::shared_ptr<write_query> wqp) noexcept {
   assert(wqd);
   assert(!wqd->buf().empty());
-  assert(!(wqd->offset() + wqd->buf().size() > cfg_->stripe_data_sz));
+  assert(!(wqd->offset() + wqd->buf().size() > static_cfg_->stripe_data_sz));
   assert(wqp);
   assert(!wqp->buf().empty());
-  assert(!(wqp->offset() + wqp->buf().size() > cfg_->strip_sz));
+  assert(!(wqp->offset() + wqp->buf().size() > static_cfg_->strip_sz));
 
   auto combined_completer_guard{
       std::shared_ptr<std::nullptr_t>{
@@ -162,13 +163,13 @@ int Target::stripe_write(uint64_t stripe_id_at,
   auto hs{handlers_generate(stripe_id_at)};
 
   size_t wb{0};
-  for (size_t hid{wqd->offset() / cfg_->strip_sz},
-       strip_offset = wqd->offset() % cfg_->strip_sz;
+  for (size_t hid{wqd->offset() / static_cfg_->strip_sz},
+       strip_offset = wqd->offset() % static_cfg_->strip_sz;
        wb < wqd->buf().size() && hid < (hs.size() - 1);
        ++hid, strip_offset = 0) {
-    auto const sq_off{stripe_id_at * cfg_->strip_sz + strip_offset};
+    auto const sq_off{stripe_id_at * static_cfg_->strip_sz + strip_offset};
     auto const sq_sz{
-        std::min(cfg_->strip_sz - strip_offset, wqd->buf().size() - wb),
+        std::min(static_cfg_->strip_sz - strip_offset, wqd->buf().size() - wb),
     };
     auto new_wqd{wqd->subquery(wb, sq_sz, sq_off, make_completer(wqd))};
     if (auto const res{hs[hid]->submit(std::move(new_wqd))}) [[unlikely]] {
@@ -181,7 +182,7 @@ int Target::stripe_write(uint64_t stripe_id_at,
 
   auto new_wqp{
       wqp->subquery(0, wqp->buf().size(),
-                    stripe_id_at * cfg_->strip_sz + wqp->offset(),
+                    stripe_id_at * static_cfg_->strip_sz + wqp->offset(),
                     make_completer(wqp)),
   };
 
@@ -197,9 +198,10 @@ int Target::stripe_write(uint64_t stripe_id_at,
                          std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
-  assert(!(wq->buf().size() < cfg_->stripe_sz));
-  auto wqd{wq->subquery(0, cfg_->stripe_data_sz, 0, wq)};
-  auto wqp{wq->subquery(cfg_->stripe_data_sz, cfg_->strip_sz, 0, wq)};
+  assert(!(wq->buf().size() < static_cfg_->stripe_sz));
+  auto wqd{wq->subquery(0, static_cfg_->stripe_data_sz, 0, wq)};
+  auto wqp{
+      wq->subquery(static_cfg_->stripe_data_sz, static_cfg_->strip_sz, 0, wq)};
   return stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
@@ -207,17 +209,17 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
   assert(rq);
   assert(!rq->buf().empty());
 
-  return read_data_skip_parity(rq->offset() / cfg_->stripe_data_sz,
-                               rq->subquery(0, rq->buf().size(),
-                                            rq->offset() % cfg_->stripe_data_sz,
-                                            rq));
+  return read_data_skip_parity(
+      rq->offset() / static_cfg_->stripe_data_sz,
+      rq->subquery(0, rq->buf().size(),
+                   rq->offset() % static_cfg_->stripe_data_sz, rq));
 }
 
 int Target::full_stripe_write_process(
     uint64_t stripe_id_at, std::shared_ptr<write_query> wqd) noexcept {
   auto cached_stripe_parity{stripe_parity_allocate()};
   auto cached_stripe_parity_view{
-      std::span{cached_stripe_parity.get(), cfg_->strip_sz},
+      std::span{cached_stripe_parity.get(), static_cfg_->strip_sz},
   };
 
   /* Renew Parity of the stripe */
@@ -249,13 +251,13 @@ int Target::process(uint64_t stripe_id,
                     std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
-  assert(!(wq->offset() + wq->buf().size() > cfg_->stripe_data_sz));
+  assert(!(wq->offset() + wq->buf().size() > static_cfg_->stripe_data_sz));
 
   /*
    * Read the whole stripe from the backend excluding parity in case we
    * intend to partially modify the stripe
    */
-  if (wq->buf().size() < cfg_->stripe_data_sz) {
+  if (wq->buf().size() < static_cfg_->stripe_data_sz) {
     auto new_cached_stripe{stripe_allocate()};
     auto new_cached_stripe_data_view{stripe_data_view(new_cached_stripe)};
     auto new_cached_stripe_parity_view{stripe_parity_view(new_cached_stripe)};
@@ -419,16 +421,17 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
 
-  stripe_w_locker_.extend(
-      div_round_up(wq->offset() + wq->buf().size(), cfg_->stripe_data_sz));
+  stripe_w_locker_.extend(div_round_up(wq->offset() + wq->buf().size(),
+                                       static_cfg_->stripe_data_sz));
   stripe_parity_coherency_state_.resize(stripe_w_locker_.size());
 
-  auto stripe_id{wq->offset() / cfg_->stripe_data_sz};
-  auto stripe_offset{wq->offset() % cfg_->stripe_data_sz};
+  auto stripe_id{wq->offset() / static_cfg_->stripe_data_sz};
+  auto stripe_offset{wq->offset() % static_cfg_->stripe_data_sz};
 
   for (size_t wb{0}; wb < wq->buf().size(); ++stripe_id, stripe_offset = 0) {
     auto const chunk_sz{
-        std::min(cfg_->stripe_data_sz - stripe_offset, wq->buf().size() - wb),
+        std::min(static_cfg_->stripe_data_sz - stripe_offset,
+                 wq->buf().size() - wb),
     };
 
     auto new_wq_completer{

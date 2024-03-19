@@ -47,13 +47,15 @@ protected:
 
   template <typename T = std::byte>
   auto stripe_data_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(stripe_view(stripe).subspan(0, cfg_->stripe_data_sz));
+    return to_span_of<T>(
+        stripe_view(stripe).subspan(0, static_cfg_->stripe_data_sz));
   }
 
   template <typename T = std::byte>
   auto
   stripe_parity_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(stripe_view(stripe).subspan(cfg_->stripe_data_sz));
+    return to_span_of<T>(
+        stripe_view(stripe).subspan(static_cfg_->stripe_data_sz));
   }
 
   auto stripe_allocate() const noexcept { return stripe_pool_->get(); }
@@ -97,7 +99,7 @@ protected:
     uint64_t stripe_data_sz;
     uint64_t stripe_sz;
   };
-  mm::uptrwd<cfg_t const> cfg_;
+  mm::uptrwd<cfg_t const> static_cfg_;
 
   std::vector<std::shared_ptr<IRWHandler>> hs_;
   bitset_locker<uint64_t, mm::allocator::cache_line_aligned_allocator<uint64_t>>
