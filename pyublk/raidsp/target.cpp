@@ -246,9 +246,9 @@ int rsp::process(uint64_t stripe_id,
                    */
                   ublk::math::xor_to(wq->buf(), new_cached_stripe_data_chunk);
                   ublk::parity_to(new_cached_stripe_data_chunk,
+                                  new_cached_stripe_parity_view,
                                   wq->offset() %
-                                      new_cached_stripe_parity_view.size(),
-                                  new_cached_stripe_parity_view);
+                                      new_cached_stripe_parity_view.size());
 
                   auto new_wqp{
                       ublk::write_query::create(

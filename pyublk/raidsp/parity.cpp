@@ -9,8 +9,8 @@
 
 namespace ublk {
 
-void parity_to(std::span<std::byte const> data, size_t parity_start_offset,
-               std::span<std::byte> parity) noexcept {
+void parity_to(std::span<std::byte const> data, std::span<std::byte> parity,
+               size_t parity_start_offset /* = 0*/) noexcept {
   assert(is_multiple_of(data.size(), sizeof(uint64_t)));
   assert(is_multiple_of(parity_start_offset, sizeof(uint64_t)));
   assert(is_multiple_of(parity.size(), sizeof(uint64_t)));
