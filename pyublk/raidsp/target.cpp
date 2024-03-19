@@ -217,9 +217,8 @@ int rsp::process(uint64_t stripe_id,
     auto new_rdq{std::shared_ptr<ublk::read_query>{}};
 
     if (stripe_parity_coherency_state_[stripe_id]) [[likely]] {
-      auto const new_cached_stripe_data_chunk{
-          new_cached_stripe_data_view.subspan(wq->offset(), wq->buf().size()),
-      };
+      new_cached_stripe_data_view =
+          new_cached_stripe_data_view.subspan(wq->offset(), wq->buf().size());
 
       auto new_rdq_completer{
           [=, this,
@@ -244,8 +243,8 @@ int rsp::process(uint64_t stripe_id,
                    * the result of old data being XORed with a new data come
                    * in
                    */
-                  ublk::math::xor_to(wq->buf(), new_cached_stripe_data_chunk);
-                  ublk::parity_to(new_cached_stripe_data_chunk,
+                  ublk::math::xor_to(wq->buf(), new_cached_stripe_data_view);
+                  ublk::parity_to(new_cached_stripe_data_view,
                                   new_cached_stripe_parity_view,
                                   wq->offset() %
                                       new_cached_stripe_parity_view.size());
@@ -290,7 +289,7 @@ int rsp::process(uint64_t stripe_id,
       };
 
       new_rdq =
-          ublk::read_query::create(new_cached_stripe_data_chunk, wq->offset(),
+          ublk::read_query::create(new_cached_stripe_data_view, wq->offset(),
                                    std::move(new_rdq_completer));
     } else {
       auto new_rdq_completer{
