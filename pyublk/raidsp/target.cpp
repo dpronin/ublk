@@ -9,28 +9,134 @@
 #include <memory>
 #include <span>
 #include <utility>
+#include <vector>
 
+#include <boost/dynamic_bitset/dynamic_bitset.hpp>
+#include <boost/sml.hpp>
+
+#include "mm/cache_line_aligned_allocator.hpp"
 #include "mm/generic_allocators.hpp"
 #include "mm/mem.hpp"
+#include "mm/mem_chunk_pool.hpp"
+#include "mm/mem_types.hpp"
 
 #include "utils/algo.hpp"
+#include "utils/bitset_locker.hpp"
 #include "utils/math.hpp"
+#include "utils/span.hpp"
 #include "utils/utility.hpp"
 
 #include "parity.hpp"
 #include "read_query.hpp"
+#include "rw_handler_interface.hpp"
+#include "sector.hpp"
 #include "write_query.hpp"
 
-namespace ublk::raidsp {
+using namespace ublk;
 
-Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
-    : hs_(std::move(hs)),
+namespace {
+
+class rsp {
+public:
+  explicit rsp(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
+               std::function<uint64_t(uint64_t stripe_id)> const
+                   &stripe_id_to_parity_id);
+  ~rsp() = default;
+
+  bool is_stripe_parity_coherent(uint64_t stripe_id) const noexcept;
+
+  int process(std::shared_ptr<read_query> rq) noexcept;
+  int process(std::shared_ptr<write_query> wq) noexcept;
+
+private:
+  std::vector<std::shared_ptr<IRWHandler>>
+  handlers_generate(uint64_t stripe_id);
+
+  int full_stripe_write_process(uint64_t stripe_id_at,
+                                std::shared_ptr<write_query> wq) noexcept;
+
+  constexpr static inline auto kCachedStripeAlignment = kSectorSz;
+  static_assert(is_aligned_to(kCachedStripeAlignment,
+                              alignof(std::max_align_t)));
+
+  constexpr static inline auto kCachedParityAlignment = kSectorSz;
+  static_assert(is_aligned_to(kCachedParityAlignment,
+                              alignof(std::max_align_t)));
+
+  template <typename T = std::byte>
+  auto stripe_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return to_span_of<T>(stripe_pool_->chunk_view(stripe));
+  }
+
+  template <typename T = std::byte>
+  auto stripe_data_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return to_span_of<T>(
+        stripe_view(stripe).subspan(0, static_cfg_->stripe_data_sz));
+  }
+
+  template <typename T = std::byte>
+  auto
+  stripe_parity_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
+    return to_span_of<T>(
+        stripe_view(stripe).subspan(static_cfg_->stripe_data_sz));
+  }
+
+  auto stripe_allocate() const noexcept { return stripe_pool_->get(); }
+
+  auto stripe_parity_allocate() const noexcept {
+    return stripe_parity_pool_->get();
+  }
+
+  int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
+                   std::shared_ptr<write_query> wqp) noexcept;
+  int stripe_write(uint64_t stripe_id_at,
+                   std::shared_ptr<write_query> wq) noexcept;
+
+  int read_data_skip_parity(uint64_t stripe_id_from,
+                            std::shared_ptr<read_query> rq) noexcept;
+  int read_stripe_data(uint64_t stripe_id_from,
+                       std::shared_ptr<read_query> rq) noexcept;
+  int read_stripe_parity(uint64_t stripe_id_from,
+                         std::shared_ptr<read_query> rq) noexcept;
+
+  uint64_t stripe_id_to_parity_id(uint64_t stripe_id) const noexcept {
+    return stripe_id_to_parity_id_(stripe_id);
+  }
+
+  int process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept;
+
+  struct cfg_t {
+    uint64_t strip_sz;
+    uint64_t stripe_data_sz;
+    uint64_t stripe_sz;
+  };
+  mm::uptrwd<cfg_t const> static_cfg_;
+
+  std::vector<std::shared_ptr<IRWHandler>> hs_;
+
+  std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id_;
+
+  bitset_locker<uint64_t, mm::allocator::cache_line_aligned_allocator<uint64_t>>
+      stripe_w_locker_;
+
+  mutable std::unique_ptr<mm::mem_chunk_pool> stripe_pool_;
+  mutable std::unique_ptr<mm::mem_chunk_pool> stripe_parity_pool_;
+
+  boost::dynamic_bitset<uint64_t> stripe_parity_coherency_state_;
+  std::vector<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
+};
+
+rsp::rsp(
+    uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
+    std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
+    : hs_(std::move(hs)), stripe_id_to_parity_id_(stripe_id_to_parity_id),
       stripe_w_locker_(0, mm::allocator::cache_line_aligned<uint64_t>::value) {
   assert(is_power_of_2(strip_sz));
   assert(is_multiple_of(strip_sz, kCachedStripeAlignment));
   assert(!(hs_.size() < 3));
   assert(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
+  assert(stripe_id_to_parity_id_);
 
   auto cfg =
       mm::make_unique_aligned<cfg_t>(hardware_destructive_interference_size);
@@ -49,13 +155,13 @@ Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       kCachedParityAlignment, static_cfg_->strip_sz);
 }
 
-bool Target::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
+bool rsp::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
   return stripe_id < stripe_parity_coherency_state_.size() &&
          stripe_parity_coherency_state_[stripe_id];
 }
 
-int Target::read_data_skip_parity(uint64_t stripe_id_from,
-                                  std::shared_ptr<read_query> rq) noexcept {
+int rsp::read_data_skip_parity(uint64_t stripe_id_from,
+                               std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
   assert(rq->offset() < static_cfg_->stripe_data_sz);
 
@@ -91,16 +197,16 @@ int Target::read_data_skip_parity(uint64_t stripe_id_from,
   return 0;
 }
 
-int Target::read_stripe_data(uint64_t stripe_id_from,
-                             std::shared_ptr<read_query> rq) noexcept {
+int rsp::read_stripe_data(uint64_t stripe_id_from,
+                          std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
   assert(!(rq->offset() + rq->buf().size() > static_cfg_->stripe_data_sz));
 
   return read_data_skip_parity(stripe_id_from, std::move(rq));
 }
 
-int Target::read_stripe_parity(uint64_t stripe_id,
-                               std::shared_ptr<read_query> rq) noexcept {
+int rsp::read_stripe_parity(uint64_t stripe_id,
+                            std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
   assert(!(rq->offset() + rq->buf().size() > static_cfg_->strip_sz));
 
@@ -113,7 +219,7 @@ int Target::read_stripe_parity(uint64_t stripe_id,
 }
 
 std::vector<std::shared_ptr<IRWHandler>>
-Target::handlers_generate(uint64_t stripe_id) {
+rsp::handlers_generate(uint64_t stripe_id) {
   std::vector<std::shared_ptr<IRWHandler>> hs;
   hs.reserve(hs_.size());
 
@@ -127,9 +233,8 @@ Target::handlers_generate(uint64_t stripe_id) {
   return hs;
 }
 
-int Target::stripe_write(uint64_t stripe_id_at,
-                         std::shared_ptr<write_query> wqd,
-                         std::shared_ptr<write_query> wqp) noexcept {
+int rsp::stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
+                      std::shared_ptr<write_query> wqp) noexcept {
   assert(wqd);
   assert(!wqd->buf().empty());
   assert(!(wqd->offset() + wqd->buf().size() > static_cfg_->stripe_data_sz));
@@ -194,8 +299,8 @@ int Target::stripe_write(uint64_t stripe_id_at,
   return 0;
 }
 
-int Target::stripe_write(uint64_t stripe_id_at,
-                         std::shared_ptr<write_query> wq) noexcept {
+int rsp::stripe_write(uint64_t stripe_id_at,
+                      std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
   assert(!(wq->buf().size() < static_cfg_->stripe_sz));
@@ -205,7 +310,7 @@ int Target::stripe_write(uint64_t stripe_id_at,
   return stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
-int Target::process(std::shared_ptr<read_query> rq) noexcept {
+int rsp::process(std::shared_ptr<read_query> rq) noexcept {
   assert(rq);
   assert(!rq->buf().empty());
 
@@ -215,8 +320,8 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
                    rq->offset() % static_cfg_->stripe_data_sz, rq));
 }
 
-int Target::full_stripe_write_process(
-    uint64_t stripe_id_at, std::shared_ptr<write_query> wqd) noexcept {
+int rsp::full_stripe_write_process(uint64_t stripe_id_at,
+                                   std::shared_ptr<write_query> wqd) noexcept {
   auto cached_stripe_parity{stripe_parity_allocate()};
   auto cached_stripe_parity_view{
       std::span{cached_stripe_parity.get(), static_cfg_->strip_sz},
@@ -247,8 +352,7 @@ int Target::full_stripe_write_process(
   return stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
-int Target::process(uint64_t stripe_id,
-                    std::shared_ptr<write_query> wq) noexcept {
+int rsp::process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
   assert(!(wq->offset() + wq->buf().size() > static_cfg_->stripe_data_sz));
@@ -417,7 +521,7 @@ int Target::process(uint64_t stripe_id,
   return 0;
 }
 
-int Target::process(std::shared_ptr<write_query> wq) noexcept {
+int rsp::process(std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
   assert(!wq->buf().empty());
 
@@ -468,6 +572,98 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
   }
 
   return 0;
+}
+
+struct erq {
+  std::shared_ptr<read_query> rq;
+  mutable int r;
+};
+
+struct ewq {
+  std::shared_ptr<write_query> wq;
+  mutable int r;
+};
+
+struct estripecohcheck {
+  uint64_t stripe_id;
+  mutable bool r;
+};
+
+/* clang-format off */
+struct transition_table {
+  auto operator()() noexcept {
+    using namespace boost::sml;
+    return make_transition_table(
+       // online state
+       *"online"_s + event<erq> [ ([](erq const &e, rsp& r){ e.r = r.process(std::move(e.rq)); return 0 == e.r; }) ]
+      , "online"_s + event<erq> = "offline"_s
+      , "online"_s + event<ewq> [ ([](ewq const &e, rsp& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
+      , "online"_s + event<ewq> = "offline"_s
+      , "online"_s + event<estripecohcheck> / [](estripecohcheck const &e, rsp const& r) { e.r = r.is_stripe_parity_coherent(e.stripe_id); }
+       // offline state
+      , "offline"_s + event<erq> / [](erq const &e) { e.r = EIO; }
+      , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EIO; }
+      , "offline"_s + event<estripecohcheck> / [](estripecohcheck const &e) { e.r = false; }
+    );
+  }
+};
+/* clang-format on */
+
+} // namespace
+
+namespace ublk::raidsp {
+
+class Target::impl final {
+public:
+  explicit impl(
+      uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
+      std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
+      : rsp_(strip_sz, std::move(hs), stripe_id_to_parity_id), fsm_(rsp_) {}
+
+  int process(std::shared_ptr<read_query> rq) noexcept {
+    erq e{.rq = std::move(rq), .r = 0};
+    fsm_.process_event(e);
+    return e.r;
+  }
+
+  int process(std::shared_ptr<write_query> wq) noexcept {
+    ewq e{.wq = std::move(wq), .r = 0};
+    fsm_.process_event(e);
+    return e.r;
+  }
+
+  bool is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
+    estripecohcheck e{.stripe_id = stripe_id, .r = false};
+    fsm_.process_event(e);
+    return e.r;
+  }
+
+private:
+  rsp rsp_;
+  mutable boost::sml::sm<transition_table> fsm_;
+};
+
+Target::Target(
+    uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
+    std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
+    : pimpl_(std::make_unique<impl>(strip_sz, std::move(hs),
+                                    stripe_id_to_parity_id)) {}
+
+Target::~Target() noexcept = default;
+
+Target::Target(Target &&) noexcept = default;
+Target &Target::operator=(Target &&) noexcept = default;
+
+bool Target::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
+  return pimpl_->is_stripe_parity_coherent(stripe_id);
+}
+
+int Target::process(std::shared_ptr<read_query> rq) noexcept {
+  return pimpl_->process(std::move(rq));
+}
+
+int Target::process(std::shared_ptr<write_query> wq) noexcept {
+  return pimpl_->process(std::move(wq));
 }
 
 } // namespace ublk::raidsp

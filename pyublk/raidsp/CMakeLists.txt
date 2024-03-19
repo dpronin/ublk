@@ -11,6 +11,9 @@ target_link_libraries(ublk_raidsp PUBLIC
     ublk::utils
     ublk::mm
 )
+target_link_libraries(ublk_raidsp PRIVATE
+    sml::sml
+)
 set_property(TARGET ublk_raidsp PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::raidsp ALIAS ublk_raidsp)
