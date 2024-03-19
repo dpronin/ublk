@@ -57,7 +57,7 @@ private:
     return std::span{cache_value.get(), item_sz()};
   }
 
-  void invalidate(value_type &value) { value.second.refs = len_max(); }
+  void invalidate(value_type &value) noexcept { value.second.refs = len_max(); }
 
   bool is_valid(value_type const &value) const noexcept {
     return value.second.refs != len_max();
