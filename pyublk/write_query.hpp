@@ -49,6 +49,8 @@ public:
   auto subquery(uint64_t buf_offset, uint64_t buf_sz, uint64_t rq_offset,
                 std::function<void(write_query const &)> &&completer = {})
       const noexcept {
+    assert(0 != buf_sz);
+    assert(!(buf_offset + buf_sz > buf_.size()));
     return create(buf_.subspan(buf_offset, buf_sz), rq_offset,
                   std::move(completer));
   }
