@@ -89,8 +89,6 @@ private:
 
   int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
                    std::shared_ptr<write_query> wqp) noexcept;
-  int stripe_write(uint64_t stripe_id_at,
-                   std::shared_ptr<write_query> wq) noexcept;
 
   int read_data_skip_parity(uint64_t stripe_id_from,
                             std::shared_ptr<read_query> rq) noexcept;
@@ -297,17 +295,6 @@ int rsp::stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
   }
 
   return 0;
-}
-
-int rsp::stripe_write(uint64_t stripe_id_at,
-                      std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-  assert(!wq->buf().empty());
-  assert(!(wq->buf().size() < static_cfg_->stripe_sz));
-  auto wqd{wq->subquery(0, static_cfg_->stripe_data_sz, 0, wq)};
-  auto wqp{
-      wq->subquery(static_cfg_->stripe_data_sz, static_cfg_->strip_sz, 0, wq)};
-  return stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
 int rsp::process(std::shared_ptr<read_query> rq) noexcept {
