@@ -82,12 +82,14 @@ private:
       return [=](cache_item_ref_t o) { return o < eo; };
     };
 
+    auto &eo = to_refs(cache_[index]);
+
     for (auto &o : cache_ | std::views::transform(to_refs) |
-                       std::views::filter(less_than(to_refs(cache_[index])))) {
+                       std::views::filter(less_than(eo))) {
       ++o;
     }
 
-    to_refs(cache_[index]) = 0;
+    eo = 0;
   }
 
   std::pair<size_t, bool> lower_bound_find(Key key) const noexcept {
@@ -145,12 +147,12 @@ public:
     auto [index, exact_match] = lower_bound_find(value.first);
     if (!exact_match) {
       if (!(index < cache_.size()) || is_valid(cache_[index])) {
-        if (!(cache_.size() < cache_len_max_)) [[likely]] {
+        if (!(cache_.size() < len_max())) [[likely]] {
           auto value_it = cache_.begin() + index;
 
           size_t evict_index{0};
           if (is_valid(cache_[evict_index])) {
-            for (size_t i = 1; i < len_max(); ++i) {
+            for (size_t i = 1; i < cache_.size(); ++i) {
               if (cache_[evict_index].second.refs < cache_[i].second.refs) {
                 evict_index = i;
                 if (!is_valid(cache_[evict_index]))
