@@ -11,6 +11,26 @@
 
 #include "mm/mem.hpp"
 
+namespace {
+
+auto handlers_data_view(
+    std::vector<std::shared_ptr<ublk::IRWHandler>> const &hs,
+    uint64_t hid_to_skip, size_t hid_first, size_t hs_nr) noexcept {
+  assert(hid_to_skip < hs.size());
+  assert(hid_first + hs_nr < hs.size());
+
+  auto const hs_first_part{std::span{hs.cbegin(), hid_to_skip}};
+  auto const hs_last_part{std::span{hs.cbegin() + hid_to_skip + 1, hs.cend()}};
+
+  /* clang-format off */
+  return   ranges::views::concat(hs_first_part, hs_last_part)
+         | std::views::drop(hid_first)
+         | std::views::take(hs_nr);
+  /* clang-format on */
+}
+
+} // namespace
+
 namespace ublk::raidsp {
 
 backend::backend(
@@ -57,8 +77,8 @@ int backend::data_read(uint64_t stripe_id_from,
     assert(strip_parity_id < hs_.size());
 
     auto const hs{
-        handlers_data_generate(strip_parity_id, strip_id_first,
-                               strip_id_last - strip_id_first),
+        handlers_data_view(hs_, strip_parity_id, strip_id_first,
+                           strip_id_last - strip_id_first),
     };
 
     for (auto strip_offset{stripe_offset % static_cfg_->strip_sz};
@@ -94,28 +114,6 @@ int backend::parity_read(uint64_t stripe_id,
                    stripe_id * static_cfg_->strip_sz, rq));
 }
 
-std::vector<std::shared_ptr<IRWHandler>>
-backend::handlers_data_generate(uint64_t hid_to_skip, size_t hid_first,
-                                size_t hs_nr) const {
-  assert(hid_to_skip < hs_.size());
-  assert(hid_first + hs_nr < hs_.size());
-
-  std::vector<std::shared_ptr<IRWHandler>> hs;
-  hs.reserve(hs_nr);
-
-  auto const hs_first_part{std::span{hs_.cbegin(), hid_to_skip}};
-  auto const hs_last_part{
-      std::span{hs_.cbegin() + hid_to_skip + 1, hs_.cend()}};
-
-  auto const hs_new{
-      ranges::views::concat(hs_first_part, hs_last_part),
-  };
-
-  std::copy_n(hs_new.begin() + hid_first, hs_nr, std::back_inserter(hs));
-
-  return hs;
-}
-
 int backend::stripe_write(uint64_t stripe_id_at,
                           std::shared_ptr<write_query> wqd,
                           std::shared_ptr<write_query> wqp) noexcept {
@@ -135,8 +133,8 @@ int backend::stripe_write(uint64_t stripe_id_at,
   assert(strip_parity_id < hs_.size());
 
   auto const hs{
-      handlers_data_generate(strip_parity_id, strip_id_first,
-                             strip_id_last - strip_id_first),
+      handlers_data_view(hs_, strip_parity_id, strip_id_first,
+                         strip_id_last - strip_id_first),
   };
 
   size_t wb{0};
