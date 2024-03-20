@@ -98,7 +98,7 @@ std::vector<std::shared_ptr<IRWHandler>>
 backend::handlers_data_generate(uint64_t hid_to_skip, size_t hid_first,
                                 size_t hs_nr) const {
   assert(hid_to_skip < hs_.size());
-  assert(!(hid_first + hs_nr > (hs_.size() - 1)));
+  assert(hid_first + hs_nr < hs_.size());
 
   std::vector<std::shared_ptr<IRWHandler>> hs;
   hs.reserve(hs_nr);
