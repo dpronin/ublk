@@ -1,4 +1,6 @@
 add_library(ublk_raidsp STATIC
+    acceptor.cpp
+    acceptor.hpp
     backend.cpp
     backend.hpp
     parity.cpp
