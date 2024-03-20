@@ -3,6 +3,7 @@ add_library(ublk_raidsp STATIC
     acceptor.hpp
     backend.cpp
     backend.hpp
+    fsm.hpp
     parity.cpp
     parity.hpp
     target.cpp

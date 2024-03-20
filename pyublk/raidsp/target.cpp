@@ -13,45 +13,7 @@
 #include "write_query.hpp"
 
 #include "acceptor.hpp"
-
-namespace {
-
-struct erq {
-  std::shared_ptr<ublk::read_query> rq;
-  mutable int r;
-};
-
-struct ewq {
-  std::shared_ptr<ublk::write_query> wq;
-  mutable int r;
-};
-
-struct estripecohcheck {
-  uint64_t stripe_id;
-  mutable bool r;
-};
-
-/* clang-format off */
-struct transition_table {
-  auto operator()() noexcept {
-    using namespace boost::sml;
-    return make_transition_table(
-       // online state
-       *"online"_s + event<erq> [ ([](erq const &e, ublk::raidsp::acceptor& acc){ e.r = acc.process(std::move(e.rq)); return 0 == e.r; }) ]
-      , "online"_s + event<erq> = "offline"_s
-      , "online"_s + event<ewq> [ ([](ewq const &e, ublk::raidsp::acceptor& acc){ e.r = acc.process(std::move(e.wq)); return 0 == e.r; }) ]
-      , "online"_s + event<ewq> = "offline"_s
-      , "online"_s + event<estripecohcheck> / [](estripecohcheck const &e, ublk::raidsp::acceptor const& r) { e.r = r.is_stripe_parity_coherent(e.stripe_id); }
-       // offline state
-      , "offline"_s + event<erq> / [](erq const &e) { e.r = EIO; }
-      , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EIO; }
-      , "offline"_s + event<estripecohcheck> / [](estripecohcheck const &e) { e.r = false; }
-    );
-  }
-};
-/* clang-format on */
-
-} // namespace
+#include "fsm.hpp"
 
 namespace ublk::raidsp {
 
@@ -63,26 +25,26 @@ public:
       : acc_(strip_sz, std::move(hs), stripe_id_to_parity_id), fsm_(acc_) {}
 
   int process(std::shared_ptr<read_query> rq) noexcept {
-    erq e{.rq = std::move(rq), .r = 0};
+    fsm::ev::rq e{.rq = std::move(rq), .r = 0};
     fsm_.process_event(e);
     return e.r;
   }
 
   int process(std::shared_ptr<write_query> wq) noexcept {
-    ewq e{.wq = std::move(wq), .r = 0};
+    fsm::ev::wq e{.wq = std::move(wq), .r = 0};
     fsm_.process_event(e);
     return e.r;
   }
 
   bool is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
-    estripecohcheck e{.stripe_id = stripe_id, .r = false};
+    fsm::ev::stripecohcheck e{.stripe_id = stripe_id, .r = false};
     fsm_.process_event(e);
     return e.r;
   }
 
 private:
   ublk::raidsp::acceptor acc_;
-  mutable boost::sml::sm<transition_table> fsm_;
+  mutable boost::sml::sm<fsm::transition_table> fsm_;
 };
 
 Target::Target(
