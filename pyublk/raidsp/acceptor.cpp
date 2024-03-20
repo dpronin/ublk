@@ -20,9 +20,9 @@ namespace ublk::raidsp {
 
 acceptor::acceptor(
     uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
-    std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
+    std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id)
     : be_(std::make_unique<backend>(strip_sz, std::move(hs),
-                                    stripe_id_to_parity_id)),
+                                    std::move(stripe_id_to_parity_id))),
       stripe_w_locker_(0, mm::allocator::cache_line_aligned<uint64_t>::value),
       stripe_pool_(std::make_unique<mm::mem_chunk_pool>(
           kCachedStripeAlignment, be_->static_cfg().stripe_sz)),

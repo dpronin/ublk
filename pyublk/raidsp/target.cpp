@@ -21,8 +21,9 @@ class Target::impl final {
 public:
   explicit impl(
       uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
-      std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
-      : acc_(strip_sz, std::move(hs), stripe_id_to_parity_id), fsm_(acc_) {}
+      std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id)
+      : acc_(strip_sz, std::move(hs), std::move(stripe_id_to_parity_id)),
+        fsm_(acc_) {}
 
   int process(std::shared_ptr<read_query> rq) noexcept {
     fsm::ev::rq e{.rq = std::move(rq), .r = 0};
@@ -49,9 +50,9 @@ private:
 
 Target::Target(
     uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
-    std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
+    std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id)
     : pimpl_(std::make_unique<impl>(strip_sz, std::move(hs),
-                                    stripe_id_to_parity_id)) {}
+                                    std::move(stripe_id_to_parity_id))) {}
 
 Target::~Target() noexcept = default;
 

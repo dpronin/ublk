@@ -15,8 +15,9 @@ namespace ublk::raidsp {
 
 backend::backend(
     uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
-    std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
-    : hs_(std::move(hs)), stripe_id_to_parity_id_(stripe_id_to_parity_id) {
+    std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id)
+    : hs_(std::move(hs)),
+      stripe_id_to_parity_id_(std::move(stripe_id_to_parity_id)) {
   assert(is_power_of_2(strip_sz));
   assert(is_multiple_of(strip_sz, kAlignmentRequiredMin));
   assert(!(hs_.size() < 3));

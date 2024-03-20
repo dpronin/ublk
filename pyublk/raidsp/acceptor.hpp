@@ -28,10 +28,9 @@ namespace ublk::raidsp {
 
 class acceptor {
 public:
-  explicit acceptor(uint64_t strip_sz,
-                    std::vector<std::shared_ptr<IRWHandler>> hs,
-                    std::function<uint64_t(uint64_t stripe_id)> const
-                        &stripe_id_to_parity_id);
+  explicit acceptor(
+      uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
+      std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id);
   ~acceptor() = default;
 
   bool is_stripe_parity_coherent(uint64_t stripe_id) const noexcept;
