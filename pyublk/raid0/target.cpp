@@ -59,12 +59,7 @@ r0::r0(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       hardware_destructive_interference_size);
   cfg->strip_sz = strip_sz;
 
-  static_cfg_ = {
-      cfg.release(),
-      [d = cfg.get_deleter()](static_cfg const *p) {
-        d(const_cast<static_cfg *>(p));
-      },
-  };
+  static_cfg_ = mm::const_uptr_cast(std::move(cfg));
 }
 
 template <typename T>
