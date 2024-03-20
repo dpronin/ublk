@@ -11,14 +11,12 @@ namespace ublk {
 
 void parity_to(std::span<std::byte const> data, std::span<std::byte> parity,
                size_t parity_start_offset /* = 0*/) noexcept {
-  assert(is_multiple_of(data.size(), sizeof(uint64_t)));
   assert(is_multiple_of(parity_start_offset, sizeof(uint64_t)));
-  assert(is_multiple_of(parity.size(), sizeof(uint64_t)));
-
-  parity_start_offset = parity_start_offset % parity.size();
 
   auto data_u64 = to_span_of<uint64_t const>(data);
   auto const parity_u64 = to_span_of<uint64_t>(parity);
+
+  parity_start_offset = parity_start_offset % parity.size();
 
   if (auto const parity_u64_offset = parity_start_offset / sizeof(uint64_t)) {
     auto const chunk_u64_len =
