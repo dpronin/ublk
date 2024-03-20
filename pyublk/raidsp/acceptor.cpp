@@ -124,8 +124,13 @@ int acceptor::stripe_write(uint64_t stripe_id_at,
                                               std::move(wqp));
 }
 
-int acceptor::full_stripe_write_process(
-    uint64_t stripe_id_at, std::shared_ptr<write_query> wqd) noexcept {
+int acceptor::stripe_data_write(uint64_t stripe_id_at,
+                                std::shared_ptr<write_query> wqd) noexcept {
+  assert(wqd);
+  assert(!wqd->buf().empty());
+  assert(0 == wqd->offset());
+  assert(wqd->buf().size() == be_->static_cfg().stripe_data_sz);
+
   auto cached_stripe_parity{stripe_parity_pool_->get()};
   auto cached_stripe_parity_view{
       std::span{cached_stripe_parity.get(), be_->static_cfg().strip_sz},
@@ -327,9 +332,8 @@ int acceptor::process(uint64_t stripe_id,
      * Calculate parity based on newly incoming stripe-long chunk and write
      * back the whole stripe including the chunk and parity computed
      */
-  } else if (auto const res{
-                 full_stripe_write_process(stripe_id, std::move(wq)),
-             }) {
+  } else if (auto const res{stripe_data_write(stripe_id, std::move(wq))})
+      [[unlikely]] {
     return res;
   }
 

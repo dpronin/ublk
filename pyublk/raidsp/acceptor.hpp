@@ -51,8 +51,8 @@ private:
   int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
                    std::shared_ptr<write_query> wqp) noexcept;
 
-  int full_stripe_write_process(uint64_t stripe_id_at,
-                                std::shared_ptr<write_query> wq) noexcept;
+  int stripe_data_write(uint64_t stripe_id_at,
+                        std::shared_ptr<write_query> wq) noexcept;
 
   constexpr static inline auto kCachedStripeAlignment =
       backend::kAlignmentRequiredMin;
