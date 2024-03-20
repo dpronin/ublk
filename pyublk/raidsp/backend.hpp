@@ -38,14 +38,10 @@ public:
   backend(backend &&) = default;
   backend &operator=(backend &&) = default;
 
-  int data_skip_parity_read(uint64_t stripe_id_from,
-                            std::shared_ptr<read_query> rq) noexcept;
+  int data_read(uint64_t stripe_id_from,
+                std::shared_ptr<read_query> rq) noexcept;
 
-  int stripe_data_read(uint64_t stripe_id_from,
-                       std::shared_ptr<read_query> rq) noexcept;
-
-  int stripe_parity_read(uint64_t stripe_id_from,
-                         std::shared_ptr<read_query> rq) noexcept;
+  int parity_read(uint64_t stripe_id, std::shared_ptr<read_query> rq) noexcept;
 
   int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
                    std::shared_ptr<write_query> wqp) noexcept;

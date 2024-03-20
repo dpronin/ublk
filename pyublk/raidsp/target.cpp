@@ -118,7 +118,7 @@ bool rsp::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
 int rsp::process(std::shared_ptr<ublk::read_query> rq) noexcept {
   assert(rq);
 
-  return be_->data_skip_parity_read(
+  return be_->data_read(
       rq->offset() / be_->static_cfg().stripe_data_sz,
       rq->subquery(0, rq->buf().size(),
                    rq->offset() % be_->static_cfg().stripe_data_sz, rq));
@@ -214,7 +214,7 @@ int rsp::process(uint64_t stripe_id,
     auto new_cached_stripe_data_view{stripe_data_view(new_cached_stripe)};
     auto new_cached_stripe_parity_view{stripe_parity_view(new_cached_stripe)};
 
-    auto new_rdq{std::shared_ptr<ublk::read_query>{}};
+    auto new_rqd{std::shared_ptr<ublk::read_query>{}};
 
     if (stripe_parity_coherency_state_[stripe_id]) [[likely]] {
       new_cached_stripe_data_view =
@@ -223,17 +223,17 @@ int rsp::process(uint64_t stripe_id,
       auto new_rdq_completer{
           [=, this,
            cached_stripe = std::shared_ptr{std::move(new_cached_stripe)}](
-              ublk::read_query const &rdq) mutable {
-            if (rdq.err()) [[unlikely]] {
-              wq->set_err(rdq.err());
+              ublk::read_query const &rqd) mutable {
+            if (rqd.err()) [[unlikely]] {
+              wq->set_err(rqd.err());
               return;
             }
 
             auto new_rpq_completer{
                 [=, this, cached_stripe = std::move(cached_stripe)](
-                    ublk::read_query const &rpq) mutable {
-                  if (rpq.err()) [[unlikely]] {
-                    wq->set_err(rpq.err());
+                    ublk::read_query const &rqp) mutable {
+                  if (rqp.err()) [[unlikely]] {
+                    wq->set_err(rqp.err());
                     return;
                   }
 
@@ -280,7 +280,7 @@ int rsp::process(uint64_t stripe_id,
             };
 
             if (auto const res{
-                    be_->stripe_parity_read(stripe_id, std::move(new_rpq)),
+                    be_->parity_read(stripe_id, std::move(new_rpq)),
                 }) [[unlikely]] {
               wq->set_err(res);
               return;
@@ -288,16 +288,16 @@ int rsp::process(uint64_t stripe_id,
           },
       };
 
-      new_rdq =
+      new_rqd =
           ublk::read_query::create(new_cached_stripe_data_view, wq->offset(),
                                    std::move(new_rdq_completer));
     } else {
       auto new_rdq_completer{
           [=, this,
            cached_stripe = std::shared_ptr{std::move(new_cached_stripe)}](
-              ublk::read_query const &rdq) mutable {
-            if (rdq.err()) [[unlikely]] {
-              wq->set_err(rdq.err());
+              ublk::read_query const &rqd) mutable {
+            if (rqd.err()) [[unlikely]] {
+              wq->set_err(rqd.err());
               return;
             }
 
@@ -358,11 +358,11 @@ int rsp::process(uint64_t stripe_id,
           },
       };
 
-      new_rdq = ublk::read_query::create(new_cached_stripe_data_view, 0,
+      new_rqd = ublk::read_query::create(new_cached_stripe_data_view, 0,
                                          std::move(new_rdq_completer));
     }
 
-    if (auto const res{be_->stripe_data_read(stripe_id, std::move(new_rdq))})
+    if (auto const res{be_->data_read(stripe_id, std::move(new_rqd))})
         [[unlikely]] {
       return res;
     }

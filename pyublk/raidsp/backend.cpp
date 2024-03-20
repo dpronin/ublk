@@ -32,8 +32,8 @@ backend::backend(
   };
 }
 
-int backend::data_skip_parity_read(uint64_t stripe_id_from,
-                                   std::shared_ptr<read_query> rq) noexcept {
+int backend::data_read(uint64_t stripe_id_from,
+                       std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
   assert(rq->offset() < static_cfg_->stripe_data_sz);
 
@@ -66,16 +66,8 @@ int backend::data_skip_parity_read(uint64_t stripe_id_from,
   return 0;
 }
 
-int backend::stripe_data_read(uint64_t stripe_id_from,
-                              std::shared_ptr<read_query> rq) noexcept {
-  assert(!rq->buf().empty());
-  assert(!(rq->offset() + rq->buf().size() > static_cfg_->stripe_data_sz));
-
-  return data_skip_parity_read(stripe_id_from, std::move(rq));
-}
-
-int backend::stripe_parity_read(uint64_t stripe_id,
-                                std::shared_ptr<read_query> rq) noexcept {
+int backend::parity_read(uint64_t stripe_id,
+                         std::shared_ptr<read_query> rq) noexcept {
   assert(!rq->buf().empty());
   assert(!(rq->offset() + rq->buf().size() > static_cfg_->strip_sz));
 
