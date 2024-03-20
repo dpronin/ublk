@@ -91,7 +91,8 @@ TEST_P(RAID1, TestWriting) {
   auto tgt{
       ublk::raid1::Target{param.read_block_per_hs_sz, {hs.begin(), hs.end()}},
   };
-  for (auto const &[h, storage_span] : std::views::zip(hs, storage_spans)) {
+  for (auto const &[h, storage_span] :
+       std::views::zip(std::views::all(hs), storage_spans)) {
     EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
         .Times(1)
         .WillRepeatedly(ut::make_inmem_writer(storage_span));
@@ -103,13 +104,14 @@ TEST_P(RAID1, TestWriting) {
 
   tgt.process(write_query::create(buf_span, 0));
 
-  for (auto storage_span : storage_spans | std::views::transform([](auto s) {
-                             return std::as_bytes(s);
-                           })) {
+  /* clang-format off */
+  for (auto storage_span :   storage_spans
+                           | std::views::transform([](auto s) { return std::as_bytes(s); })) {
     auto const s1{buf_span};
     auto const s2{storage_span};
     EXPECT_THAT(s1, ElementsAreArray(s2));
   }
+  /* clang-format on */
 }
 
 INSTANTIATE_TEST_SUITE_P(RAID1_Operations, RAID1,

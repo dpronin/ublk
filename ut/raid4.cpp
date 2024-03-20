@@ -44,12 +44,14 @@ TEST_P(RAID4, TestReading) {
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid4::Target{param.strip_sz, {hs.begin(), hs.end()}}};
-  for (auto const &[h, storage_span] :
-       std::views::zip(hs, storage_spans) | std::views::take(hs.size() - 1)) {
+  /* clang-format off */
+  for (auto const &[h, storage_span] :   std::views::zip(std::views::all(hs), storage_spans)
+                                       | std::views::take(hs.size() - 1)) {
     EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
         .Times(param.stripes_nr)
         .WillRepeatedly(ut::make_inmem_reader(storage_span));
   }
+  /* clang-format on */
   EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<read_query>>())).Times(0);
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
@@ -81,11 +83,13 @@ TEST_P(RAID4, TestWriting) {
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid4::Target{param.strip_sz, {hs.begin(), hs.end()}}};
-  for (auto const &[h, storage_span] : std::views::zip(hs, storage_spans)) {
+  /* clang-format off */
+  for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
     EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
         .Times(param.stripes_nr)
         .WillRepeatedly(ut::make_inmem_writer(storage_span));
   }
+  /* clang-format on */
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
   auto const buf{ut::make_unique_random_bytes(buf_sz)};

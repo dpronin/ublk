@@ -8,6 +8,7 @@ add_library(ublk_utils INTERFACE
     genl.hpp
     math.hpp
     page.hpp
+    random.hpp
     size_units.hpp
     span.hpp
     utility.hpp

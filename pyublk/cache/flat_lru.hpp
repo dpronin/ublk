@@ -84,10 +84,13 @@ private:
 
     auto &eo = to_refs(cache_[index]);
 
-    for (auto &o : cache_ | std::views::transform(to_refs) |
-                       std::views::filter(less_than(eo))) {
+    /* clang-format off */
+    for (auto &o :   std::views::all(cache_)
+                   | std::views::transform(to_refs)
+                   | std::views::filter(less_than(eo))) {
       ++o;
     }
+    /* clang-format on */
 
     eo = 0;
   }

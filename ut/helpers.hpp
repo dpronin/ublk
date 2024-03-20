@@ -6,10 +6,12 @@
 #include <cstddef>
 
 #include <algorithm>
+#include <functional>
 #include <memory>
-#include <random>
 #include <span>
 #include <vector>
+
+#include "utils/random.hpp"
 
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
@@ -25,9 +27,8 @@ public:
 
 inline std::unique_ptr<std::byte[]> make_unique_random_bytes(size_t sz) {
   auto storage{std::make_unique_for_overwrite<std::byte[]>(sz)};
-  std::generate_n(storage.get(), sz, [rd = std::random_device{}] mutable {
-    return static_cast<std::byte>(rd());
-  });
+  auto gen = make_random_bytes_generator();
+  std::generate_n(storage.get(), sz, std::ref(gen));
   return storage;
 }
 

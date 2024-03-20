@@ -93,11 +93,13 @@ TEST_P(RAID5, TestWriting) {
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
-  for (auto const &[h, storage_span] : std::views::zip(hs, storage_spans)) {
+  /* clang-format off */
+  for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
     EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
         .Times(param.stripes_nr)
         .WillRepeatedly(ut::make_inmem_writer(storage_span));
   }
+  /* clang-format on */
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
   auto const buf{ut::make_unique_random_bytes(buf_sz)};

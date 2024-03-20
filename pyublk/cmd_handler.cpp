@@ -24,15 +24,15 @@ CmdHandler::CmdHandler(
     : cellds_(cellds), cells_(cells), acknowledger_(std::move(acknowledger)) {
   assert(acknowledger_);
 
-  /* clang-format off */
-  static auto reqh_not_supp = ReqHandlerNotSupp{};
-  static auto const sp_reqh_not_supp =
-      std::shared_ptr<IUblkReqHandler>{&reqh_not_supp, []([[maybe_unused]] auto *p) {}};
-  /* clang-format on */
+  static auto reqh_not_supp{ReqHandlerNotSupp{}};
+  static auto const sp_reqh_not_supp{
+      std::shared_ptr<IUblkReqHandler>{&reqh_not_supp,
+                                       []([[maybe_unused]] auto *p) {}},
+  };
 
   std::ranges::fill(hs_, sp_reqh_not_supp);
 
-  auto hs = hs_ | std::views::take(std::size(hs_) - 1);
+  auto hs{std::views::all(hs_) | std::views::take(std::size(hs_) - 1)};
   for (auto const &[op, h] : maphs) {
     assert(op < std::size(hs));
     hs[op] = h;
@@ -42,11 +42,13 @@ CmdHandler::CmdHandler(
 int CmdHandler::handle(ublkdrv_cmd const &cmd) noexcept {
   auto rq = std::shared_ptr<req>{};
 
-  auto completer = [a = acknowledger_](req const &rq) {
-    ublkdrv_cmd_ack cmd_ack;
-    ublkdrv_cmd_ack_set_id(&cmd_ack, ublkdrv_cmd_get_id(&rq.cmd()));
-    ublkdrv_cmd_ack_set_err(&cmd_ack, static_cast<__u16>(rq.err()));
-    a->handle(cmd_ack);
+  auto completer{
+      [a = acknowledger_](req const &rq) {
+        ublkdrv_cmd_ack cmd_ack;
+        ublkdrv_cmd_ack_set_id(&cmd_ack, ublkdrv_cmd_get_id(&rq.cmd()));
+        ublkdrv_cmd_ack_set_err(&cmd_ack, static_cast<__u16>(rq.err()));
+        a->handle(cmd_ack);
+      },
   };
 
   auto const op = ublkdrv_cmd_get_op(&cmd);
@@ -74,7 +76,7 @@ int CmdHandler::handle(ublkdrv_cmd const &cmd) noexcept {
     break;
   }
 
-  auto const hid = std::min(static_cast<size_t>(op), std::size(hs_) - 1);
+  auto const hid{std::min(static_cast<size_t>(op), std::size(hs_) - 1)};
   assert(hs_[hid]);
   return hs_[hid]->handle(std::move(rq));
 }

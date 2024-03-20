@@ -43,7 +43,8 @@ TEST_P(RAID0, TestReading) {
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid0::Target{param.strip_sz, {hs.begin(), hs.end()}}};
-  for (auto const &[h, storage_span] : std::views::zip(hs, storage_spans)) {
+  for (auto const &[h, storage_span] :
+       std::views::zip(std::views::all(hs), storage_spans)) {
     EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
         .Times(param.stripes_nr)
         .WillRepeatedly(ut::make_inmem_reader(storage_span));
@@ -78,7 +79,8 @@ TEST_P(RAID0, TestWriting) {
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid0::Target{param.strip_sz, {hs.begin(), hs.end()}}};
-  for (auto const &[h, storage_span] : std::views::zip(hs, storage_spans)) {
+  for (auto const &[h, storage_span] :
+       std::views::zip(std::views::all(hs), storage_spans)) {
     EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
         .Times(param.stripes_nr)
         .WillRepeatedly(ut::make_inmem_writer(storage_span));
