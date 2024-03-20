@@ -43,9 +43,9 @@ int acceptor::process(std::shared_ptr<read_query> rq) noexcept {
                    rq->offset() % be_->static_cfg().stripe_data_sz, rq));
 }
 
-int acceptor::stripe_write(uint64_t stripe_id_at,
-                           std::shared_ptr<write_query> wqd,
-                           std::shared_ptr<write_query> wqp) noexcept {
+int acceptor::stripe_incoherent_parity_write(
+    uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
+    std::shared_ptr<write_query> wqp) noexcept {
   assert(wqd);
   assert(wqp);
 
@@ -73,15 +73,55 @@ int acceptor::stripe_write(uint64_t stripe_id_at,
       },
   };
 
-  auto new_wqd{
-      write_query::create(wqd->buf(), wqd->offset(), make_a_new_completer(wqd)),
-  };
+  auto *p_wqd = wqd.get();
+  wqd = write_query::create(p_wqd->buf(), p_wqd->offset(),
+                            make_a_new_completer(std::move(wqd)));
 
-  auto new_wqp{
-      write_query::create(wqp->buf(), wqp->offset(), make_a_new_completer(wqp)),
-  };
+  auto *p_wqp = wqp.get();
+  wqp = write_query::create(p_wqp->buf(), p_wqp->offset(),
+                            make_a_new_completer(std::move(wqp)));
 
   return be_->stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
+}
+
+int acceptor::stripe_coherent_parity_write(
+    uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
+    std::shared_ptr<write_query> wqp) noexcept {
+  assert(wqd);
+  assert(wqp);
+
+  auto make_a_new_completer{
+      [=, this](std::shared_ptr<write_query> wq) {
+        return [=, this, wq = std::move(wq)](write_query const &new_wq) {
+          if (new_wq.err()) [[unlikely]] {
+            wq->set_err(new_wq.err());
+            assert(stripe_id_at < stripe_parity_coherency_state_.size());
+            stripe_parity_coherency_state_.reset(stripe_id_at);
+            return;
+          }
+        };
+      },
+  };
+
+  auto *p_wqd = wqd.get();
+  wqd = write_query::create(p_wqd->buf(), p_wqd->offset(),
+                            make_a_new_completer(std::move(wqd)));
+
+  auto *p_wqp = wqp.get();
+  wqp = write_query::create(p_wqp->buf(), p_wqp->offset(),
+                            make_a_new_completer(std::move(wqp)));
+
+  return be_->stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
+}
+
+int acceptor::stripe_write(uint64_t stripe_id_at,
+                           std::shared_ptr<write_query> wqd,
+                           std::shared_ptr<write_query> wqp) noexcept {
+  return is_stripe_parity_coherent(stripe_id_at)
+             ? stripe_coherent_parity_write(stripe_id_at, std::move(wqd),
+                                            std::move(wqp))
+             : stripe_incoherent_parity_write(stripe_id_at, std::move(wqd),
+                                              std::move(wqp));
 }
 
 int acceptor::full_stripe_write_process(
@@ -110,8 +150,8 @@ int acceptor::full_stripe_write_process(
   };
 
   /*
-   * Write Back the chunk including the newly incoming data
-   * and the parity computed and updated
+   * Write Back the chunk including the newly incoming full-stripe-sized data
+   * and the parity renewed
    */
   return stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
@@ -183,8 +223,8 @@ int acceptor::process(uint64_t stripe_id,
                    * and the parity computed and updated
                    */
                   if (auto const res{
-                          stripe_write(stripe_id, std::move(wq),
-                                       std::move(wqp)),
+                          stripe_coherent_parity_write(stripe_id, std::move(wq),
+                                                       std::move(wqp)),
                       }) [[unlikely]] {
                     return;
                   }
@@ -265,8 +305,8 @@ int acceptor::process(uint64_t stripe_id,
              * and the parity computed and updated
              */
             if (auto const res{
-                    stripe_write(stripe_id, std::move(new_wqd),
-                                 std::move(new_wqp)),
+                    stripe_incoherent_parity_write(
+                        stripe_id, std::move(new_wqd), std::move(new_wqp)),
                 }) [[unlikely]] {
               wq->set_err(res);
               return;

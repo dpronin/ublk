@@ -40,6 +40,14 @@ public:
   int process(std::shared_ptr<write_query> wq) noexcept;
 
 private:
+  int stripe_incoherent_parity_write(uint64_t stripe_id_at,
+                                     std::shared_ptr<write_query> wqd,
+                                     std::shared_ptr<write_query> wqp) noexcept;
+
+  int stripe_coherent_parity_write(uint64_t stripe_id_at,
+                                   std::shared_ptr<write_query> wqd,
+                                   std::shared_ptr<write_query> wqp) noexcept;
+
   int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
                    std::shared_ptr<write_query> wqp) noexcept;
 
