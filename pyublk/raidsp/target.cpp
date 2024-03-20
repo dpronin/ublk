@@ -196,7 +196,7 @@ int rsp::full_stripe_write_process(
    * Write Back the chunk including the newly incoming data
    * and the parity computed and updated
    */
-  return be_->stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
+  return stripe_write(stripe_id_at, std::move(wqd), std::move(wqp));
 }
 
 int rsp::process(uint64_t stripe_id,
@@ -249,7 +249,7 @@ int rsp::process(uint64_t stripe_id,
                                   wq->offset() %
                                       new_cached_stripe_parity_view.size());
 
-                  auto new_wqp{
+                  auto wqp{
                       ublk::write_query::create(
                           new_cached_stripe_parity_view, 0,
                           [wq, cached_stripe = std::move(cached_stripe)](
@@ -266,8 +266,8 @@ int rsp::process(uint64_t stripe_id,
                    * and the parity computed and updated
                    */
                   if (auto const res{
-                          be_->stripe_write(stripe_id, std::move(wq),
-                                            std::move(new_wqp)),
+                          stripe_write(stripe_id, std::move(wq),
+                                       std::move(wqp)),
                       }) [[unlikely]] {
                     return;
                   }
@@ -349,8 +349,8 @@ int rsp::process(uint64_t stripe_id,
              * and the parity computed and updated
              */
             if (auto const res{
-                    be_->stripe_write(stripe_id, std::move(new_wqd),
-                                      std::move(new_wqp)),
+                    stripe_write(stripe_id, std::move(new_wqd),
+                                 std::move(new_wqp)),
                 }) [[unlikely]] {
               wq->set_err(res);
               return;
