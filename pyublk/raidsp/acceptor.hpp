@@ -26,7 +26,7 @@
 
 namespace ublk::raidsp {
 
-class acceptor {
+class acceptor final {
 public:
   explicit acceptor(
       uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
