@@ -25,8 +25,8 @@ backend::backend(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
   assert(stripe_id_to_parity_id_);
 
-  auto cfg =
-      mm::make_unique_aligned<cfg_t>(hardware_destructive_interference_size);
+  auto cfg = mm::make_unique_aligned<struct static_cfg>(
+      hardware_destructive_interference_size);
   cfg->strip_sz = strip_sz;
   cfg->stripe_data_sz = cfg->strip_sz * (hs_.size() - 1);
   cfg->stripe_sz = cfg->stripe_data_sz + cfg->strip_sz;

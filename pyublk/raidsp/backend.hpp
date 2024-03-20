@@ -20,7 +20,7 @@ public:
   constexpr static inline auto kAlignmentRequiredMin = kSectorSz;
   static_assert(is_aligned_to(kAlignmentRequiredMin, kSectorSz));
 
-  struct cfg_t {
+  struct static_cfg {
     uint64_t strip_sz;
     uint64_t stripe_data_sz;
     uint64_t stripe_sz;
@@ -45,7 +45,7 @@ public:
   int stripe_write(uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
                    std::shared_ptr<write_query> wqp) noexcept;
 
-  cfg_t const &static_cfg() const noexcept { return *static_cfg_; }
+  struct static_cfg const &static_cfg() const noexcept { return *static_cfg_; }
 
 private:
   std::vector<std::shared_ptr<IRWHandler>>
@@ -59,7 +59,7 @@ private:
   std::vector<std::shared_ptr<IRWHandler>> hs_;
   std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id_;
 
-  mm::uptrwd<cfg_t const> static_cfg_;
+  mm::uptrwd<struct static_cfg const> static_cfg_;
 };
 
 } // namespace ublk::raidsp
