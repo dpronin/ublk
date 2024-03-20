@@ -37,9 +37,9 @@ struct transition_table {
     using namespace boost::sml;
     return make_transition_table(
        // online state
-       *"online"_s + event<erq> [ ([](erq const &e, ublk::raidsp::acceptor& r){ e.r = r.process(std::move(e.rq)); return 0 == e.r; }) ]
+       *"online"_s + event<erq> [ ([](erq const &e, ublk::raidsp::acceptor& acc){ e.r = acc.process(std::move(e.rq)); return 0 == e.r; }) ]
       , "online"_s + event<erq> = "offline"_s
-      , "online"_s + event<ewq> [ ([](ewq const &e, ublk::raidsp::acceptor& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
+      , "online"_s + event<ewq> [ ([](ewq const &e, ublk::raidsp::acceptor& acc){ e.r = acc.process(std::move(e.wq)); return 0 == e.r; }) ]
       , "online"_s + event<ewq> = "offline"_s
       , "online"_s + event<estripecohcheck> / [](estripecohcheck const &e, ublk::raidsp::acceptor const& r) { e.r = r.is_stripe_parity_coherent(e.stripe_id); }
        // offline state
@@ -60,7 +60,7 @@ public:
   explicit impl(
       uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
       std::function<uint64_t(uint64_t stripe_id)> const &stripe_id_to_parity_id)
-      : rsp_(strip_sz, std::move(hs), stripe_id_to_parity_id), fsm_(rsp_) {}
+      : acc_(strip_sz, std::move(hs), stripe_id_to_parity_id), fsm_(acc_) {}
 
   int process(std::shared_ptr<read_query> rq) noexcept {
     erq e{.rq = std::move(rq), .r = 0};
@@ -81,7 +81,7 @@ public:
   }
 
 private:
-  ublk::raidsp::acceptor rsp_;
+  ublk::raidsp::acceptor acc_;
   mutable boost::sml::sm<transition_table> fsm_;
 };
 
