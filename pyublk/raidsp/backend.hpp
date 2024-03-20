@@ -50,9 +50,9 @@ public:
 
 private:
   std::vector<std::shared_ptr<IRWHandler>>
-  handlers_generate(uint64_t stripe_id);
+  handlers_data_generate(uint64_t hid_to_skip, size_t hid_first, size_t hs_nr);
 
-  uint64_t stripe_id_to_parity_id(uint64_t stripe_id) const noexcept {
+  uint64_t stripe_id_to_strip_parity_id(uint64_t stripe_id) const noexcept {
     return stripe_id_to_parity_id_(stripe_id);
   }
 

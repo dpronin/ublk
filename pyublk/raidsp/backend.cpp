@@ -3,7 +3,11 @@
 #include <cassert>
 
 #include <algorithm>
+#include <ranges>
+#include <span>
 #include <utility>
+
+#include <range/v3/view/concat.hpp>
 
 #include "mm/mem.hpp"
 
@@ -46,19 +50,32 @@ int backend::data_read(uint64_t stripe_id_from,
                  rq->buf().size() - rb),
     };
 
-    auto hs{handlers_generate(stripe_id)};
+    auto const strip_id_first{stripe_offset / static_cfg_->strip_sz};
+    auto const strip_id_last{
+        div_round_up(stripe_offset + chunk_sz, static_cfg_->strip_sz),
+    };
 
-    for (size_t hid{stripe_offset / static_cfg_->strip_sz},
-         strip_offset = stripe_offset % static_cfg_->strip_sz;
-         chunk_sz > 0 && hid < (hs.size() - 1); ++hid, strip_offset = 0) {
-      auto const h_offset{stripe_id * static_cfg_->strip_sz + strip_offset};
-      auto const h_sz{std::min(static_cfg_->strip_sz - strip_offset, chunk_sz)};
-      auto new_rq{rq->subquery(rb, h_sz, h_offset, rq)};
-      if (auto const res{hs[hid]->submit(std::move(new_rq))}) [[unlikely]] {
+    auto const strip_parity_id{stripe_id_to_strip_parity_id(stripe_id)};
+    assert(strip_parity_id < hs_.size());
+
+    auto const hs{
+        handlers_data_generate(strip_parity_id, strip_id_first,
+                               strip_id_last - strip_id_first),
+    };
+
+    for (auto strip_offset{stripe_offset % static_cfg_->strip_sz};
+         auto const &h : hs) {
+      auto const sq_off{stripe_id * static_cfg_->strip_sz + strip_offset};
+      auto const sq_sz{
+          std::min(static_cfg_->strip_sz - strip_offset, chunk_sz),
+      };
+      auto new_rq{rq->subquery(rb, sq_sz, sq_off, rq)};
+      if (auto const res{h->submit(std::move(new_rq))}) [[unlikely]] {
         return res;
       }
-      rb += h_sz;
-      chunk_sz -= h_sz;
+      rb += sq_sz;
+      chunk_sz -= sq_sz;
+      strip_offset = 0;
     }
     assert(0 == chunk_sz);
   }
@@ -71,25 +88,32 @@ int backend::parity_read(uint64_t stripe_id,
   assert(!rq->buf().empty());
   assert(!(rq->offset() + rq->buf().size() > static_cfg_->strip_sz));
 
-  auto const parity_id{stripe_id_to_parity_id(stripe_id)};
-  assert(parity_id < hs_.size());
+  auto const strip_parity_id{stripe_id_to_strip_parity_id(stripe_id)};
+  assert(strip_parity_id < hs_.size());
 
-  return hs_[parity_id]->submit(
+  return hs_[strip_parity_id]->submit(
       rq->subquery(0, std::min(static_cfg_->strip_sz, rq->buf().size()),
                    stripe_id * static_cfg_->strip_sz, rq));
 }
 
 std::vector<std::shared_ptr<IRWHandler>>
-backend::handlers_generate(uint64_t stripe_id) {
+backend::handlers_data_generate(uint64_t hid_to_skip, size_t hid_first,
+                                size_t hs_nr) {
+  assert(hid_to_skip < hs_.size());
+  assert(!(hid_first + hs_nr > (hs_.size() - 1)));
+
   std::vector<std::shared_ptr<IRWHandler>> hs;
-  hs.reserve(hs_.size());
+  hs.reserve(hs_nr);
 
-  auto const parity_id{stripe_id_to_parity_id(stripe_id)};
-  assert(parity_id < hs_.size());
+  auto const hs_first_part{std::span{hs_.cbegin(), hid_to_skip}};
+  auto const hs_last_part{
+      std::span{hs_.cbegin() + hid_to_skip + 1, hs_.cend()}};
 
-  std::copy_n(hs_.begin(), parity_id, std::back_inserter(hs));
-  std::rotate_copy(hs_.begin() + parity_id, hs_.begin() + parity_id + 1,
-                   hs_.end(), std::back_inserter(hs));
+  auto const hs_new{
+      ranges::views::concat(hs_first_part, hs_last_part),
+  };
+
+  std::copy_n(hs_new.begin() + hid_first, hs_nr, std::back_inserter(hs));
 
   return hs;
 }
@@ -104,23 +128,33 @@ int backend::stripe_write(uint64_t stripe_id_at,
   assert(!wqp->buf().empty());
   assert(!(wqp->offset() + wqp->buf().size() > static_cfg_->strip_sz));
 
-  auto hs{handlers_generate(stripe_id_at)};
+  auto const strip_id_first{wqd->offset() / static_cfg_->strip_sz};
+  auto const strip_id_last{
+      div_round_up(wqd->offset() + wqd->buf().size(), static_cfg_->strip_sz),
+  };
+
+  auto const strip_parity_id{stripe_id_to_strip_parity_id(stripe_id_at)};
+  assert(strip_parity_id < hs_.size());
+
+  auto const hs{
+      handlers_data_generate(strip_parity_id, strip_id_first,
+                             strip_id_last - strip_id_first),
+  };
 
   size_t wb{0};
-  for (size_t hid{wqd->offset() / static_cfg_->strip_sz},
-       strip_offset = wqd->offset() % static_cfg_->strip_sz;
-       wb < wqd->buf().size() && hid < (hs.size() - 1);
-       ++hid, strip_offset = 0) {
+  for (auto strip_offset{wqd->offset() % static_cfg_->strip_sz};
+       auto const &h : hs) {
     auto const sq_off{stripe_id_at * static_cfg_->strip_sz + strip_offset};
     auto const sq_sz{
         std::min(static_cfg_->strip_sz - strip_offset, wqd->buf().size() - wb),
     };
     auto new_wqd{wqd->subquery(wb, sq_sz, sq_off, wqd)};
-    if (auto const res{hs[hid]->submit(std::move(new_wqd))}) [[unlikely]] {
+    if (auto const res{h->submit(std::move(new_wqd))}) [[unlikely]] {
       wqd->set_err(res);
       return res;
     }
     wb += sq_sz;
+    strip_offset = 0;
   }
   assert(!(wb < wqd->buf().size()));
 
@@ -129,7 +163,8 @@ int backend::stripe_write(uint64_t stripe_id_at,
                     stripe_id_at * static_cfg_->strip_sz + wqp->offset(), wqp),
   };
 
-  if (auto const res{hs.back()->submit(std::move(new_wqp))}) [[unlikely]] {
+  if (auto const res{hs_[strip_parity_id]->submit(std::move(new_wqp))})
+      [[unlikely]] {
     wqp->set_err(res);
     return res;
   }
