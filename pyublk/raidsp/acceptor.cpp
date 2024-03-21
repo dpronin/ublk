@@ -133,7 +133,10 @@ int acceptor::stripe_data_write(uint64_t stripe_id_at,
 
   auto stripe_parity_buf{stripe_parity_pool_->get()};
   auto stripe_parity_buf_view{
-      std::span{stripe_parity_buf.get(), stripe_parity_pool_->chunk_sz()},
+      std::span{
+          stripe_parity_buf.get(),
+          stripe_parity_pool_->chunk_sz(),
+      },
   };
 
   /* Renew Parity of the stripe */
