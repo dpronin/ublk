@@ -105,6 +105,8 @@ struct ewq {
   mutable int r;
 };
 
+struct efail {};
+
 /* clang-format off */
 struct transition_table {
   auto operator()() noexcept {
@@ -115,6 +117,7 @@ struct transition_table {
       , "online"_s + event<erq> = "offline"_s
       , "online"_s + event<ewq> [ ([](ewq const &e, r0& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
       , "online"_s + event<ewq> = "offline"_s
+      , "online"_s + event<efail> = "offline"_s
        // offline state
       , "offline"_s + event<erq> / [](erq const &e) { e.r = EIO; }
       , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EIO; }
@@ -133,13 +136,29 @@ public:
       : r0_(strip_sz, std::move(hs)), fsm_(r0_) {}
 
   int process(std::shared_ptr<read_query> rq) noexcept {
-    erq e{.rq = std::move(rq), .r = 0};
+    auto *p_rq = rq.get();
+    rq = p_rq->subquery(0, p_rq->buf().size(), p_rq->offset(),
+                        [this, rq = std::move(rq)](read_query const &new_rq) {
+                          if (new_rq.err()) [[unlikely]] {
+                            rq->set_err(new_rq.err());
+                            fsm_.process_event(efail{});
+                          }
+                        });
+    erq e{.rq = rq, .r = 0};
     fsm_.process_event(e);
     return e.r;
   }
 
   int process(std::shared_ptr<write_query> wq) noexcept {
-    ewq e{.wq = std::move(wq), .r = 0};
+    auto *p_wq = wq.get();
+    wq = p_wq->subquery(0, p_wq->buf().size(), p_wq->offset(),
+                        [this, wq = std::move(wq)](write_query const &new_wq) {
+                          if (new_wq.err()) [[unlikely]] {
+                            wq->set_err(new_wq.err());
+                            fsm_.process_event(efail{});
+                          }
+                        });
+    ewq e{.wq = wq, .r = 0};
     fsm_.process_event(e);
     return e.r;
   }
