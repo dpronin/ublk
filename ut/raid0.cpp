@@ -29,7 +29,7 @@ struct RAID0Param {
   size_t stripes_nr;
 };
 
-class RAID0 : public TestWithParam<RAID0Param> {
+class RAID0BaseTest : public TestWithParam<RAID0Param> {
 protected:
   void SetUp() override {
     auto const &param{GetParam()};
@@ -62,7 +62,9 @@ protected:
   std::unique_ptr<raid0::Target> target_;
 };
 
-TEST_P(RAID0, FullStripeReading) {
+class RAID0FullStripeTest : public RAID0BaseTest {};
+
+TEST_P(RAID0FullStripeTest, ReadStripeOneByOne) {
   auto const &param{GetParam()};
 
   auto const hs{
@@ -81,6 +83,8 @@ TEST_P(RAID0, FullStripeReading) {
     auto const stripe_storage_buf_span{
         std::as_bytes(std::span{stripe_storage_buf.get(), stripe_sz}),
     };
+    ASSERT_THAT(stripe_buf_span,
+                Not(ElementsAreArray(stripe_storage_buf_span)));
     /* clang-format off */
     for (size_t strip_id{0}; auto const &h : hs) {
       auto const strip_storage_buf_span{stripe_storage_buf_span.subspan((strip_id++) * param.strip_sz, param.strip_sz)};
@@ -101,7 +105,7 @@ TEST_P(RAID0, FullStripeReading) {
   }
 }
 
-TEST_P(RAID0, FullStripeWriting) {
+TEST_P(RAID0FullStripeTest, WriteStripeOneByOne) {
   auto const &param{GetParam()};
 
   auto const hs{
@@ -120,6 +124,8 @@ TEST_P(RAID0, FullStripeWriting) {
     auto const stripe_storage_buf_span{
         std::as_writable_bytes(std::span{stripe_storage_buf.get(), stripe_sz}),
     };
+    ASSERT_THAT(stripe_buf_span,
+                Not(ElementsAreArray(stripe_storage_buf_span)));
     /* clang-format off */
     for (size_t strip_id{0}; auto const &h : hs) {
       auto const strip_storage_buf_span{stripe_storage_buf_span.subspan((strip_id++) * param.strip_sz, param.strip_sz)};
@@ -140,7 +146,7 @@ TEST_P(RAID0, FullStripeWriting) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(RAID0_Operations, RAID0,
+INSTANTIATE_TEST_SUITE_P(RAID0, RAID0FullStripeTest,
                          Values(
                              RAID0Param{
                                  .strip_sz = 512,
