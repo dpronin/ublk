@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <memory>
+#include <ranges>
 #include <vector>
 
 #include "rw_handler_interface.hpp"
@@ -16,6 +17,11 @@ class Target final {
 public:
   explicit Target(uint64_t strip_sz,
                   std::vector<std::shared_ptr<IRWHandler>> hs);
+
+  template <std::ranges::input_range Range>
+  explicit Target(uint64_t strip_sz, Range &&hs)
+      : Target(strip_sz, {std::ranges::begin(hs), std::ranges::end(hs)}) {}
+
   ~Target() noexcept;
 
   Target(Target const &) = delete;
