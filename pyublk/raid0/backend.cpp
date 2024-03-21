@@ -51,8 +51,9 @@ int backend::do_op(std::shared_ptr<T> query) noexcept {
     auto const hid{strip_id_in_stripe};
     auto const &h{hs_[hid]};
     auto const stripe_id{strip_id / hs_.size()};
-    auto const subquery_offset{strip_offset +
-                               stripe_id * static_cfg_->strip_sz};
+    auto const subquery_offset{
+        strip_offset + stripe_id * static_cfg_->strip_sz,
+    };
     auto const subquery_sz{
         std::min(static_cfg_->strip_sz - strip_offset,
                  query->buf().size() - submitted_bytes),
