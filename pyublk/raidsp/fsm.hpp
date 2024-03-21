@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cerrno>
+
 #include <memory>
 
 #include <boost/sml.hpp>
