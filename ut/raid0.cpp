@@ -81,13 +81,21 @@ TEST_P(RAID0, FullStripeReading) {
 
   auto const stripe_sz{param.strip_sz * param.strips_per_stripe_nr};
 
-  for (size_t off{0}; off < buf_span.size(); off += stripe_sz) {
-    for (auto const &[h, storage_span] : std::views::zip(hs, storage_spans)) {
+  for (size_t stripe_id{0}; stripe_id < param.stripes_nr; ++stripe_id) {
+    /* clang-format off */
+    for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
       EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
-          .WillOnce(ut::make_inmem_reader(storage_span));
+      .WillOnce([&, inmem_reader{ut::make_inmem_reader(storage_span)}](std::shared_ptr<read_query> rq) {
+        EXPECT_TRUE(rq);
+        EXPECT_EQ(rq->offset(), param.strip_sz * stripe_id);
+        EXPECT_EQ(rq->buf().size(), param.strip_sz);
+        return inmem_reader(rq);
+      });
     }
+    /* clang-format on */
     target_->process(read_query::create(
-        buf_span.subspan(off, stripe_sz), off,
+        buf_span.subspan(stripe_id * stripe_sz, stripe_sz),
+        stripe_id * stripe_sz,
         [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); }));
   }
 
@@ -123,15 +131,21 @@ TEST_P(RAID0, FullStripeWriting) {
 
   auto const stripe_sz{param.strip_sz * param.strips_per_stripe_nr};
 
-  for (size_t off{0}; off < buf_span.size(); off += stripe_sz) {
+  for (size_t stripe_id{0}; stripe_id < param.stripes_nr; ++stripe_id) {
     /* clang-format off */
     for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
       EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
-          .WillOnce(ut::make_inmem_writer(storage_span));
+      .WillOnce([&, inmem_writer{ut::make_inmem_writer(storage_span)}](std::shared_ptr<write_query> wq) {
+        EXPECT_TRUE(wq);
+        EXPECT_EQ(wq->offset(), param.strip_sz * stripe_id);
+        EXPECT_EQ(wq->buf().size(), param.strip_sz);
+        return inmem_writer(wq);
+      });
     }
     /* clang-format on */
     target_->process(write_query::create(
-        buf_span.subspan(off, stripe_sz), off,
+        buf_span.subspan(stripe_id * stripe_sz, stripe_sz),
+        stripe_id * stripe_sz,
         [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); }));
   }
 
