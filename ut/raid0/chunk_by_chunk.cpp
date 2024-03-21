@@ -25,6 +25,7 @@ namespace {
 struct ChunkByChunkParam {
   ut::raid0::target_cfg target_cfg;
   size_t start_off;
+  ssize_t nend_off;
   size_t chunk_sz;
 };
 
@@ -46,17 +47,20 @@ TEST_P(ChunkByChunk, Read) {
       target_cfg.strip_sz * target_cfg.strips_per_stripe_nr *
           target_cfg.stripes_nr,
   };
-  auto const raid_storage_buf{mm::make_unique_random_bytes(raid_storage_sz)};
+  auto const raid_storage_buf{
+      std::unique_ptr<std::byte const[]>(
+          mm::make_unique_random_bytes(raid_storage_sz)),
+  };
   auto const raid_storage_buf_span{
       std::as_bytes(std::span{raid_storage_buf.get(), raid_storage_sz}),
   };
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (size_t off{param.start_off}; off < raid_storage_sz;
-       off += param.chunk_sz) {
+  for (size_t off{param.start_off}, end_off{raid_storage_sz + param.nend_off};
+       off < end_off; off += param.chunk_sz) {
     auto const chunk_sz{
-        std::min({param.chunk_sz, stripe_sz, raid_storage_sz - off}),
+        std::min({param.chunk_sz, stripe_sz, end_off - off}),
     };
     auto const chunk_buf{mm::make_unique_zeroed_bytes(chunk_sz)};
     auto const chunk_buf_span{
@@ -126,10 +130,10 @@ TEST_P(ChunkByChunk, Write) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (size_t off{param.start_off}; off < raid_storage_sz;
-       off += param.chunk_sz) {
+  auto const end_off{raid_storage_sz + param.nend_off};
+  for (size_t off{param.start_off}; off < end_off; off += param.chunk_sz) {
     auto const chunk_sz{
-        std::min({param.chunk_sz, stripe_sz, raid_storage_sz - off}),
+        std::min({param.chunk_sz, stripe_sz, end_off - off}),
     };
     auto const chunk_buf{mm::make_unique_random_bytes(chunk_sz)};
     auto const chunk_buf_span{
@@ -175,6 +179,8 @@ TEST_P(ChunkByChunk, Write) {
 
     EXPECT_THAT(chunk_buf_span, ElementsAreArray(chunk_raid_storage_buf_span));
   }
+
+  EXPECT_THAT(raid_storage_buf_span.subspan(end_off), Each(Eq(0_b)));
 }
 
 INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
@@ -187,6 +193,7 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                          .stripes_nr = 4,
                                      },
                                  .start_off = 0,
+                                 .nend_off = 0,
                                  .chunk_sz = 512,
                              },
                              ChunkByChunkParam{
@@ -197,6 +204,7 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                          .stripes_nr = 10,
                                      },
                                  .start_off = 512,
+                                 .nend_off = -512,
                                  .chunk_sz = 1_KiB,
                              },
                              ChunkByChunkParam{
@@ -207,5 +215,6 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                          .stripes_nr = 10,
                                      },
                                  .start_off = 3_KiB,
+                                 .nend_off = -static_cast<ssize_t>(1_KiB),
                                  .chunk_sz = 6_KiB,
                              }));
