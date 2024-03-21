@@ -22,18 +22,17 @@ using namespace testing;
 
 namespace {
 
-struct RAID0ChunkByChunkParam {
+struct ChunkByChunkParam {
   ut::raid0::target_cfg target_cfg;
   size_t start_off;
   size_t chunk_sz;
 };
 
-class RAID0ChunkByChunkTest
-    : public ut::raid0::BaseTest<RAID0ChunkByChunkParam> {};
+class ChunkByChunk : public ut::raid0::BaseTest<ChunkByChunkParam> {};
 
 } // namespace
 
-TEST_P(RAID0ChunkByChunkTest, Read) {
+TEST_P(ChunkByChunk, Read) {
   auto const &param{GetParam()};
 
   auto const &target_cfg = param.target_cfg;
@@ -71,26 +70,30 @@ TEST_P(RAID0ChunkByChunkTest, Read) {
     ASSERT_THAT(chunk_buf_span,
                 Not(ElementsAreArray(chunk_raid_storage_buf_span)));
 
-    /* clang-format off */
     for (size_t chunk_off{0}; chunk_off < chunk_buf_span.size();) {
       auto const req_off{off + chunk_off};
       auto const strip_off{req_off % target_cfg.strip_sz};
-      auto const req_sz{std::min(chunk_buf_span.size() - chunk_off, target_cfg.strip_sz - strip_off)};
-      auto const req_storage_span{raid_storage_buf_span.subspan(req_off, req_sz)};
+      auto const req_sz{
+          std::min(chunk_buf_span.size() - chunk_off,
+                   target_cfg.strip_sz - strip_off),
+      };
+      auto const req_storage_span{
+          raid_storage_buf_span.subspan(req_off, req_sz),
+      };
       auto const strip_id{req_off / target_cfg.strip_sz};
       auto const stripe_id{strip_id / target_cfg.strips_per_stripe_nr};
       auto const hid{strip_id % target_cfg.strips_per_stripe_nr};
       EXPECT_CALL(*hs[hid], submit(An<std::shared_ptr<read_query>>()))
-      .WillOnce([=, &target_cfg](std::shared_ptr<read_query> rq) {
-        EXPECT_TRUE(rq);
-        EXPECT_EQ(rq->offset(), stripe_id * target_cfg.strip_sz + strip_off);
-        EXPECT_EQ(rq->buf().size(), req_storage_span.size());
-        std::ranges::copy(req_storage_span, rq->buf().begin());
-        return 0;
-      });
+          .WillOnce([=, &target_cfg](std::shared_ptr<read_query> rq) {
+            EXPECT_TRUE(rq);
+            EXPECT_EQ(rq->offset(),
+                      stripe_id * target_cfg.strip_sz + strip_off);
+            EXPECT_EQ(rq->buf().size(), req_storage_span.size());
+            std::ranges::copy(req_storage_span, rq->buf().begin());
+            return 0;
+          });
       chunk_off += req_storage_span.size();
     }
-    /* clang-format on */
 
     target_->process(
         read_query::create(chunk_buf_span, off, [](read_query const &rq) {
@@ -101,7 +104,7 @@ TEST_P(RAID0ChunkByChunkTest, Read) {
   }
 }
 
-TEST_P(RAID0ChunkByChunkTest, Write) {
+TEST_P(ChunkByChunk, Write) {
   auto const &param{GetParam()};
 
   auto const &target_cfg = param.target_cfg;
@@ -140,26 +143,29 @@ TEST_P(RAID0ChunkByChunkTest, Write) {
     ASSERT_THAT(chunk_buf_span,
                 Not(ElementsAreArray(chunk_raid_storage_buf_span)));
 
-    /* clang-format off */
     for (size_t chunk_off{0}; chunk_off < chunk_buf_span.size();) {
       auto const req_off{off + chunk_off};
       auto const strip_off{req_off % target_cfg.strip_sz};
-      auto const req_sz{std::min(chunk_buf_span.size() - chunk_off, target_cfg.strip_sz - strip_off)};
-      auto const req_storage_span{raid_storage_buf_span.subspan(req_off, req_sz)};
+      auto const req_sz{
+          std::min(chunk_buf_span.size() - chunk_off,
+                   target_cfg.strip_sz - strip_off),
+      };
+      auto const req_storage_span{
+          raid_storage_buf_span.subspan(req_off, req_sz)};
       auto const strip_id{req_off / target_cfg.strip_sz};
       auto const stripe_id{strip_id / target_cfg.strips_per_stripe_nr};
       auto const hid{strip_id % target_cfg.strips_per_stripe_nr};
       EXPECT_CALL(*hs[hid], submit(An<std::shared_ptr<write_query>>()))
-      .WillOnce([=, &target_cfg](std::shared_ptr<write_query> wq) {
-        EXPECT_TRUE(wq);
-        EXPECT_EQ(wq->offset(), stripe_id * target_cfg.strip_sz + strip_off);
-        EXPECT_EQ(wq->buf().size(), req_storage_span.size());
-        std::ranges::copy(wq->buf(), req_storage_span.begin());
-        return 0;
-      });
+          .WillOnce([=, &target_cfg](std::shared_ptr<write_query> wq) {
+            EXPECT_TRUE(wq);
+            EXPECT_EQ(wq->offset(),
+                      stripe_id * target_cfg.strip_sz + strip_off);
+            EXPECT_EQ(wq->buf().size(), req_storage_span.size());
+            std::ranges::copy(wq->buf(), req_storage_span.begin());
+            return 0;
+          });
       chunk_off += req_storage_span.size();
     }
-    /* clang-format on */
 
     target_->process(
         write_query::create(chunk_buf_span, off, [](write_query const &wq) {
@@ -170,9 +176,9 @@ TEST_P(RAID0ChunkByChunkTest, Write) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(RAID0, RAID0ChunkByChunkTest,
+INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                          Values(
-                             RAID0ChunkByChunkParam{
+                             ChunkByChunkParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 512,
@@ -182,7 +188,7 @@ INSTANTIATE_TEST_SUITE_P(RAID0, RAID0ChunkByChunkTest,
                                  .start_off = 0,
                                  .chunk_sz = 512,
                              },
-                             RAID0ChunkByChunkParam{
+                             ChunkByChunkParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 4_KiB,
@@ -192,7 +198,7 @@ INSTANTIATE_TEST_SUITE_P(RAID0, RAID0ChunkByChunkTest,
                                  .start_off = 512,
                                  .chunk_sz = 1_KiB,
                              },
-                             RAID0ChunkByChunkParam{
+                             ChunkByChunkParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 4_KiB,

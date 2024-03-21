@@ -22,16 +22,15 @@ using namespace testing;
 
 namespace {
 
-struct RAID0StripeByStripeParam {
+struct StripeByStripeParam {
   ut::raid0::target_cfg target_cfg;
 };
 
-class RAID0StripeByStripe
-    : public ut::raid0::BaseTest<RAID0StripeByStripeParam> {};
+class StripeByStripe : public ut::raid0::BaseTest<StripeByStripeParam> {};
 
 } // namespace
 
-TEST_P(RAID0StripeByStripe, Read) {
+TEST_P(StripeByStripe, Read) {
   auto const &param{GetParam()};
 
   auto const &target_cfg{param.target_cfg};
@@ -52,12 +51,16 @@ TEST_P(RAID0StripeByStripe, Read) {
     auto const stripe_storage_buf_span{
         std::as_bytes(std::span{stripe_storage_buf.get(), stripe_sz}),
     };
+
     ASSERT_THAT(stripe_buf_span,
                 Not(ElementsAreArray(stripe_storage_buf_span)));
-    /* clang-format off */
-        for (size_t strip_id{0}; auto const &h : hs) {
-          auto const strip_storage_buf_span{stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz, target_cfg.strip_sz)};
-          EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
+
+    for (size_t strip_id{0}; auto const &h : hs) {
+      auto const strip_storage_buf_span{
+          stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz,
+                                          target_cfg.strip_sz),
+      };
+      EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
           .WillOnce([=, &target_cfg](std::shared_ptr<read_query> rq) {
             EXPECT_TRUE(rq);
             EXPECT_EQ(rq->offset(), target_cfg.strip_sz * stripe_id);
@@ -65,16 +68,17 @@ TEST_P(RAID0StripeByStripe, Read) {
             std::ranges::copy(strip_storage_buf_span, rq->buf().begin());
             return 0;
           });
-        }
-    /* clang-format on */
+    }
+
     target_->process(read_query::create(
         stripe_buf_span, stripe_id * stripe_sz,
         [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); }));
+
     EXPECT_THAT(stripe_buf_span, ElementsAreArray(stripe_storage_buf_span));
   }
 }
 
-TEST_P(RAID0StripeByStripe, Write) {
+TEST_P(StripeByStripe, Write) {
   auto const &param{GetParam()};
 
   auto const &target_cfg{param.target_cfg};
@@ -95,12 +99,16 @@ TEST_P(RAID0StripeByStripe, Write) {
     auto const stripe_storage_buf_span{
         std::as_writable_bytes(std::span{stripe_storage_buf.get(), stripe_sz}),
     };
+
     ASSERT_THAT(stripe_buf_span,
                 Not(ElementsAreArray(stripe_storage_buf_span)));
-    /* clang-format off */
-        for (size_t strip_id{0}; auto const &h : hs) {
-          auto const strip_storage_buf_span{stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz, target_cfg.strip_sz)};
-          EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+
+    for (size_t strip_id{0}; auto const &h : hs) {
+      auto const strip_storage_buf_span{
+          stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz,
+                                          target_cfg.strip_sz),
+      };
+      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
           .WillOnce([=, &target_cfg](std::shared_ptr<write_query> wq) {
             EXPECT_TRUE(wq);
             EXPECT_EQ(wq->offset(), target_cfg.strip_sz * stripe_id);
@@ -108,18 +116,19 @@ TEST_P(RAID0StripeByStripe, Write) {
             std::ranges::copy(wq->buf(), strip_storage_buf_span.begin());
             return 0;
           });
-        }
-    /* clang-format on */
+    }
+
     target_->process(write_query::create(
         stripe_buf_span, stripe_id * stripe_sz,
         [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); }));
+
     EXPECT_THAT(stripe_buf_span, ElementsAreArray(stripe_storage_buf_span));
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(RAID0, RAID0StripeByStripe,
+INSTANTIATE_TEST_SUITE_P(RAID0, StripeByStripe,
                          Values(
-                             RAID0StripeByStripeParam{
+                             StripeByStripeParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 512,
@@ -127,7 +136,7 @@ INSTANTIATE_TEST_SUITE_P(RAID0, RAID0StripeByStripe,
                                          .stripes_nr = 4,
                                      },
                              },
-                             RAID0StripeByStripeParam{
+                             StripeByStripeParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 4_KiB,
@@ -135,7 +144,7 @@ INSTANTIATE_TEST_SUITE_P(RAID0, RAID0StripeByStripe,
                                          .stripes_nr = 10,
                                      },
                              },
-                             RAID0StripeByStripeParam{
+                             StripeByStripeParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 128_KiB,
