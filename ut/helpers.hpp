@@ -74,11 +74,15 @@ inline auto make_randomized_storages(size_t storage_sz, size_t nr) {
   return storages;
 }
 
+template <is_byte T> inline auto make_zeroed_storage(size_t storage_sz) {
+  return std::make_unique<T[]>(storage_sz);
+}
+
 template <is_byte T>
 inline auto make_zeroed_storages(size_t storage_sz, size_t nr) {
   std::vector<std::unique_ptr<T[]>> storages{nr};
   std::ranges::generate(
-      storages, [storage_sz] { return std::make_unique<T[]>(storage_sz); });
+      storages, [storage_sz] { return make_zeroed_storage<T>(storage_sz); });
   return storages;
 }
 
