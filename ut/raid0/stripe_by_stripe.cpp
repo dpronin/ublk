@@ -20,12 +20,16 @@
 using namespace ublk;
 using namespace testing;
 
+namespace {
+
 struct RAID0StripeByStripeParam {
   ut::raid0::target_cfg target_cfg;
 };
 
 class RAID0StripeByStripe
     : public ut::raid0::BaseTest<RAID0StripeByStripeParam> {};
+
+} // namespace
 
 TEST_P(RAID0StripeByStripe, Read) {
   auto const &param{GetParam()};

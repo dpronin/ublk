@@ -20,6 +20,8 @@
 using namespace ublk;
 using namespace testing;
 
+namespace {
+
 struct RAID0ChunkByChunkParam {
   ut::raid0::target_cfg target_cfg;
   size_t start_off;
@@ -28,6 +30,8 @@ struct RAID0ChunkByChunkParam {
 
 class RAID0ChunkByChunkTest
     : public ut::raid0::BaseTest<RAID0ChunkByChunkParam> {};
+
+} // namespace
 
 TEST_P(RAID0ChunkByChunkTest, Read) {
   auto const &param{GetParam()};
