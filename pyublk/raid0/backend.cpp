@@ -1,8 +1,10 @@
 #include "backend.hpp"
 
 #include <cassert>
+#include <cstdint>
 
 #include <algorithm>
+#include <bit>
 #include <concepts>
 #include <utility>
 
@@ -15,6 +17,7 @@ namespace ublk::raid0 {
 
 struct backend::static_cfg {
   uint64_t strip_sz;
+  uint64_t strip_shift;
 };
 
 backend::backend(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
@@ -27,6 +30,7 @@ backend::backend(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
   auto cfg = mm::make_unique_aligned<static_cfg>(
       hardware_destructive_interference_size);
   cfg->strip_sz = strip_sz;
+  cfg->strip_shift = std::countr_zero(cfg->strip_sz);
 
   static_cfg_ = mm::const_uptrwd_cast(std::move(cfg));
 }
@@ -42,8 +46,8 @@ int backend::do_op(std::shared_ptr<T> query) noexcept {
   assert(query);
   assert(!query->buf().empty());
 
-  auto strip_id{query->offset() / static_cfg_->strip_sz};
-  auto strip_offset{query->offset() % static_cfg_->strip_sz};
+  auto strip_id{query->offset() >> static_cfg_->strip_shift};
+  auto strip_offset{query->offset() & (static_cfg_->strip_sz - 1)};
 
   for (size_t submitted_bytes{0}; submitted_bytes < query->buf().size();
        ++strip_id, strip_offset = 0) {
@@ -52,7 +56,7 @@ int backend::do_op(std::shared_ptr<T> query) noexcept {
     auto const &h{hs_[hid]};
     auto const stripe_id{strip_id / hs_.size()};
     auto const subquery_offset{
-        strip_offset + stripe_id * static_cfg_->strip_sz,
+        strip_offset + (stripe_id << static_cfg_->strip_shift),
     };
     auto const subquery_sz{
         std::min(static_cfg_->strip_sz - strip_offset,
