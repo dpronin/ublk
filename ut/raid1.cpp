@@ -9,6 +9,8 @@
 #include <span>
 #include <vector>
 
+#include "mm/mem.hpp"
+
 #include "utils/size_units.hpp"
 
 #include "raid1/target.hpp"
@@ -100,7 +102,7 @@ TEST_P(RAID1, TestWriting) {
   /* clang-format on */
 
   auto const buf_sz{param.hs_storage_sz};
-  auto const buf{ut::make_unique_random_bytes(buf_sz)};
+  auto const buf{mm::make_unique_random_bytes(buf_sz)};
   auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
   tgt.process(write_query::create(buf_span, 0));

@@ -10,6 +10,8 @@
 #include <span>
 #include <vector>
 
+#include "mm/mem.hpp"
+
 #include "utils/size_units.hpp"
 
 #include "raid4/target.hpp"
@@ -92,7 +94,7 @@ TEST_P(RAID4, TestWriting) {
   /* clang-format on */
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
-  auto const buf{ut::make_unique_random_bytes(buf_sz)};
+  auto const buf{mm::make_unique_random_bytes(buf_sz)};
   auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
   tgt.process(write_query::create(buf_span, 0));

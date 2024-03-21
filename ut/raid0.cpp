@@ -9,6 +9,8 @@
 #include <span>
 #include <vector>
 
+#include "mm/mem.hpp"
+
 #include "utils/size_units.hpp"
 
 #include "raid0/target.hpp"
@@ -39,9 +41,10 @@ protected:
       };
     });
 
-    auto hs =
+    auto hs{
         std::views::all(backend_ctxs_) |
-        std::views::transform([](auto const &hs_ctx) { return hs_ctx.h; });
+            std::views::transform([](auto const &hs_ctx) { return hs_ctx.h; }),
+    };
 
     target_ = std::make_unique<raid0::Target>(param.strip_sz, hs);
   }
@@ -62,103 +65,78 @@ protected:
 TEST_P(RAID0, FullStripeReading) {
   auto const &param{GetParam()};
 
-  auto const storage_sz{param.strip_sz * param.stripes_nr};
-  auto const storages{
-      ut::make_randomized_storages<std::byte const>(storage_sz,
-                                                    backend_ctxs_.size()),
-  };
-  auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
-
-  auto const hs =
+  auto const hs{
       std::views::all(backend_ctxs_) |
-      std::views::transform([](auto const &hs_ctx) { return hs_ctx.h; });
-
-  auto const buf_sz{
-      param.strips_per_stripe_nr * param.strip_sz * param.stripes_nr,
+          std::views::transform([](auto const &hs_ctx) { return hs_ctx.h; }),
   };
-  auto const buf{std::make_unique<std::byte[]>(buf_sz)};
-  auto const buf_span{std::span{buf.get(), buf_sz}};
 
   auto const stripe_sz{param.strip_sz * param.strips_per_stripe_nr};
 
   for (size_t stripe_id{0}; stripe_id < param.stripes_nr; ++stripe_id) {
+    auto const stripe_buf{mm::make_unique_zeroed_bytes(stripe_sz)};
+    auto const stripe_buf_span{
+        std::as_writable_bytes(std::span{stripe_buf.get(), stripe_sz}),
+    };
+    auto const stripe_storage_buf{mm::make_unique_random_bytes(stripe_sz)};
+    auto const stripe_storage_buf_span{
+        std::as_bytes(std::span{stripe_storage_buf.get(), stripe_sz}),
+    };
     /* clang-format off */
-    for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
+    for (size_t strip_id{0}; auto const &h : hs) {
+      auto const strip_storage_buf_span{stripe_storage_buf_span.subspan((strip_id++) * param.strip_sz, param.strip_sz)};
       EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
-      .WillOnce([&, inmem_reader{ut::make_inmem_reader(storage_span)}](std::shared_ptr<read_query> rq) {
+      .WillOnce([=, &param](std::shared_ptr<read_query> rq) {
         EXPECT_TRUE(rq);
         EXPECT_EQ(rq->offset(), param.strip_sz * stripe_id);
-        EXPECT_EQ(rq->buf().size(), param.strip_sz);
-        return inmem_reader(rq);
+        EXPECT_EQ(rq->buf().size(), strip_storage_buf_span.size());
+        std::ranges::copy(strip_storage_buf_span, rq->buf().begin());
+        return 0;
       });
     }
     /* clang-format on */
     target_->process(read_query::create(
-        buf_span.subspan(stripe_id * stripe_sz, stripe_sz),
-        stripe_id * stripe_sz,
+        stripe_buf_span, stripe_id * stripe_sz,
         [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); }));
-  }
-
-  for (size_t off = 0; off < buf_span.size(); off += param.strip_sz) {
-    auto const sid{(off / param.strip_sz) % param.strips_per_stripe_nr};
-    auto const soff{
-        off / (param.strip_sz * param.strips_per_stripe_nr) * param.strip_sz,
-    };
-    auto const s1{std::as_bytes(buf_span.subspan(off, param.strip_sz))};
-    auto const s2{storage_spans[sid].subspan(soff, param.strip_sz)};
-    EXPECT_THAT(s1, ElementsAreArray(s2));
+    EXPECT_THAT(stripe_buf_span, ElementsAreArray(stripe_storage_buf_span));
   }
 }
 
 TEST_P(RAID0, FullStripeWriting) {
   auto const &param{GetParam()};
 
-  auto const storage_sz{param.strip_sz * param.stripes_nr};
-  auto const storages{
-      ut::make_zeroed_storages<std::byte>(storage_sz, backend_ctxs_.size()),
-  };
-  auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
-
-  auto const hs =
+  auto const hs{
       std::views::all(backend_ctxs_) |
-      std::views::transform([](auto const &hs_ctx) { return hs_ctx.h; });
-
-  auto const buf_sz{
-      param.strips_per_stripe_nr * param.strip_sz * param.stripes_nr,
+          std::views::transform([](auto const &hs_ctx) { return hs_ctx.h; }),
   };
-  auto const buf{ut::make_unique_random_bytes(buf_sz)};
-  auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
   auto const stripe_sz{param.strip_sz * param.strips_per_stripe_nr};
 
   for (size_t stripe_id{0}; stripe_id < param.stripes_nr; ++stripe_id) {
+    auto const stripe_buf{mm::make_unique_random_bytes(stripe_sz)};
+    auto const stripe_buf_span{
+        std::as_bytes(std::span{stripe_buf.get(), stripe_sz}),
+    };
+    auto const stripe_storage_buf{mm::make_unique_zeroed_bytes(stripe_sz)};
+    auto const stripe_storage_buf_span{
+        std::as_writable_bytes(std::span{stripe_storage_buf.get(), stripe_sz}),
+    };
     /* clang-format off */
-    for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
+    for (size_t strip_id{0}; auto const &h : hs) {
+      auto const strip_storage_buf_span{stripe_storage_buf_span.subspan((strip_id++) * param.strip_sz, param.strip_sz)};
       EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
-      .WillOnce([&, inmem_writer{ut::make_inmem_writer(storage_span)}](std::shared_ptr<write_query> wq) {
+      .WillOnce([=, &param](std::shared_ptr<write_query> wq) {
         EXPECT_TRUE(wq);
         EXPECT_EQ(wq->offset(), param.strip_sz * stripe_id);
-        EXPECT_EQ(wq->buf().size(), param.strip_sz);
-        return inmem_writer(wq);
+        EXPECT_EQ(wq->buf().size(), strip_storage_buf_span.size());
+        std::ranges::copy(wq->buf(), strip_storage_buf_span.begin());
+        return 0;
       });
     }
     /* clang-format on */
     target_->process(write_query::create(
-        buf_span.subspan(stripe_id * stripe_sz, stripe_sz),
-        stripe_id * stripe_sz,
+        stripe_buf_span, stripe_id * stripe_sz,
         [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); }));
-  }
-
-  for (size_t off{0}; off < buf_span.size(); off += param.strip_sz) {
-    auto const sid{(off / param.strip_sz) % param.strips_per_stripe_nr};
-    auto const soff{
-        off / (param.strip_sz * param.strips_per_stripe_nr) * param.strip_sz,
-    };
-    auto const s1{buf_span.subspan(off, param.strip_sz)};
-    auto const s2{
-        std::as_bytes(storage_spans[sid].subspan(soff, param.strip_sz)),
-    };
-    EXPECT_THAT(s1, ElementsAreArray(s2));
+    EXPECT_THAT(stripe_buf_span, ElementsAreArray(stripe_storage_buf_span));
   }
 }
 

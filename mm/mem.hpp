@@ -7,11 +7,14 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#include <algorithm>
+#include <functional>
 #include <new>
 #include <type_traits>
 #include <utility>
 
 #include "utils/page.hpp"
+#include "utils/random.hpp"
 #include "utils/size_units.hpp"
 #include "utils/utility.hpp"
 
@@ -104,6 +107,17 @@ uptrwd<T> make_unique_aligned(size_t align, Args &&...args) {
         operator delete(p, std::align_val_t{align});
       },
   };
+}
+
+inline std::unique_ptr<std::byte[]> make_unique_zeroed_bytes(size_t sz) {
+  return std::make_unique<std::byte[]>(sz);
+}
+
+inline std::unique_ptr<std::byte[]> make_unique_random_bytes(size_t sz) {
+  auto buf{std::make_unique_for_overwrite<std::byte[]>(sz)};
+  auto gen = make_random_bytes_generator();
+  std::generate_n(buf.get(), sz, std::ref(gen));
+  return buf;
 }
 
 inline uptrwd<std::byte[]> make_unique_bytes(alloc_mode_new, size_t sz) {
