@@ -13,6 +13,10 @@
 
 namespace ublk::raid0 {
 
+struct backend::static_cfg {
+  uint64_t strip_sz;
+};
+
 backend::backend(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
     : hs_(std::move(hs)) {
   assert(is_power_of_2(strip_sz));
@@ -26,6 +30,11 @@ backend::backend(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
 
   static_cfg_ = mm::const_uptrwd_cast(std::move(cfg));
 }
+
+backend::~backend() noexcept = default;
+
+backend::backend(backend &&) noexcept = default;
+backend &backend::operator=(backend &&) noexcept = default;
 
 template <typename T>
   requires std::same_as<T, write_query> || std::same_as<T, read_query>
