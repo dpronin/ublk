@@ -26,7 +26,7 @@ struct StripeByStripeParam {
   ut::raid0::target_cfg target_cfg;
 };
 
-class StripeByStripe : public ut::raid0::BaseTest<StripeByStripeParam> {};
+class StripeByStripe : public ut::raid0::Base<StripeByStripeParam> {};
 
 } // namespace
 

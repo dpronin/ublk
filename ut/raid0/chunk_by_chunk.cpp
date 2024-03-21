@@ -28,14 +28,14 @@ struct ChunkByChunkParam {
   size_t chunk_sz;
 };
 
-class ChunkByChunk : public ut::raid0::BaseTest<ChunkByChunkParam> {};
+class ChunkByChunk : public ut::raid0::Base<ChunkByChunkParam> {};
 
 } // namespace
 
 TEST_P(ChunkByChunk, Read) {
   auto const &param{GetParam()};
 
-  auto const &target_cfg = param.target_cfg;
+  auto const &target_cfg{param.target_cfg};
 
   auto const hs{
       std::views::all(backend_ctxs_) |
@@ -107,7 +107,7 @@ TEST_P(ChunkByChunk, Read) {
 TEST_P(ChunkByChunk, Write) {
   auto const &param{GetParam()};
 
-  auto const &target_cfg = param.target_cfg;
+  auto const &target_cfg{param.target_cfg};
 
   auto const hs{
       std::views::all(backend_ctxs_) |
@@ -151,7 +151,8 @@ TEST_P(ChunkByChunk, Write) {
                    target_cfg.strip_sz - strip_off),
       };
       auto const req_storage_span{
-          raid_storage_buf_span.subspan(req_off, req_sz)};
+          raid_storage_buf_span.subspan(req_off, req_sz),
+      };
       auto const strip_id{req_off / target_cfg.strip_sz};
       auto const stripe_id{strip_id / target_cfg.strips_per_stripe_nr};
       auto const hid{strip_id % target_cfg.strips_per_stripe_nr};

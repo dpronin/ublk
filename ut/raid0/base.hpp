@@ -23,7 +23,7 @@ struct target_cfg {
 };
 
 template <typename ParamType>
-class BaseTest : public testing::TestWithParam<ParamType> {
+class Base : public testing::TestWithParam<ParamType> {
 protected:
   void SetUp() override {
     auto const &param{this->GetParam()};
