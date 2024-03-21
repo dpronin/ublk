@@ -131,17 +131,17 @@ int acceptor::stripe_data_write(uint64_t stripe_id_at,
   assert(0 == wqd->offset());
   assert(wqd->buf().size() == be_->static_cfg().stripe_data_sz);
 
-  auto cached_stripe_parity{stripe_parity_pool_->get()};
-  auto cached_stripe_parity_view{
-      std::span{cached_stripe_parity.get(), be_->static_cfg().strip_sz},
+  auto stripe_parity_buf{stripe_parity_pool_->get()};
+  auto stripe_parity_buf_view{
+      std::span{stripe_parity_buf.get(), stripe_parity_pool_->chunk_sz()},
   };
 
   /* Renew Parity of the stripe */
-  parity_renew(wqd->buf(), cached_stripe_parity_view);
+  parity_renew(wqd->buf(), stripe_parity_buf_view);
 
   auto wqp_completer{
       [wqd, cached_stripe_parity = std::shared_ptr{std::move(
-                cached_stripe_parity)}](write_query const &new_wqp) {
+                stripe_parity_buf)}](write_query const &new_wqp) {
         if (new_wqp.err()) [[unlikely]] {
           wqd->set_err(new_wqp.err());
           return;
@@ -150,8 +150,7 @@ int acceptor::stripe_data_write(uint64_t stripe_id_at,
   };
 
   auto wqp{
-      write_query::create(cached_stripe_parity_view, 0,
-                          std::move(wqp_completer)),
+      write_query::create(stripe_parity_buf_view, 0, std::move(wqp_completer)),
   };
 
   /*
@@ -172,19 +171,27 @@ int acceptor::process(uint64_t stripe_id,
    * intend to partially modify the stripe
    */
   if (wq->buf().size() < be_->static_cfg().stripe_data_sz) {
-    auto new_cached_stripe{stripe_pool_->get()};
-    auto new_cached_stripe_data_view{stripe_data_view(new_cached_stripe)};
-    auto new_cached_stripe_parity_view{stripe_parity_view(new_cached_stripe)};
+    auto stripe_buf{stripe_pool_->get()};
+    auto const stripe_buf_view{
+        std::span<std::byte>{stripe_buf.get(), stripe_pool_->chunk_sz()},
+    };
+    auto stripe_data_buf_view{
+        stripe_buf_view.subspan(0, be_->static_cfg().stripe_data_sz),
+    };
+    auto const stripe_parity_buf_view{
+        stripe_buf_view.subspan(stripe_data_buf_view.size(),
+                                stripe_buf_view.size() -
+                                    stripe_data_buf_view.size()),
+    };
 
     auto new_rqd{std::shared_ptr<read_query>{}};
 
     if (stripe_parity_coherency_state_[stripe_id]) [[likely]] {
-      new_cached_stripe_data_view =
-          new_cached_stripe_data_view.subspan(wq->offset(), wq->buf().size());
+      stripe_data_buf_view =
+          stripe_data_buf_view.subspan(wq->offset(), wq->buf().size());
 
       auto new_rdq_completer{
-          [=, this,
-           cached_stripe = std::shared_ptr{std::move(new_cached_stripe)}](
+          [=, this, stripe_buf = std::shared_ptr{std::move(stripe_buf)}](
               read_query const &rqd) mutable {
             if (rqd.err()) [[unlikely]] {
               wq->set_err(rqd.err());
@@ -192,7 +199,7 @@ int acceptor::process(uint64_t stripe_id,
             }
 
             auto new_rpq_completer{
-                [=, this, cached_stripe = std::move(cached_stripe)](
+                [=, this, stripe_buf = std::move(stripe_buf)](
                     read_query const &rqp) mutable {
                   if (rqp.err()) [[unlikely]] {
                     wq->set_err(rqp.err());
@@ -205,16 +212,14 @@ int acceptor::process(uint64_t stripe_id,
                    * the result of old data being XORed with a new data come
                    * in
                    */
-                  math::xor_to(wq->buf(), new_cached_stripe_data_view);
-                  parity_to(new_cached_stripe_data_view,
-                            new_cached_stripe_parity_view,
-                            wq->offset() %
-                                new_cached_stripe_parity_view.size());
+                  math::xor_to(wq->buf(), stripe_data_buf_view);
+                  parity_to(stripe_data_buf_view, stripe_parity_buf_view,
+                            wq->offset() % stripe_parity_buf_view.size());
 
                   auto wqp{
                       write_query::create(
-                          new_cached_stripe_parity_view, 0,
-                          [wq, cached_stripe = std::move(cached_stripe)](
+                          stripe_parity_buf_view, 0,
+                          [wq, stripe_buf = std::move(stripe_buf)](
                               write_query const &new_wqp) {
                             if (new_wqp.err()) [[unlikely]] {
                               wq->set_err(new_wqp.err());
@@ -237,7 +242,7 @@ int acceptor::process(uint64_t stripe_id,
             };
 
             auto new_rpq{
-                read_query::create(new_cached_stripe_parity_view, 0,
+                read_query::create(stripe_parity_buf_view, 0,
                                    std::move(new_rpq_completer)),
             };
 
@@ -250,12 +255,11 @@ int acceptor::process(uint64_t stripe_id,
           },
       };
 
-      new_rqd = read_query::create(new_cached_stripe_data_view, wq->offset(),
+      new_rqd = read_query::create(stripe_data_buf_view, wq->offset(),
                                    std::move(new_rdq_completer));
     } else {
       auto new_rdq_completer{
-          [=, this,
-           cached_stripe = std::shared_ptr{std::move(new_cached_stripe)}](
+          [=, this, cached_stripe = std::shared_ptr{std::move(stripe_buf)}](
               read_query const &rqd) mutable {
             if (rqd.err()) [[unlikely]] {
               wq->set_err(rqd.err());
@@ -266,15 +270,14 @@ int acceptor::process(uint64_t stripe_id,
 
             auto const copy_from{chunk};
             auto const copy_to{
-                new_cached_stripe_data_view.subspan(wq->offset(), chunk.size()),
+                stripe_data_buf_view.subspan(wq->offset(), chunk.size()),
             };
 
             /* Modify the part of the stripe with the new data come in */
             algo::copy(copy_from, copy_to);
 
             /* Renew Parity of the stripe */
-            parity_renew(new_cached_stripe_data_view,
-                         new_cached_stripe_parity_view);
+            parity_renew(stripe_data_buf_view, stripe_parity_buf_view);
 
             auto wqd_completer{
                 [wq](write_query const &new_wq) {
@@ -301,7 +304,7 @@ int acceptor::process(uint64_t stripe_id,
             };
 
             auto new_wqp{
-                write_query::create(new_cached_stripe_parity_view, 0,
+                write_query::create(stripe_parity_buf_view, 0,
                                     std::move(wqp_completer)),
             };
 
@@ -319,7 +322,7 @@ int acceptor::process(uint64_t stripe_id,
           },
       };
 
-      new_rqd = read_query::create(new_cached_stripe_data_view, 0,
+      new_rqd = read_query::create(stripe_data_buf_view, 0,
                                    std::move(new_rdq_completer));
     }
 

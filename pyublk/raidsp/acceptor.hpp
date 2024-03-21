@@ -12,10 +12,8 @@
 
 #include "mm/cache_line_aligned_allocator.hpp"
 #include "mm/mem_chunk_pool.hpp"
-#include "mm/mem_types.hpp"
 
 #include "utils/bitset_locker.hpp"
-#include "utils/span.hpp"
 #include "utils/utility.hpp"
 
 #include "read_query.hpp"
@@ -39,6 +37,16 @@ public:
   int process(std::shared_ptr<write_query> wq) noexcept;
 
 private:
+  constexpr static inline auto kCachedStripeAlignment =
+      backend::kAlignmentRequiredMin;
+  static_assert(is_aligned_to(kCachedStripeAlignment,
+                              alignof(std::max_align_t)));
+
+  constexpr static inline auto kCachedParityAlignment =
+      backend::kAlignmentRequiredMin;
+  static_assert(is_aligned_to(kCachedParityAlignment,
+                              alignof(std::max_align_t)));
+
   int stripe_incoherent_parity_write(uint64_t stripe_id_at,
                                      std::shared_ptr<write_query> wqd,
                                      std::shared_ptr<write_query> wqp) noexcept;
@@ -52,34 +60,6 @@ private:
 
   int stripe_data_write(uint64_t stripe_id_at,
                         std::shared_ptr<write_query> wq) noexcept;
-
-  constexpr static inline auto kCachedStripeAlignment =
-      backend::kAlignmentRequiredMin;
-  static_assert(is_aligned_to(kCachedStripeAlignment,
-                              alignof(std::max_align_t)));
-
-  constexpr static inline auto kCachedParityAlignment =
-      backend::kAlignmentRequiredMin;
-  static_assert(is_aligned_to(kCachedParityAlignment,
-                              alignof(std::max_align_t)));
-
-  template <typename T = std::byte>
-  auto stripe_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(stripe_pool_->chunk_view(stripe));
-  }
-
-  template <typename T = std::byte>
-  auto stripe_data_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(
-        stripe_view(stripe).subspan(0, be_->static_cfg().stripe_data_sz));
-  }
-
-  template <typename T = std::byte>
-  auto
-  stripe_parity_view(mm::uptrwd<std::byte[]> const &stripe) const noexcept {
-    return to_span_of<T>(
-        stripe_view(stripe).subspan(be_->static_cfg().stripe_data_sz));
-  }
 
   int process(uint64_t stripe_id, std::shared_ptr<write_query> wq) noexcept;
 
