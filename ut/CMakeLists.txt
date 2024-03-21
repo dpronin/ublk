@@ -8,23 +8,13 @@ add_library(ublk_ut_helpers INTERFACE
 target_link_libraries(ublk_ut_helpers INTERFACE
     gtest::gtest
 )
+target_include_directories(ublk_ut_helpers INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}
+)
 
 add_library(ublk::ut::helpers ALIAS ublk_ut_helpers)
 
-
-add_executable(raid0_ut
-    raid0.cpp
-)
-
-target_link_libraries(raid0_ut PRIVATE
-    gtest::gtest
-    ublk::mm
-    ublk::raid0
-    ublk::ut::helpers
-    ublk::utils
-)
-
-add_test(NAME RAID0 COMMAND raid0_ut)
+add_subdirectory(raid0)
 
 add_executable(raid1_ut
     raid1.cpp
