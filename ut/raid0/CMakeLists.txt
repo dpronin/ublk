@@ -1,5 +1,7 @@
 add_executable(raid0_ut
-    raid0.cpp
+    base.hpp
+    chunk_by_chunk.cpp
+    stripe_by_stripe.cpp
 )
 
 target_link_libraries(raid0_ut PRIVATE
