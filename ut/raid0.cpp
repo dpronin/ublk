@@ -66,7 +66,7 @@ protected:
 };
 
 struct RAID0StripeByStripeParam {
-  target_cfg target_cfg;
+  struct target_cfg target_cfg;
 };
 
 class RAID0StripeByStripe : public RAID0BaseTest<RAID0StripeByStripeParam> {};
@@ -185,7 +185,7 @@ INSTANTIATE_TEST_SUITE_P(RAID0, RAID0StripeByStripe,
                              }));
 
 struct RAID0ChunkByChunkParam {
-  target_cfg target_cfg;
+  struct target_cfg target_cfg;
   size_t start_off;
   size_t chunk_sz;
 };
