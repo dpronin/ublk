@@ -51,7 +51,7 @@ r1::r1(uint64_t read_strip_sz,
       hardware_destructive_interference_size);
   cfg->read_strip_sz = read_strip_sz;
 
-  static_cfg_ = mm::const_uptr_cast(std::move(cfg));
+  static_cfg_ = mm::const_uptrwd_cast(std::move(cfg));
 }
 
 int r1::process(std::shared_ptr<read_query> rq) noexcept {

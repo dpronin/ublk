@@ -24,7 +24,7 @@ backend::backend(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       hardware_destructive_interference_size);
   cfg->strip_sz = strip_sz;
 
-  static_cfg_ = mm::const_uptr_cast(std::move(cfg));
+  static_cfg_ = mm::const_uptrwd_cast(std::move(cfg));
 }
 
 template <typename T>

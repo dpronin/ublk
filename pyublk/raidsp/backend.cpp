@@ -51,7 +51,7 @@ backend::backend(
   cfg->stripe_data_sz = cfg->strip_sz * (hs_.size() - 1);
   cfg->stripe_sz = cfg->stripe_data_sz + cfg->strip_sz;
 
-  static_cfg_ = mm::const_uptr_cast(std::move(cfg));
+  static_cfg_ = mm::const_uptrwd_cast(std::move(cfg));
 }
 
 int backend::data_read(uint64_t stripe_id_from,
