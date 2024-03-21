@@ -15,7 +15,7 @@ set_property(TARGET ublk_inmem PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::inmem ALIAS ublk_inmem)
 
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND COVERAGE_ENABLE)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND COVERAGE_ENABLE)
   include(CodeCoverage)
   append_coverage_compiler_flags_to_target(ublk_inmem)
 endif ()
