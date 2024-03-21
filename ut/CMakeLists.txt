@@ -15,48 +15,9 @@ target_include_directories(ublk_ut_helpers INTERFACE
 add_library(ublk::ut::helpers ALIAS ublk_ut_helpers)
 
 add_subdirectory(raid0)
-
-add_executable(raid1_ut
-    raid1.cpp
-)
-
-target_link_libraries(raid1_ut PRIVATE
-    gtest::gtest
-    ublk::mm
-    ublk::raid1
-    ublk::ut::helpers
-    ublk::utils
-)
-
-add_test(NAME RAID1 COMMAND raid1_ut)
-
-add_executable(raid4_ut
-    raid4.cpp
-)
-
-target_link_libraries(raid4_ut PRIVATE
-    gtest::gtest
-    ublk::mm
-    ublk::raid4
-    ublk::ut::helpers
-    ublk::utils
-)
-
-add_test(NAME RAID4 COMMAND raid4_ut)
-
-add_executable(raid5_ut
-    raid5.cpp
-)
-
-target_link_libraries(raid5_ut PRIVATE
-    gtest::gtest
-    ublk::mm
-    ublk::raid5
-    ublk::ut::helpers
-    ublk::utils
-)
-
-add_test(NAME RAID5 COMMAND raid5_ut)
+add_subdirectory(raid1)
+add_subdirectory(raid4)
+add_subdirectory(raid5)
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND COVERAGE_ENABLE)
   include(CodeCoverage)
