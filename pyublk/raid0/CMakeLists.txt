@@ -1,4 +1,7 @@
 add_library(ublk_raid0 STATIC
+    backend.cpp
+    backend.hpp
+    fsm.hpp
     read_handler.hpp
     target.cpp
     target.hpp
