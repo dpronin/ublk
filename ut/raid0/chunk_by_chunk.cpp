@@ -99,10 +99,13 @@ TEST_P(ChunkByChunk, Read) {
       chunk_off += req_storage_span.size();
     }
 
-    target_->process(
-        read_query::create(chunk_buf_span, off, [](read_query const &rq) {
-          EXPECT_EQ(rq.err(), 0);
-        }));
+    auto const res{
+        target_->process(read_query::create(
+            chunk_buf_span, off,
+            [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
+    };
+
+    EXPECT_EQ(res, 0);
 
     EXPECT_THAT(chunk_buf_span, ElementsAreArray(chunk_raid_storage_buf_span));
   }
@@ -171,10 +174,13 @@ TEST_P(ChunkByChunk, Write) {
       chunk_off += req_storage_span.size();
     }
 
-    target_->process(
-        write_query::create(chunk_buf_span, off, [](write_query const &wq) {
-          EXPECT_EQ(wq.err(), 0);
-        }));
+    auto const res{
+        target_->process(write_query::create(
+            chunk_buf_span, off,
+            [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+    };
+
+    EXPECT_EQ(res, 0);
 
     EXPECT_THAT(chunk_buf_span, ElementsAreArray(chunk_raid_storage_buf_span));
   }

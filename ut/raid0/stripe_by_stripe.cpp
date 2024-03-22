@@ -71,9 +71,13 @@ TEST_P(StripeByStripe, Read) {
           });
     }
 
-    target_->process(read_query::create(
-        stripe_buf_span, stripe_id * stripe_sz,
-        [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); }));
+    auto const res{
+        target_->process(read_query::create(
+            stripe_buf_span, stripe_id * stripe_sz,
+            [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
+    };
+
+    EXPECT_EQ(res, 0);
 
     EXPECT_THAT(stripe_buf_span, ElementsAreArray(stripe_storage_buf_span));
   }
@@ -119,9 +123,13 @@ TEST_P(StripeByStripe, Write) {
           });
     }
 
-    target_->process(write_query::create(
-        stripe_buf_span, stripe_id * stripe_sz,
-        [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); }));
+    auto const res{
+        target_->process(write_query::create(
+            stripe_buf_span, stripe_id * stripe_sz,
+            [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+    };
+
+    EXPECT_EQ(res, 0);
 
     EXPECT_THAT(stripe_buf_span, ElementsAreArray(stripe_storage_buf_span));
   }
