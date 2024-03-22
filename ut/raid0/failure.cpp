@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <ranges>
 #include <span>
 
 #include "mm/mem.hpp"
@@ -57,12 +58,13 @@ TEST_F(RAID0, FailureAtSubmitRead) {
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
-  auto const res{
-      target_->process(read_query::create(
-          buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
-  };
-
-  EXPECT_EQ(res, EIO);
+  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
+    auto const res{
+        target_->process(read_query::create(
+            buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
+    };
+    EXPECT_EQ(res, EIO);
+  }
 }
 
 TEST_F(RAID0, FailureAtCompleteRead) {
@@ -82,8 +84,15 @@ TEST_F(RAID0, FailureAtCompleteRead) {
       target_->process(read_query::create(
           buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), EIO); })),
   };
-
   EXPECT_EQ(res, 0);
+
+  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
+    auto const res{
+        target_->process(read_query::create(
+            buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
+    };
+    EXPECT_EQ(res, EIO);
+  }
 }
 
 TEST_F(RAID0, FailureAtSubmitWrite) {
@@ -99,12 +108,14 @@ TEST_F(RAID0, FailureAtSubmitWrite) {
   };
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
-  auto const res{
-      target_->process(write_query::create(
-          buf_span, 0, [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
-  };
-
-  EXPECT_EQ(res, EIO);
+  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
+    auto const res{
+        target_->process(write_query::create(
+            buf_span, 0,
+            [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+    };
+    EXPECT_EQ(res, EIO);
+  }
 }
 
 TEST_F(RAID0, FailureAtCompleteWrite) {
@@ -129,6 +140,14 @@ TEST_F(RAID0, FailureAtCompleteWrite) {
           buf_span, 0,
           [](write_query const &wq) { EXPECT_EQ(wq.err(), EIO); })),
   };
-
   EXPECT_EQ(res, 0);
+
+  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
+    auto const res{
+        target_->process(write_query::create(
+            buf_span, 0,
+            [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+    };
+    EXPECT_EQ(res, EIO);
+  }
 }
