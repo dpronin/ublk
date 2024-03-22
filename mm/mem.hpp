@@ -113,6 +113,10 @@ inline std::unique_ptr<std::byte[]> make_unique_zeroed_bytes(size_t sz) {
   return std::make_unique<std::byte[]>(sz);
 }
 
+inline std::unique_ptr<std::byte[]> make_unique_for_overwrite_bytes(size_t sz) {
+  return std::make_unique_for_overwrite<std::byte[]>(sz);
+}
+
 inline std::unique_ptr<std::byte[]> make_unique_random_bytes(size_t sz) {
   auto buf{std::make_unique_for_overwrite<std::byte[]>(sz)};
   auto gen = make_random_bytes_generator();
