@@ -1,6 +1,7 @@
 add_executable(raid0_ut
     base.hpp
     chunk_by_chunk.cpp
+    failure.cpp
     stripe_by_stripe.cpp
 )
 
