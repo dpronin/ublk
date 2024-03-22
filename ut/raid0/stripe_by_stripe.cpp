@@ -42,7 +42,7 @@ TEST_P(StripeByStripe, Read) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (size_t stripe_id{0}; stripe_id < target_cfg.stripes_nr; ++stripe_id) {
+  for (auto stripe_id{0uz}; stripe_id < target_cfg.stripes_nr; ++stripe_id) {
     auto const stripe_buf{mm::make_unique_zeroed_bytes(stripe_sz)};
     auto const stripe_buf_span{
         std::as_writable_bytes(std::span{stripe_buf.get(), stripe_sz}),
@@ -55,7 +55,7 @@ TEST_P(StripeByStripe, Read) {
     ASSERT_THAT(stripe_buf_span,
                 Not(ElementsAreArray(stripe_storage_buf_span)));
 
-    for (size_t strip_id{0}; auto const &h : hs) {
+    for (auto strip_id{0uz}; auto const &h : hs) {
       auto const strip_storage_buf_span{
           stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz,
                                           target_cfg.strip_sz),
@@ -90,7 +90,7 @@ TEST_P(StripeByStripe, Write) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (size_t stripe_id{0}; stripe_id < target_cfg.stripes_nr; ++stripe_id) {
+  for (auto stripe_id{0uz}; stripe_id < target_cfg.stripes_nr; ++stripe_id) {
     auto const stripe_buf{mm::make_unique_random_bytes(stripe_sz)};
     auto const stripe_buf_span{
         std::as_bytes(std::span{stripe_buf.get(), stripe_sz}),
@@ -103,7 +103,7 @@ TEST_P(StripeByStripe, Write) {
     ASSERT_THAT(stripe_buf_span,
                 Not(ElementsAreArray(stripe_storage_buf_span)));
 
-    for (size_t strip_id{0}; auto const &h : hs) {
+    for (auto strip_id{0uz}; auto const &h : hs) {
       auto const strip_storage_buf_span{
           stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz,
                                           target_cfg.strip_sz),
@@ -131,24 +131,24 @@ INSTANTIATE_TEST_SUITE_P(RAID0, StripeByStripe,
                              StripeByStripeParam{
                                  .target_cfg =
                                      {
-                                         .strip_sz = 512,
-                                         .strips_per_stripe_nr = 2,
-                                         .stripes_nr = 4,
+                                         .strip_sz = 512uz,
+                                         .strips_per_stripe_nr = 2uz,
+                                         .stripes_nr = 4uz,
                                      },
                              },
                              StripeByStripeParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 4_KiB,
-                                         .strips_per_stripe_nr = 1,
-                                         .stripes_nr = 10,
+                                         .strips_per_stripe_nr = 1uz,
+                                         .stripes_nr = 10uz,
                                      },
                              },
                              StripeByStripeParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 128_KiB,
-                                         .strips_per_stripe_nr = 8,
-                                         .stripes_nr = 6,
+                                         .strips_per_stripe_nr = 8uz,
+                                         .stripes_nr = 6uz,
                                      },
                              }));

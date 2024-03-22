@@ -57,7 +57,7 @@ TEST_P(ChunkByChunk, Read) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (size_t off{param.start_off}, end_off{raid_storage_sz + param.nend_off};
+  for (auto off{param.start_off}, end_off{raid_storage_sz + param.nend_off};
        off < end_off; off += param.chunk_sz) {
     auto const chunk_sz{
         std::min({param.chunk_sz, stripe_sz, end_off - off}),
@@ -74,7 +74,7 @@ TEST_P(ChunkByChunk, Read) {
     ASSERT_THAT(chunk_buf_span,
                 Not(ElementsAreArray(chunk_raid_storage_buf_span)));
 
-    for (size_t chunk_off{0}; chunk_off < chunk_buf_span.size();) {
+    for (auto chunk_off{0uz}; chunk_off < chunk_buf_span.size();) {
       auto const req_off{off + chunk_off};
       auto const strip_off{req_off % target_cfg.strip_sz};
       auto const req_sz{
@@ -131,7 +131,7 @@ TEST_P(ChunkByChunk, Write) {
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
   auto const end_off{raid_storage_sz + param.nend_off};
-  for (size_t off{param.start_off}; off < end_off; off += param.chunk_sz) {
+  for (auto off{param.start_off}; off < end_off; off += param.chunk_sz) {
     auto const chunk_sz{
         std::min({param.chunk_sz, stripe_sz, end_off - off}),
     };
@@ -147,7 +147,7 @@ TEST_P(ChunkByChunk, Write) {
     ASSERT_THAT(chunk_buf_span,
                 Not(ElementsAreArray(chunk_raid_storage_buf_span)));
 
-    for (size_t chunk_off{0}; chunk_off < chunk_buf_span.size();) {
+    for (auto chunk_off{0uz}; chunk_off < chunk_buf_span.size();) {
       auto const req_off{off + chunk_off};
       auto const strip_off{req_off % target_cfg.strip_sz};
       auto const req_sz{
@@ -188,31 +188,31 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                              ChunkByChunkParam{
                                  .target_cfg =
                                      {
-                                         .strip_sz = 512,
-                                         .strips_per_stripe_nr = 2,
-                                         .stripes_nr = 4,
+                                         .strip_sz = 512uz,
+                                         .strips_per_stripe_nr = 2uz,
+                                         .stripes_nr = 4uz,
                                      },
-                                 .start_off = 0,
-                                 .nend_off = 0,
-                                 .chunk_sz = 512,
+                                 .start_off = 0uz,
+                                 .nend_off = 0z,
+                                 .chunk_sz = 512uz,
                              },
                              ChunkByChunkParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 4_KiB,
-                                         .strips_per_stripe_nr = 3,
-                                         .stripes_nr = 10,
+                                         .strips_per_stripe_nr = 3uz,
+                                         .stripes_nr = 10uz,
                                      },
-                                 .start_off = 512,
-                                 .nend_off = -512,
+                                 .start_off = 512uz,
+                                 .nend_off = -512z,
                                  .chunk_sz = 1_KiB,
                              },
                              ChunkByChunkParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 4_KiB,
-                                         .strips_per_stripe_nr = 3,
-                                         .stripes_nr = 10,
+                                         .strips_per_stripe_nr = 3uz,
+                                         .stripes_nr = 10uz,
                                      },
                                  .start_off = 3_KiB,
                                  .nend_off = -static_cast<ssize_t>(1_KiB),
