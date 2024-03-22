@@ -24,6 +24,7 @@ namespace {
 
 struct ChunkByChunkParam {
   ut::raid0::target_cfg target_cfg;
+  size_t stripes_nr;
   size_t start_off;
   ssize_t nend_off;
   size_t chunk_sz;
@@ -44,8 +45,7 @@ TEST_P(ChunkByChunk, Read) {
   };
 
   auto const raid_storage_sz{
-      target_cfg.strip_sz * target_cfg.strips_per_stripe_nr *
-          target_cfg.stripes_nr,
+      target_cfg.strip_sz * target_cfg.strips_per_stripe_nr * param.stripes_nr,
   };
   auto const raid_storage_buf{
       std::unique_ptr<std::byte const[]>(
@@ -119,8 +119,7 @@ TEST_P(ChunkByChunk, Write) {
   };
 
   auto const raid_storage_sz{
-      target_cfg.strip_sz * target_cfg.strips_per_stripe_nr *
-          target_cfg.stripes_nr,
+      target_cfg.strip_sz * target_cfg.strips_per_stripe_nr * param.stripes_nr,
   };
   auto const raid_storage_buf{mm::make_unique_zeroed_bytes(raid_storage_sz)};
   auto const raid_storage_buf_span{
@@ -190,8 +189,8 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                      {
                                          .strip_sz = 512uz,
                                          .strips_per_stripe_nr = 2uz,
-                                         .stripes_nr = 4uz,
                                      },
+                                 .stripes_nr = 4uz,
                                  .start_off = 0uz,
                                  .nend_off = 0z,
                                  .chunk_sz = 512uz,
@@ -201,8 +200,8 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                      {
                                          .strip_sz = 4_KiB,
                                          .strips_per_stripe_nr = 3uz,
-                                         .stripes_nr = 10uz,
                                      },
+                                 .stripes_nr = 10uz,
                                  .start_off = 512uz,
                                  .nend_off = -512z,
                                  .chunk_sz = 1_KiB,
@@ -212,8 +211,8 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                      {
                                          .strip_sz = 4_KiB,
                                          .strips_per_stripe_nr = 3uz,
-                                         .stripes_nr = 10uz,
                                      },
+                                 .stripes_nr = 10uz,
                                  .start_off = 3_KiB,
                                  .nend_off = -static_cast<ssize_t>(1_KiB),
                                  .chunk_sz = 6_KiB,

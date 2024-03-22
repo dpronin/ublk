@@ -19,7 +19,6 @@ namespace ublk::ut::raid0 {
 struct target_cfg {
   size_t strip_sz;
   size_t strips_per_stripe_nr;
-  size_t stripes_nr;
 };
 
 template <typename ParamType>

@@ -24,6 +24,7 @@ namespace {
 
 struct StripeByStripeParam {
   ut::raid0::target_cfg target_cfg;
+  size_t stripes_nr;
 };
 
 class StripeByStripe : public ut::raid0::Base<StripeByStripeParam> {};
@@ -42,7 +43,7 @@ TEST_P(StripeByStripe, Read) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (auto stripe_id{0uz}; stripe_id < target_cfg.stripes_nr; ++stripe_id) {
+  for (auto stripe_id{0uz}; stripe_id < param.stripes_nr; ++stripe_id) {
     auto const stripe_buf{mm::make_unique_zeroed_bytes(stripe_sz)};
     auto const stripe_buf_span{
         std::as_writable_bytes(std::span{stripe_buf.get(), stripe_sz}),
@@ -90,7 +91,7 @@ TEST_P(StripeByStripe, Write) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (auto stripe_id{0uz}; stripe_id < target_cfg.stripes_nr; ++stripe_id) {
+  for (auto stripe_id{0uz}; stripe_id < param.stripes_nr; ++stripe_id) {
     auto const stripe_buf{mm::make_unique_random_bytes(stripe_sz)};
     auto const stripe_buf_span{
         std::as_bytes(std::span{stripe_buf.get(), stripe_sz}),
@@ -133,22 +134,22 @@ INSTANTIATE_TEST_SUITE_P(RAID0, StripeByStripe,
                                      {
                                          .strip_sz = 512uz,
                                          .strips_per_stripe_nr = 2uz,
-                                         .stripes_nr = 4uz,
                                      },
+                                 .stripes_nr = 4uz,
                              },
                              StripeByStripeParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 4_KiB,
                                          .strips_per_stripe_nr = 1uz,
-                                         .stripes_nr = 10uz,
                                      },
+                                 .stripes_nr = 10uz,
                              },
                              StripeByStripeParam{
                                  .target_cfg =
                                      {
                                          .strip_sz = 128_KiB,
                                          .strips_per_stripe_nr = 8uz,
-                                         .stripes_nr = 6uz,
                                      },
+                                 .stripes_nr = 6uz,
                              }));
