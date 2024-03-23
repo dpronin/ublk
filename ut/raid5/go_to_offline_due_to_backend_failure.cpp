@@ -106,7 +106,7 @@ TEST_F(RAID5_OnlineToOfflineTransition,
 }
 
 TEST_F(RAID5_OnlineToOfflineTransition,
-       GoToOfflineDueToBackendFailureAtSubmitWrite) {
+       GoToOfflineDueToBackendFailureAtSubmitDataWrite) {
   auto buf{
       std::unique_ptr<std::byte const[]>{
           mm::make_unique_for_overwrite_bytes(this->kStripeDataSz),
@@ -136,7 +136,39 @@ TEST_F(RAID5_OnlineToOfflineTransition,
 }
 
 TEST_F(RAID5_OnlineToOfflineTransition,
-       GoToOfflineDueToBackendFailureAtCompleteWrite) {
+       GoToOfflineDueToBackendFailureAtSubmitParityWrite) {
+  auto buf{
+      std::unique_ptr<std::byte const[]>{
+          mm::make_unique_for_overwrite_bytes(this->kStripeDataSz),
+      },
+  };
+  auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
+
+  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce(Return(0));
+  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce(Return(0));
+  EXPECT_CALL(*hs_[2], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce(Return(EIO));
+
+  auto const r1{
+      target_->process(write_query::create(
+          buf_span, 0, [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+  };
+  EXPECT_EQ(r1, EIO);
+
+  EXPECT_STRCASEEQ(target_->state().c_str(), "offline");
+
+  auto const r2{
+      target_->process(write_query::create(
+          buf_span.subspan(0, this->kStripSz), 0,
+          [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+  };
+  EXPECT_EQ(r2, EIO);
+}
+
+TEST_F(RAID5_OnlineToOfflineTransition,
+       GoToOfflineDueToBackendFailureAtCompleteDataWrite) {
   auto buf{
       std::unique_ptr<std::byte const[]>{
           mm::make_unique_for_overwrite_bytes(this->kStripeDataSz),
@@ -154,6 +186,43 @@ TEST_F(RAID5_OnlineToOfflineTransition,
       });
   EXPECT_CALL(*hs_[2], submit(An<std::shared_ptr<write_query>>()))
       .WillOnce(Return(0));
+
+  auto const r1{
+      target_->process(write_query::create(
+          buf_span, 0,
+          [](write_query const &wq) { EXPECT_EQ(wq.err(), EIO); })),
+  };
+  EXPECT_EQ(r1, 0);
+
+  EXPECT_STRCASEEQ(target_->state().c_str(), "offline");
+
+  auto const r2{
+      target_->process(write_query::create(
+          buf_span.subspan(0, this->kStripSz), 0,
+          [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+  };
+  EXPECT_EQ(r2, EIO);
+}
+
+TEST_F(RAID5_OnlineToOfflineTransition,
+       GoToOfflineDueToBackendFailureAtCompleteParityWrite) {
+  auto buf{
+      std::unique_ptr<std::byte const[]>{
+          mm::make_unique_for_overwrite_bytes(this->kStripeDataSz),
+      },
+  };
+  auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
+
+  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce(Return(0));
+  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce(Return(0));
+  EXPECT_CALL(*hs_[2], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce([](std::shared_ptr<write_query> wq) {
+        EXPECT_TRUE(wq);
+        wq->set_err(EIO);
+        return 0;
+      });
 
   auto const r1{
       target_->process(write_query::create(
