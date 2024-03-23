@@ -29,7 +29,7 @@ public:
     auto r{std::string{}};
 
     fsm_.visit_current_states([&r](auto s) {
-      r = s.c_str();
+      r += s.c_str();
       r.push_back(',');
     });
     r.pop_back();
