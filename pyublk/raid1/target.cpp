@@ -83,6 +83,8 @@ Target::Target(uint64_t read_strip_sz,
                std::vector<std::shared_ptr<IRWHandler>> hs)
     : pimpl_(std::make_unique<impl>(read_strip_sz, std::move(hs))) {}
 
+std::string Target::state() const { return pimpl_->state(); }
+
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
   return pimpl_->process(std::move(rq));
 }
