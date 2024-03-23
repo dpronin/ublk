@@ -23,7 +23,10 @@ namespace ublk::raid0 {
 class Target::impl final {
 public:
   explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
-      : be_(std::make_unique<backend>(strip_sz, std::move(hs))), fsm_(*be_) {}
+      : ctx_{
+          .be = std::make_unique<backend>(strip_sz, std::move(hs)),
+        },
+        fsm_(ctx_) {}
 
   std::string state() const {
     auto r{std::string{}};
@@ -74,7 +77,7 @@ public:
   }
 
 private:
-  std::unique_ptr<backend> be_;
+  fsm::ctx ctx_;
   boost::sml::sm<fsm::transition_table, boost::sml::process_queue<std::queue>>
       fsm_;
 };
