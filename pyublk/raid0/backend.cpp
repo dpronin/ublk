@@ -11,6 +11,7 @@
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
+#include "utils/align.hpp"
 #include "utils/utility.hpp"
 
 namespace ublk::raid0 {
