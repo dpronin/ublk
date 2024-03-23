@@ -32,8 +32,8 @@ protected:
 
   void SetUp() override {
     hs_.resize(kStripsInStripeNr);
-    std::ranges::generate(hs_,
-                          [] { return std::make_shared<ut::MockRWHandler>(); });
+    std::ranges::generate(
+        hs_, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
     be_ = std::make_unique<ublk::raid0::backend>(kStripSz, hs_);
   }
 
@@ -54,6 +54,7 @@ TEST_F(RAID0_BackendFailure, FailureAtFirstStripOfFullStripeRead) {
 
   EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
       .WillOnce(Return(EIO));
+  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<read_query>>())).Times(0);
 
   auto const r{be_->process(read_query::create(buf_span, 0))};
   EXPECT_EQ(r, EIO);
@@ -82,6 +83,7 @@ TEST_F(RAID0_BackendFailure, FailureAtFirstStripOfFullStripeWrite) {
 
   EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
       .WillOnce(Return(EIO));
+  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>())).Times(0);
 
   auto const r{be_->process(write_query::create(buf_span, 0))};
   EXPECT_EQ(r, EIO);
