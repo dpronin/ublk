@@ -25,7 +25,7 @@ using namespace testing;
 
 namespace {
 
-class RAID0 : public Test {
+class RAID0_OnlineToOfflineTransition : public Test {
 protected:
   static constexpr auto kStripSz{4_KiB};
   static constexpr auto kStripsInStripeNr{2};
@@ -49,7 +49,8 @@ protected:
 
 } // namespace
 
-TEST_F(RAID0, OfflineDueToBackendFailureAtSubmitRead) {
+TEST_F(RAID0_OnlineToOfflineTransition,
+       GoToOfflineDueToBackendFailureAtSubmitRead) {
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
@@ -74,7 +75,8 @@ TEST_F(RAID0, OfflineDueToBackendFailureAtSubmitRead) {
   EXPECT_EQ(r2, EIO);
 }
 
-TEST_F(RAID0, OfflineDueToBackendFailureAtCompleteRead) {
+TEST_F(RAID0_OnlineToOfflineTransition,
+       GoToOfflineDueToBackendFailureAtCompleteRead) {
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
@@ -103,7 +105,8 @@ TEST_F(RAID0, OfflineDueToBackendFailureAtCompleteRead) {
   EXPECT_EQ(r2, EIO);
 }
 
-TEST_F(RAID0, OfflineDueToBackendFailureAtSubmitWrite) {
+TEST_F(RAID0_OnlineToOfflineTransition,
+       GoToOfflineDueToBackendFailureAtSubmitWrite) {
   auto buf{
       std::unique_ptr<std::byte const[]>{
           mm::make_unique_for_overwrite_bytes(this->kStripeSz),
@@ -132,7 +135,8 @@ TEST_F(RAID0, OfflineDueToBackendFailureAtSubmitWrite) {
   EXPECT_EQ(r2, EIO);
 }
 
-TEST_F(RAID0, OfflineDueToBackendFailureAtCompleteWrite) {
+TEST_F(RAID0_OnlineToOfflineTransition,
+       GoToOfflineDueToBackendFailureAtCompleteWrite) {
   auto buf{
       std::unique_ptr<std::byte const[]>{
           mm::make_unique_for_overwrite_bytes(this->kStripeSz),
