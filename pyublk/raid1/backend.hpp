@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <memory>
+#include <ranges>
 #include <vector>
 
 #include "mm/mem_types.hpp"
@@ -18,8 +19,7 @@ class backend final {
 public:
   explicit backend(uint64_t read_strip_sz,
                    std::vector<std::shared_ptr<IRWHandler>> hs) noexcept;
-  template <std::ranges::input_range Range>
-  explicit backend(uint64_t read_strip_sz, Range &&hs)
+  explicit backend(uint64_t read_strip_sz, std::ranges::input_range auto &&hs)
       : backend(read_strip_sz, {std::ranges::begin(hs), std::ranges::end(hs)}) {
   }
 

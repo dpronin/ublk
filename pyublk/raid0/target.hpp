@@ -18,8 +18,7 @@ public:
   explicit Target(uint64_t strip_sz,
                   std::vector<std::shared_ptr<IRWHandler>> hs);
 
-  template <std::ranges::input_range Range>
-  explicit Target(uint64_t strip_sz, Range &&hs)
+  explicit Target(uint64_t strip_sz, std::ranges::input_range auto &&hs)
       : Target(strip_sz, {std::ranges::begin(hs), std::ranges::end(hs)}) {}
 
   ~Target() noexcept;
