@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <memory>
 #include <span>
+#include <vector>
 
 #include "mm/mem.hpp"
 
