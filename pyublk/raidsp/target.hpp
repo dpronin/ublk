@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "read_query.hpp"
@@ -16,6 +17,13 @@ public:
   explicit Target(
       uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs,
       std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id);
+
+  explicit Target(
+      uint64_t strip_sz, std::ranges::input_range auto &&hs,
+      std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id)
+      : Target(strip_sz, {std::ranges::begin(hs), std::ranges::end(hs)},
+               std::move(stripe_id_to_parity_id)) {}
+
   ~Target() noexcept;
 
   Target(Target const &) = delete;
@@ -23,6 +31,8 @@ public:
 
   Target(Target &&) noexcept;
   Target &operator=(Target &&) noexcept;
+
+  std::string state() const;
 
   bool is_stripe_parity_coherent(uint64_t stripe_id) const noexcept;
 

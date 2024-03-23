@@ -30,26 +30,42 @@ struct stripecohcheck {
   mutable bool r;
 };
 
+struct fail {};
+
 } // namespace ev
 
-/* clang-format off */
 struct transition_table {
   auto operator()() noexcept {
     using namespace boost::sml;
     return make_transition_table(
-       // online state
-       *"online"_s + event<ev::rq> [ ([](ev::rq const &e, acceptor& acc){ e.r = acc.process(std::move(e.rq)); return 0 == e.r; }) ]
-      , "online"_s + event<ev::rq> = "offline"_s
-      , "online"_s + event<ev::wq> [ ([](ev::wq const &e, acceptor& acc){ e.r = acc.process(std::move(e.wq)); return 0 == e.r; }) ]
-      , "online"_s + event<ev::wq> = "offline"_s
-      , "online"_s + event<ev::stripecohcheck> / [](ev::stripecohcheck const &e, acceptor const& r) { e.r = r.is_stripe_parity_coherent(e.stripe_id); }
-       // offline state
-      , "offline"_s + event<ev::rq> / [](ev::rq const &e) { e.r = EIO; }
-      , "offline"_s + event<ev::wq> / [](ev::wq const &e) { e.r = EIO; }
-      , "offline"_s + event<ev::stripecohcheck> / [](ev::stripecohcheck const &e) { e.r = false; }
-    );
+        // online state
+        *"online"_s + event<ev::rq> /
+                          [](ev::rq const &e, acceptor &acc,
+                             back::process<ev::fail> process) {
+                            e.r = acc.process(e.rq);
+                            if (0 != e.r) [[unlikely]] {
+                              process(ev::fail{});
+                            }
+                          },
+        "online"_s + event<ev::wq> /
+                         [](ev::wq const &e, acceptor &acc,
+                            back::process<ev::fail> process) {
+                           e.r = acc.process(e.wq);
+                           if (0 != e.r) [[unlikely]] {
+                             process(ev::fail{});
+                           }
+                         },
+        "online"_s + event<ev::stripecohcheck> /
+                         [](ev::stripecohcheck const &e, acceptor const &r) {
+                           e.r = r.is_stripe_parity_coherent(e.stripe_id);
+                         },
+        "online"_s + event<ev::fail> = "offline"_s,
+        // offline state
+        "offline"_s + event<ev::rq> / [](ev::rq const &e) { e.r = EIO; },
+        "offline"_s + event<ev::wq> / [](ev::wq const &e) { e.r = EIO; },
+        "offline"_s + event<ev::stripecohcheck> /
+                          [](ev::stripecohcheck const &e) { e.r = false; });
   }
 };
-/* clang-format on */
 
 } // namespace ublk::raidsp::fsm
