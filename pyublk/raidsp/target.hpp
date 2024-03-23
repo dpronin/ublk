@@ -2,12 +2,15 @@
 
 #include <cstdint>
 
+#include <functional>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <vector>
 
-#include "read_query.hpp"
 #include "rw_handler_interface.hpp"
+
+#include "read_query.hpp"
 #include "write_query.hpp"
 
 namespace ublk::raidsp {
