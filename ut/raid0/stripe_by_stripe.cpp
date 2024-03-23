@@ -22,19 +22,19 @@ using namespace testing;
 
 namespace {
 
-struct StripeByStripeParam {
-  ut::raid0::target_cfg target_cfg;
+struct stripe_by_stripe_param {
+  ut::raid0::backend_cfg be_cfg;
   size_t stripes_nr;
 };
 
-class StripeByStripe : public ut::raid0::Base<StripeByStripeParam> {};
+class StripeByStripe : public ut::raid0::Base<stripe_by_stripe_param> {};
 
 } // namespace
 
 TEST_P(StripeByStripe, Read) {
   auto const &param{GetParam()};
 
-  auto const &target_cfg{param.target_cfg};
+  auto const &target_cfg{param.be_cfg};
 
   auto const hs{
       std::views::all(backend_ctxs_) |
@@ -72,7 +72,7 @@ TEST_P(StripeByStripe, Read) {
     }
 
     auto const res{
-        target_->process(read_query::create(
+        be_->process(read_query::create(
             stripe_buf_span, stripe_id * stripe_sz,
             [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
     };
@@ -86,7 +86,7 @@ TEST_P(StripeByStripe, Read) {
 TEST_P(StripeByStripe, Write) {
   auto const &param{GetParam()};
 
-  auto const &target_cfg{param.target_cfg};
+  auto const &target_cfg{param.be_cfg};
 
   auto const hs{
       std::views::all(backend_ctxs_) |
@@ -124,7 +124,7 @@ TEST_P(StripeByStripe, Write) {
     }
 
     auto const res{
-        target_->process(write_query::create(
+        be_->process(write_query::create(
             stripe_buf_span, stripe_id * stripe_sz,
             [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
     };
@@ -137,24 +137,24 @@ TEST_P(StripeByStripe, Write) {
 
 INSTANTIATE_TEST_SUITE_P(RAID0, StripeByStripe,
                          Values(
-                             StripeByStripeParam{
-                                 .target_cfg =
+                             stripe_by_stripe_param{
+                                 .be_cfg =
                                      {
                                          .strip_sz = 512uz,
                                          .strips_per_stripe_nr = 2uz,
                                      },
                                  .stripes_nr = 4uz,
                              },
-                             StripeByStripeParam{
-                                 .target_cfg =
+                             stripe_by_stripe_param{
+                                 .be_cfg =
                                      {
                                          .strip_sz = 4_KiB,
                                          .strips_per_stripe_nr = 1uz,
                                      },
                                  .stripes_nr = 10uz,
                              },
-                             StripeByStripeParam{
-                                 .target_cfg =
+                             stripe_by_stripe_param{
+                                 .be_cfg =
                                      {
                                          .strip_sz = 128_KiB,
                                          .strips_per_stripe_nr = 8uz,

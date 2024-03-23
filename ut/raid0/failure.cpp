@@ -50,24 +50,32 @@ protected:
 } // namespace
 
 TEST_F(RAID0, FailureAtSubmitRead) {
+  auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
+  auto buf_span{std::span{buf.get(), this->kStripeSz}};
+
   EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
       .WillOnce(Return(0));
   EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<read_query>>()))
       .WillOnce(Return(EIO));
 
-  auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
-  auto buf_span{std::span{buf.get(), this->kStripeSz}};
+  auto const r1{
+      target_->process(read_query::create(
+          buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
+  };
+  EXPECT_EQ(r1, EIO);
 
-  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
-    auto const res{
-        target_->process(read_query::create(
-            buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
-    };
-    EXPECT_EQ(res, EIO);
-  }
+  auto const r2{
+      target_->process(read_query::create(
+          buf_span.subspan(0, this->kStripSz), 0,
+          [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
+  };
+  EXPECT_EQ(r2, EIO);
 }
 
 TEST_F(RAID0, FailureAtCompleteRead) {
+  auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
+  auto buf_span{std::span{buf.get(), this->kStripeSz}};
+
   EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
       .WillOnce(Return(0));
   EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<read_query>>()))
@@ -77,30 +85,21 @@ TEST_F(RAID0, FailureAtCompleteRead) {
         return 0;
       });
 
-  auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
-  auto buf_span{std::span{buf.get(), this->kStripeSz}};
-
-  auto const res{
+  auto const r1{
       target_->process(read_query::create(
           buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), EIO); })),
   };
-  EXPECT_EQ(res, 0);
+  EXPECT_EQ(r1, 0);
 
-  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
-    auto const res{
-        target_->process(read_query::create(
-            buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
-    };
-    EXPECT_EQ(res, EIO);
-  }
+  auto const r2{
+      target_->process(read_query::create(
+          buf_span.subspan(0, this->kStripSz), 0,
+          [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
+  };
+  EXPECT_EQ(r2, EIO);
 }
 
 TEST_F(RAID0, FailureAtSubmitWrite) {
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
-      .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
-      .WillOnce(Return(EIO));
-
   auto buf{
       std::unique_ptr<std::byte const[]>{
           mm::make_unique_for_overwrite_bytes(this->kStripeSz),
@@ -108,17 +107,33 @@ TEST_F(RAID0, FailureAtSubmitWrite) {
   };
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
-  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
-    auto const res{
-        target_->process(write_query::create(
-            buf_span, 0,
-            [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
-    };
-    EXPECT_EQ(res, EIO);
-  }
+  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce(Return(0));
+  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+      .WillOnce(Return(EIO));
+
+  auto const r1{
+      target_->process(write_query::create(
+          buf_span, 0, [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+  };
+  EXPECT_EQ(r1, EIO);
+
+  auto const r2{
+      target_->process(write_query::create(
+          buf_span.subspan(0, this->kStripSz), 0,
+          [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+  };
+  EXPECT_EQ(r2, EIO);
 }
 
 TEST_F(RAID0, FailureAtCompleteWrite) {
+  auto buf{
+      std::unique_ptr<std::byte const[]>{
+          mm::make_unique_for_overwrite_bytes(this->kStripeSz),
+      },
+  };
+  auto buf_span{std::span{buf.get(), this->kStripeSz}};
+
   EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
       .WillOnce(Return(0));
   EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
@@ -128,26 +143,17 @@ TEST_F(RAID0, FailureAtCompleteWrite) {
         return 0;
       });
 
-  auto buf{
-      std::unique_ptr<std::byte const[]>{
-          mm::make_unique_for_overwrite_bytes(this->kStripeSz),
-      },
-  };
-  auto buf_span{std::span{buf.get(), this->kStripeSz}};
-
-  auto const res{
+  auto const r1{
       target_->process(write_query::create(
           buf_span, 0,
           [](write_query const &wq) { EXPECT_EQ(wq.err(), EIO); })),
   };
-  EXPECT_EQ(res, 0);
+  EXPECT_EQ(r1, 0);
 
-  for (auto i [[maybe_unused]] : std::views::iota(0, 2)) {
-    auto const res{
-        target_->process(write_query::create(
-            buf_span, 0,
-            [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
-    };
-    EXPECT_EQ(res, EIO);
-  }
+  auto const r2{
+      target_->process(write_query::create(
+          buf_span.subspan(0, this->kStripSz), 0,
+          [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
+  };
+  EXPECT_EQ(r2, EIO);
 }

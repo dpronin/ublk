@@ -4,6 +4,7 @@
 
 #include <concepts>
 #include <memory>
+#include <ranges>
 #include <vector>
 
 #include "mm/mem_types.hpp"
@@ -16,6 +17,10 @@ class backend final {
 public:
   explicit backend(uint64_t strip_sz,
                    std::vector<std::shared_ptr<IRWHandler>> hs);
+  template <std::ranges::input_range Range>
+  explicit backend(uint64_t strip_sz, Range &&hs)
+      : backend(strip_sz, {std::ranges::begin(hs), std::ranges::end(hs)}) {}
+
   ~backend() noexcept;
 
   backend(backend const &) = delete;

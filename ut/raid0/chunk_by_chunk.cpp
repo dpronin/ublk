@@ -22,22 +22,22 @@ using namespace testing;
 
 namespace {
 
-struct ChunkByChunkParam {
-  ut::raid0::target_cfg target_cfg;
+struct chunk_by_chunk_param {
+  ut::raid0::backend_cfg be_cfg;
   size_t stripes_nr;
   size_t start_off;
   ssize_t nend_off;
   size_t chunk_sz;
 };
 
-class ChunkByChunk : public ut::raid0::Base<ChunkByChunkParam> {};
+class ChunkByChunk : public ut::raid0::Base<chunk_by_chunk_param> {};
 
 } // namespace
 
 TEST_P(ChunkByChunk, Read) {
   auto const &param{GetParam()};
 
-  auto const &target_cfg{param.target_cfg};
+  auto const &target_cfg{param.be_cfg};
 
   auto const hs{
       std::views::all(backend_ctxs_) |
@@ -100,7 +100,7 @@ TEST_P(ChunkByChunk, Read) {
     }
 
     auto const res{
-        target_->process(read_query::create(
+        be_->process(read_query::create(
             chunk_buf_span, off,
             [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
     };
@@ -114,7 +114,7 @@ TEST_P(ChunkByChunk, Read) {
 TEST_P(ChunkByChunk, Write) {
   auto const &param{GetParam()};
 
-  auto const &target_cfg{param.target_cfg};
+  auto const &target_cfg{param.be_cfg};
 
   auto const hs{
       std::views::all(backend_ctxs_) |
@@ -175,7 +175,7 @@ TEST_P(ChunkByChunk, Write) {
     }
 
     auto const res{
-        target_->process(write_query::create(
+        be_->process(write_query::create(
             chunk_buf_span, off,
             [](write_query const &wq) { EXPECT_EQ(wq.err(), 0); })),
     };
@@ -190,8 +190,8 @@ TEST_P(ChunkByChunk, Write) {
 
 INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                          Values(
-                             ChunkByChunkParam{
-                                 .target_cfg =
+                             chunk_by_chunk_param{
+                                 .be_cfg =
                                      {
                                          .strip_sz = 512uz,
                                          .strips_per_stripe_nr = 2uz,
@@ -201,8 +201,8 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                  .nend_off = 0z,
                                  .chunk_sz = 512uz,
                              },
-                             ChunkByChunkParam{
-                                 .target_cfg =
+                             chunk_by_chunk_param{
+                                 .be_cfg =
                                      {
                                          .strip_sz = 4_KiB,
                                          .strips_per_stripe_nr = 3uz,
@@ -212,8 +212,8 @@ INSTANTIATE_TEST_SUITE_P(RAID0, ChunkByChunk,
                                  .nend_off = -512z,
                                  .chunk_sz = 1_KiB,
                              },
-                             ChunkByChunkParam{
-                                 .target_cfg =
+                             chunk_by_chunk_param{
+                                 .be_cfg =
                                      {
                                          .strip_sz = 4_KiB,
                                          .strips_per_stripe_nr = 3uz,

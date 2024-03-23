@@ -12,11 +12,11 @@
 
 #include "helpers.hpp"
 
-#include "raid0/target.hpp"
+#include "raid0/backend.hpp"
 
 namespace ublk::ut::raid0 {
 
-struct target_cfg {
+struct backend_cfg {
   size_t strip_sz;
   size_t strips_per_stripe_nr;
 };
@@ -27,9 +27,9 @@ protected:
   void SetUp() override {
     auto const &param{this->GetParam()};
 
-    auto const &target_cfg{param.target_cfg};
+    auto const &be_cfg{param.be_cfg};
 
-    backend_ctxs_.resize(target_cfg.strips_per_stripe_nr);
+    backend_ctxs_.resize(be_cfg.strips_per_stripe_nr);
     std::ranges::generate(backend_ctxs_, [] -> backend_ctx {
       return {
           .h = std::make_shared<ut::MockRWHandler>(),
@@ -41,11 +41,11 @@ protected:
             std::views::transform([](auto const &hs_ctx) { return hs_ctx.h; }),
     };
 
-    target_ = std::make_unique<ublk::raid0::Target>(target_cfg.strip_sz, hs);
+    be_ = std::make_unique<ublk::raid0::backend>(be_cfg.strip_sz, hs);
   }
 
   void TearDown() override {
-    target_.reset();
+    be_.reset();
     backend_ctxs_.clear();
   }
 
@@ -54,7 +54,7 @@ protected:
   };
   std::vector<backend_ctx> backend_ctxs_;
 
-  std::unique_ptr<ublk::raid0::Target> target_;
+  std::unique_ptr<ublk::raid0::backend> be_;
 };
 
 } // namespace ublk::ut::raid0
