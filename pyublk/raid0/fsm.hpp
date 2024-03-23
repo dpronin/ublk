@@ -40,7 +40,7 @@ struct transition_table {
                             e.r = r.process(e.rq);
                             if (0 != e.r) [[unlikely]] {
                               process(ev::fail{});
-                            };
+                            }
                           },
         "online"_s + event<ev::rq> = "offline"_s,
         "online"_s + event<ev::wq> /
@@ -49,7 +49,7 @@ struct transition_table {
                            e.r = r.process(e.wq);
                            if (0 != e.r) [[unlikely]] {
                              process(ev::fail{});
-                           };
+                           }
                          },
         "online"_s + event<ev::wq> = "offline"_s,
         "online"_s + event<ev::fail> = "offline"_s,
