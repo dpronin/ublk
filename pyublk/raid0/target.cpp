@@ -25,15 +25,15 @@ public:
       : be_(std::make_unique<backend>(strip_sz, std::move(hs))), fsm_(*be_) {}
 
   std::string state() const {
-    auto res{std::string{}};
+    auto r{std::string{}};
 
-    fsm_.visit_current_states([&res](auto s) {
-      res = s.c_str();
-      res.push_back(',');
+    fsm_.visit_current_states([&r](auto s) {
+      r = s.c_str();
+      r.push_back(',');
     });
-    res.pop_back();
+    r.pop_back();
 
-    return res;
+    return r;
   }
 
   int process(std::shared_ptr<read_query> rq) noexcept {
@@ -48,7 +48,7 @@ public:
                           }
                         });
 
-    fsm::ev::rq e{.rq = rq, .r = 0};
+    fsm::ev::rq e{.rq = std::move(rq), .r = 0};
     fsm_.process_event(e);
 
     return e.r;
@@ -66,7 +66,7 @@ public:
                           }
                         });
 
-    fsm::ev::wq e{.wq = wq, .r = 0};
+    fsm::ev::wq e{.wq = std::move(wq), .r = 0};
     fsm_.process_event(e);
 
     return e.r;
