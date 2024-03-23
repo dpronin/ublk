@@ -43,7 +43,7 @@ TEST_P(StripeByStripe, Read) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (auto stripe_id{0uz}; stripe_id < param.stripes_nr; ++stripe_id) {
+  for (auto stripe_id : std::views::iota(0uz, param.stripes_nr)) {
     auto const stripe_buf{mm::make_unique_zeroed_bytes(stripe_sz)};
     auto const stripe_buf_span{
         std::as_writable_bytes(std::span{stripe_buf.get(), stripe_sz}),
@@ -95,7 +95,7 @@ TEST_P(StripeByStripe, Write) {
 
   auto const stripe_sz{target_cfg.strip_sz * target_cfg.strips_per_stripe_nr};
 
-  for (auto stripe_id{0uz}; stripe_id < param.stripes_nr; ++stripe_id) {
+  for (auto stripe_id : std::views::iota(0uz, param.stripes_nr)) {
     auto const stripe_buf{mm::make_unique_random_bytes(stripe_sz)};
     auto const stripe_buf_span{
         std::as_bytes(std::span{stripe_buf.get(), stripe_sz}),

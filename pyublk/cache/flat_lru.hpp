@@ -106,15 +106,14 @@ private:
     };
   }
 
-  std::pair<size_t, size_t>
-  range_find(std::pair<Key, Key> range) const noexcept {
+  auto range_find(std::pair<Key, Key> range) const noexcept {
     assert(!(range.first > range.second));
     auto const first =
         std::ranges::lower_bound(cache_, range.first, keys_cmp{}, key_proj);
     auto const last =
         std::ranges::upper_bound(std::ranges::subrange{first, cache_.end()},
                                  range.second, keys_cmp{}, key_proj);
-    return {first - cache_.begin(), last - cache_.begin()};
+    return std::views::iota(first - cache_.begin(), last - cache_.begin());
   }
 
 public:
@@ -155,7 +154,7 @@ public:
 
           size_t evict_index{0};
           if (is_valid(cache_[evict_index])) {
-            for (size_t i = 1; i < cache_.size(); ++i) {
+            for (auto i : std::views::iota(1uz, cache_.size())) {
               if (cache_[evict_index].second.refs < cache_[i].second.refs) {
                 evict_index = i;
                 if (!is_valid(cache_[evict_index]))
@@ -210,8 +209,8 @@ public:
   }
 
   void invalidate_range(std::pair<Key, Key> range) noexcept {
-    for (auto [findex, lindex] = range_find(range); findex < lindex; ++findex)
-      invalidate(cache_[findex]);
+    for (auto index : range_find(range))
+      invalidate(cache_[index]);
   }
 
 private:

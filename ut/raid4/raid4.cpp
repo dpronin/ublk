@@ -109,7 +109,7 @@ TEST_P(RAID4, TestWriting) {
     EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 
-  for (size_t i = 0; i < param.strip_sz; ++i) {
+  for (auto i : std::views::iota(0uz, param.strip_sz)) {
     EXPECT_EQ(std::reduce(storage_spans.begin(), storage_spans.end() - 1,
                           storage_spans.end()[-1][i],
                           [i, op = std::bit_xor<>{}](auto &&arg1, auto &&arg2) {

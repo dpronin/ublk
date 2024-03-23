@@ -53,7 +53,8 @@ TEST_P(RAID1, TestReading) {
   auto tgt{
       ublk::raid1::Target{param.read_block_per_hs_sz, {hs.begin(), hs.end()}},
   };
-  for (size_t i = 0; i < hs.size(); ++i) {
+
+  for (auto i : std::views::iota(0uz, hs.size())) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times(reads_nr / hs.size() + (i < (reads_nr % hs.size())))
         .WillRepeatedly(ut::make_inmem_reader(storage_spans[i]));

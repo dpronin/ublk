@@ -50,7 +50,7 @@ TEST_P(RAID5, TestReading) {
   auto const parity_full_cycles{param.stripes_nr / hs.size()};
   auto const parity_cycle_rem{param.stripes_nr % hs.size()};
 
-  for (size_t i = 0; i < hs.size(); ++i) {
+  for (auto i : std::views::iota(0uz, hs.size())) {
     EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
         .Times((hs.size() - 1) * parity_full_cycles + parity_cycle_rem -
                !(i < (hs.size() - parity_cycle_rem)))
@@ -128,7 +128,7 @@ TEST_P(RAID5, TestWriting) {
     EXPECT_THAT(s1, ElementsAreArray(s2));
   }
 
-  for (size_t i = 0; i < param.strip_sz; ++i) {
+  for (auto i : std::views::iota(0uz, param.strip_sz)) {
     EXPECT_EQ(std::reduce(storage_spans.begin(), storage_spans.end() - 1,
                           storage_spans.end()[-1][i],
                           [i, op = std::bit_xor<>{}](auto &&arg1, auto &&arg2) {
