@@ -6,8 +6,8 @@
 
 namespace ublk {
 
-constexpr inline uint64_t kSectorShift = 9;
-constexpr inline uint64_t kSectorSz = 1 << kSectorShift;
+constexpr inline auto kSectorShift{UINT64_C(9)};
+constexpr inline auto kSectorSz{UINT64_C(1) << kSectorShift};
 
 constexpr auto sectors_to_bytes(std::unsigned_integral auto x) noexcept {
   return x << kSectorShift;
