@@ -29,23 +29,34 @@ struct fail {};
 
 } // namespace ev
 
-/* clang-format off */
 struct transition_table {
   auto operator()() noexcept {
     using namespace boost::sml;
     return make_transition_table(
-       // online state
-       *"online"_s + event<ev::rq> [ ([](ev::rq const &e, backend& r){ e.r = r.process(std::move(e.rq)); return 0 == e.r; }) ]
-      , "online"_s + event<ev::rq> = "offline"_s
-      , "online"_s + event<ev::wq> [ ([](ev::wq const &e, backend& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
-      , "online"_s + event<ev::wq> = "offline"_s
-      , "online"_s + event<ev::fail> = "offline"_s
-       // offline state
-      , "offline"_s + event<ev::rq> / [](ev::rq const &e) { e.r = EIO; }
-      , "offline"_s + event<ev::wq> / [](ev::wq const &e) { e.r = EIO; }
-    );
+        // online state
+        *"online"_s + event<ev::rq> /
+                          [](ev::rq const &e, backend &r,
+                             back::process<ev::fail> process) {
+                            e.r = r.process(e.rq);
+                            if (0 != e.r) [[unlikely]] {
+                              process(ev::fail{});
+                            };
+                          },
+        "online"_s + event<ev::rq> = "offline"_s,
+        "online"_s + event<ev::wq> /
+                         [](ev::wq const &e, backend &r,
+                            back::process<ev::fail> process) {
+                           e.r = r.process(e.wq);
+                           if (0 != e.r) [[unlikely]] {
+                             process(ev::fail{});
+                           };
+                         },
+        "online"_s + event<ev::wq> = "offline"_s,
+        "online"_s + event<ev::fail> = "offline"_s,
+        // offline state
+        "offline"_s + event<ev::rq> / [](ev::rq const &e) { e.r = EIO; },
+        "offline"_s + event<ev::wq> / [](ev::wq const &e) { e.r = EIO; });
   }
 };
-/* clang-format on */
 
 } // namespace ublk::raid0::fsm

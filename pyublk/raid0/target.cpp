@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <memory>
+#include <queue>
 #include <utility>
 
 #include <boost/sml.hpp>
@@ -73,7 +74,8 @@ public:
 
 private:
   std::unique_ptr<backend> be_;
-  boost::sml::sm<fsm::transition_table> fsm_;
+  boost::sml::sm<fsm::transition_table, boost::sml::process_queue<std::queue>>
+      fsm_;
 };
 
 Target::Target(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
