@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <ranges>
+#include <string>
 #include <vector>
 
 #include "rw_handler_interface.hpp"
