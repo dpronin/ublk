@@ -26,9 +26,9 @@ namespace {
 
 class RAID0_BackendFailure : public Test {
 protected:
-  static constexpr auto kStripSz{4_KiB};
-  static constexpr auto kStripsInStripeNr{2};
-  static constexpr auto kStripeSz{kStripSz * kStripsInStripeNr};
+  constexpr static auto kStripSz{4_KiB};
+  constexpr static auto kStripsInStripeNr{2};
+  constexpr static auto kStripeSz{kStripSz * kStripsInStripeNr};
 
   void SetUp() override {
     hs_.resize(kStripsInStripeNr);

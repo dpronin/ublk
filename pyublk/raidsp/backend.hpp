@@ -17,7 +17,7 @@ namespace ublk::raidsp {
 
 class backend final {
 public:
-  constexpr static inline auto kAlignmentRequiredMin = kSectorSz;
+  constexpr static auto kAlignmentRequiredMin = kSectorSz;
   static_assert(is_aligned_to(kAlignmentRequiredMin, kSectorSz));
 
   struct static_cfg {

@@ -37,13 +37,11 @@ public:
   int process(std::shared_ptr<write_query> wq) noexcept;
 
 private:
-  constexpr static inline auto kCachedStripeAlignment =
-      backend::kAlignmentRequiredMin;
+  constexpr static auto kCachedStripeAlignment = backend::kAlignmentRequiredMin;
   static_assert(is_aligned_to(kCachedStripeAlignment,
                               alignof(std::max_align_t)));
 
-  constexpr static inline auto kCachedParityAlignment =
-      backend::kAlignmentRequiredMin;
+  constexpr static auto kCachedParityAlignment = backend::kAlignmentRequiredMin;
   static_assert(is_aligned_to(kCachedParityAlignment,
                               alignof(std::max_align_t)));
 

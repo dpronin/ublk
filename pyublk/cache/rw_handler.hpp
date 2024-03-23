@@ -15,7 +15,7 @@ namespace ublk::cache {
 
 class RWHandler : public IRWHandler {
 private:
-  constexpr static inline auto kCachedChunkAlignment = kSectorSz;
+  constexpr static auto kCachedChunkAlignment = kSectorSz;
   static_assert(is_aligned_to(kCachedChunkAlignment,
                               alignof(std::max_align_t)));
 
