@@ -1,5 +1,6 @@
 #include "target.hpp"
 
+#include <cassert>
 #include <cstdint>
 
 #include <memory>
@@ -23,6 +24,8 @@ public:
       : be_(std::make_unique<backend>(strip_sz, std::move(hs))), fsm_(*be_) {}
 
   int process(std::shared_ptr<read_query> rq) noexcept {
+    assert(rq);
+
     auto *p_rq = rq.get();
     rq = p_rq->subquery(0, p_rq->buf().size(), p_rq->offset(),
                         [this, rq = std::move(rq)](read_query const &new_rq) {
@@ -31,12 +34,16 @@ public:
                             fsm_.process_event(fsm::ev::fail{});
                           }
                         });
+
     fsm::ev::rq e{.rq = rq, .r = 0};
     fsm_.process_event(e);
+
     return e.r;
   }
 
   int process(std::shared_ptr<write_query> wq) noexcept {
+    assert(wq);
+
     auto *p_wq = wq.get();
     wq = p_wq->subquery(0, p_wq->buf().size(), p_wq->offset(),
                         [this, wq = std::move(wq)](write_query const &new_wq) {
@@ -45,8 +52,10 @@ public:
                             fsm_.process_event(fsm::ev::fail{});
                           }
                         });
+
     fsm::ev::wq e{.wq = wq, .r = 0};
     fsm_.process_event(e);
+
     return e.r;
   }
 
