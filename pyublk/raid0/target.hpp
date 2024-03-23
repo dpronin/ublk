@@ -30,6 +30,8 @@ public:
   Target(Target &&) noexcept;
   Target &operator=(Target &&) noexcept;
 
+  std::string state() const;
+
   int process(std::shared_ptr<read_query> rq) noexcept;
   int process(std::shared_ptr<write_query> wq) noexcept;
 

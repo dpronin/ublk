@@ -23,6 +23,18 @@ public:
   explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       : be_(std::make_unique<backend>(strip_sz, std::move(hs))), fsm_(*be_) {}
 
+  std::string state() const {
+    auto res{std::string{}};
+
+    fsm_.visit_current_states([&res](auto s) {
+      res = s.c_str();
+      res.push_back(',');
+    });
+    res.pop_back();
+
+    return res;
+  }
+
   int process(std::shared_ptr<read_query> rq) noexcept {
     assert(rq);
 
@@ -71,6 +83,8 @@ Target::~Target() noexcept = default;
 
 Target::Target(Target &&) noexcept = default;
 Target &Target::operator=(Target &&) noexcept = default;
+
+std::string Target::state() const { return pimpl_->state(); }
 
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
   return pimpl_->process(std::move(rq));
