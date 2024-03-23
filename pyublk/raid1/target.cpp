@@ -6,7 +6,9 @@
 
 #include <algorithm>
 #include <memory>
+#include <queue>
 #include <utility>
+#include <vector>
 
 #include <boost/sml.hpp>
 
@@ -79,33 +81,55 @@ int r1::process(std::shared_ptr<write_query> wq) noexcept {
   return 0;
 }
 
-struct erq {
+namespace fsm {
+
+namespace ev {
+
+struct rq {
   std::shared_ptr<read_query> rq;
   mutable int r;
 };
 
-struct ewq {
+struct wq {
   std::shared_ptr<write_query> wq;
   mutable int r;
 };
 
-/* clang-format off */
+struct fail {};
+
+} // namespace ev
+
 struct transition_table {
   auto operator()() noexcept {
     using namespace boost::sml;
     return make_transition_table(
-       // online state
-       *"online"_s + event<erq> [ ([](erq const &e, r1& r){ e.r = r.process(std::move(e.rq)); return 0 == e.r; }) ]
-      , "online"_s + event<erq> = "offline"_s
-      , "online"_s + event<ewq> [ ([](ewq const &e, r1& r){ e.r = r.process(std::move(e.wq)); return 0 == e.r; }) ]
-      , "online"_s + event<ewq> = "offline"_s
-       // offline state
-      , "offline"_s + event<erq> / [](erq const &e) { e.r = EIO; }
-      , "offline"_s + event<ewq> / [](ewq const &e) { e.r = EIO; }
-    );
+        // online state
+        *"online"_s +
+            event<ev::rq> /
+                [](ev::rq const &e, r1 &r, back::process<ev::fail> process) {
+                  e.r = r.process(e.rq);
+                  if (0 != e.r) [[unlikely]] {
+                    process(ev::fail{});
+                  }
+                },
+        "online"_s + event<ev::rq> = "offline"_s,
+        "online"_s +
+            event<ev::wq> /
+                [](ev::wq const &e, r1 &r, back::process<ev::fail> process) {
+                  e.r = r.process(e.wq);
+                  if (0 != e.r) [[unlikely]] {
+                    process(ev::fail{});
+                  }
+                },
+        "online"_s + event<ev::wq> = "offline"_s,
+        "online"_s + event<ev::fail> = "offline"_s,
+        // offline state
+        "offline"_s + event<ev::rq> / [](ev::rq const &e) { e.r = EIO; },
+        "offline"_s + event<ev::wq> / [](ev::wq const &e) { e.r = EIO; });
   }
 };
-/* clang-format on */
+
+} // namespace fsm
 
 } // namespace
 
@@ -116,21 +140,58 @@ public:
   explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
       : r1_(strip_sz, std::move(hs)), fsm_(r1_) {}
 
+  std::string state() const {
+    auto r{std::string{}};
+
+    fsm_.visit_current_states([&r](auto s) {
+      r = s.c_str();
+      r.push_back(',');
+    });
+    r.pop_back();
+
+    return r;
+  }
+
   int process(std::shared_ptr<read_query> rq) noexcept {
-    erq e{.rq = std::move(rq), .r = 0};
+    assert(rq);
+
+    auto *p_rq = rq.get();
+    rq = p_rq->subquery(0, p_rq->buf().size(), p_rq->offset(),
+                        [this, rq = std::move(rq)](read_query const &new_rq) {
+                          if (new_rq.err()) [[unlikely]] {
+                            rq->set_err(new_rq.err());
+                            fsm_.process_event(fsm::ev::fail{});
+                          }
+                        });
+
+    fsm::ev::rq e{.rq = std::move(rq), .r = 0};
     fsm_.process_event(e);
+
     return e.r;
   }
 
   int process(std::shared_ptr<write_query> wq) noexcept {
-    ewq e{.wq = std::move(wq), .r = 0};
+    assert(wq);
+
+    auto *p_wq = wq.get();
+    wq = p_wq->subquery(0, p_wq->buf().size(), p_wq->offset(),
+                        [this, wq = std::move(wq)](write_query const &new_wq) {
+                          if (new_wq.err()) [[unlikely]] {
+                            wq->set_err(new_wq.err());
+                            fsm_.process_event(fsm::ev::fail{});
+                          }
+                        });
+
+    fsm::ev::wq e{.wq = std::move(wq), .r = 0};
     fsm_.process_event(e);
+
     return e.r;
   }
 
 private:
   r1 r1_;
-  boost::sml::sm<transition_table> fsm_;
+  boost::sml::sm<fsm::transition_table, boost::sml::process_queue<std::queue>>
+      fsm_;
 };
 
 Target::Target(uint64_t read_strip_sz,
