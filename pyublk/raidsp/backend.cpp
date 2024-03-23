@@ -146,7 +146,6 @@ int backend::stripe_write(uint64_t stripe_id_at,
     };
     auto new_wqd{wqd->subquery(wb, sq_sz, sq_off, wqd)};
     if (auto const res{h->submit(std::move(new_wqd))}) [[unlikely]] {
-      wqd->set_err(res);
       return res;
     }
     wb += sq_sz;
@@ -161,7 +160,6 @@ int backend::stripe_write(uint64_t stripe_id_at,
 
   if (auto const res{hs_[strip_parity_id]->submit(std::move(new_wqp))})
       [[unlikely]] {
-    wqp->set_err(res);
     return res;
   }
 
