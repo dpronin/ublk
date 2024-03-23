@@ -1,10 +1,8 @@
 #include "target.hpp"
 
 #include <cassert>
-#include <cerrno>
 #include <cstdint>
 
-#include <algorithm>
 #include <memory>
 #include <queue>
 #include <utility>
@@ -12,133 +10,20 @@
 
 #include <boost/sml.hpp>
 
-#include "utils/utility.hpp"
+#include "read_query.hpp"
+#include "write_query.hpp"
 
-#include "mm/mem.hpp"
-#include "mm/mem_types.hpp"
-
-#include "sector.hpp"
+#include "backend.hpp"
+#include "fsm.hpp"
 
 using namespace ublk;
-
-namespace {
-
-class r1 final {
-public:
-  explicit r1(uint64_t read_strip_sz,
-              std::vector<std::shared_ptr<IRWHandler>> hs) noexcept;
-
-  int process(std::shared_ptr<read_query> rq) noexcept;
-  int process(std::shared_ptr<write_query> wq) noexcept;
-
-private:
-  struct static_cfg {
-    uint64_t read_strip_sz;
-  };
-  mm::uptrwd<static_cfg const> static_cfg_;
-
-  uint32_t next_hid_;
-  std::vector<std::shared_ptr<IRWHandler>> hs_;
-};
-
-r1::r1(uint64_t read_strip_sz,
-       std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
-    : next_hid_(0), hs_(std::move(hs)) {
-  assert(is_multiple_of(read_strip_sz, kSectorSz));
-  assert(!(hs_.size() < 2));
-  assert(std::ranges::all_of(
-      hs_, [](auto const &h) { return static_cast<bool>(h); }));
-
-  auto cfg = mm::make_unique_aligned<static_cfg>(
-      hardware_destructive_interference_size);
-  cfg->read_strip_sz = read_strip_sz;
-
-  static_cfg_ = mm::const_uptrwd_cast(std::move(cfg));
-}
-
-int r1::process(std::shared_ptr<read_query> rq) noexcept {
-  for (size_t rb{0}; rb < rq->buf().size();
-       next_hid_ = (next_hid_ + 1) % hs_.size()) {
-    auto const chunk_sz{
-        std::min(static_cfg_->read_strip_sz, rq->buf().size() - rb),
-    };
-    auto new_rq{rq->subquery(rb, chunk_sz, rq->offset() + rb, rq)};
-    if (auto const res{hs_[next_hid_]->submit(std::move(new_rq))})
-        [[unlikely]] {
-      return res;
-    }
-    rb += chunk_sz;
-  }
-  return 0;
-}
-
-int r1::process(std::shared_ptr<write_query> wq) noexcept {
-  for (auto const &h : hs_) {
-    if (auto const res{h->submit(wq)}) [[unlikely]] {
-      return res;
-    }
-  }
-  return 0;
-}
-
-namespace fsm {
-
-namespace ev {
-
-struct rq {
-  std::shared_ptr<read_query> rq;
-  mutable int r;
-};
-
-struct wq {
-  std::shared_ptr<write_query> wq;
-  mutable int r;
-};
-
-struct fail {};
-
-} // namespace ev
-
-struct transition_table {
-  auto operator()() noexcept {
-    using namespace boost::sml;
-    return make_transition_table(
-        // online state
-        *"online"_s +
-            event<ev::rq> /
-                [](ev::rq const &e, r1 &r, back::process<ev::fail> process) {
-                  e.r = r.process(e.rq);
-                  if (0 != e.r) [[unlikely]] {
-                    process(ev::fail{});
-                  }
-                },
-        "online"_s + event<ev::rq> = "offline"_s,
-        "online"_s +
-            event<ev::wq> /
-                [](ev::wq const &e, r1 &r, back::process<ev::fail> process) {
-                  e.r = r.process(e.wq);
-                  if (0 != e.r) [[unlikely]] {
-                    process(ev::fail{});
-                  }
-                },
-        "online"_s + event<ev::wq> = "offline"_s,
-        "online"_s + event<ev::fail> = "offline"_s,
-        // offline state
-        "offline"_s + event<ev::rq> / [](ev::rq const &e) { e.r = EIO; },
-        "offline"_s + event<ev::wq> / [](ev::wq const &e) { e.r = EIO; });
-  }
-};
-
-} // namespace fsm
-
-} // namespace
 
 namespace ublk::raid1 {
 
 class Target::impl final {
 public:
   explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
-      : r1_(strip_sz, std::move(hs)), fsm_(r1_) {}
+      : be_(std::make_unique<backend>(strip_sz, std::move(hs))), fsm_(*be_) {}
 
   std::string state() const {
     auto r{std::string{}};
@@ -189,7 +74,7 @@ public:
   }
 
 private:
-  r1 r1_;
+  std::unique_ptr<backend> be_;
   boost::sml::sm<fsm::transition_table, boost::sml::process_queue<std::queue>>
       fsm_;
 };
