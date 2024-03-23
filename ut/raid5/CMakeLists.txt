@@ -1,6 +1,7 @@
 add_executable(raid5_ut
     go_to_offline_due_to_backend_failure.cpp
     raid5.cpp
+    stripe_parity.cpp
 )
 
 target_link_libraries(raid5_ut PRIVATE
