@@ -1,4 +1,6 @@
 add_executable(raid1_ut
+    backend_failure.cpp
+    go_to_offline_due_to_backend_failure.cpp
     raid1.cpp
 )
 
