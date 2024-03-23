@@ -6,6 +6,7 @@
 #include <memory>
 #include <queue>
 #include <utility>
+#include <vector>
 
 #include <boost/sml.hpp>
 
