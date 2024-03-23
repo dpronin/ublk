@@ -1,7 +1,7 @@
 add_executable(raid0_ut
     base.hpp
     chunk_by_chunk.cpp
-    failure.cpp
+    offline_due_to_backend_failure.cpp
     stripe_by_stripe.cpp
 )
 

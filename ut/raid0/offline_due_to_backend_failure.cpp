@@ -49,7 +49,7 @@ protected:
 
 } // namespace
 
-TEST_F(RAID0, FailureAtSubmitRead) {
+TEST_F(RAID0, OfflineDueToBackendFailureAtSubmitRead) {
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
@@ -64,6 +64,8 @@ TEST_F(RAID0, FailureAtSubmitRead) {
   };
   EXPECT_EQ(r1, EIO);
 
+  EXPECT_STRCASEEQ(target_->state().c_str(), "offline");
+
   auto const r2{
       target_->process(read_query::create(
           buf_span.subspan(0, this->kStripSz), 0,
@@ -72,7 +74,7 @@ TEST_F(RAID0, FailureAtSubmitRead) {
   EXPECT_EQ(r2, EIO);
 }
 
-TEST_F(RAID0, FailureAtCompleteRead) {
+TEST_F(RAID0, OfflineDueToBackendFailureAtCompleteRead) {
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
@@ -91,6 +93,8 @@ TEST_F(RAID0, FailureAtCompleteRead) {
   };
   EXPECT_EQ(r1, 0);
 
+  EXPECT_STRCASEEQ(target_->state().c_str(), "offline");
+
   auto const r2{
       target_->process(read_query::create(
           buf_span.subspan(0, this->kStripSz), 0,
@@ -99,7 +103,7 @@ TEST_F(RAID0, FailureAtCompleteRead) {
   EXPECT_EQ(r2, EIO);
 }
 
-TEST_F(RAID0, FailureAtSubmitWrite) {
+TEST_F(RAID0, OfflineDueToBackendFailureAtSubmitWrite) {
   auto buf{
       std::unique_ptr<std::byte const[]>{
           mm::make_unique_for_overwrite_bytes(this->kStripeSz),
@@ -118,6 +122,8 @@ TEST_F(RAID0, FailureAtSubmitWrite) {
   };
   EXPECT_EQ(r1, EIO);
 
+  EXPECT_STRCASEEQ(target_->state().c_str(), "offline");
+
   auto const r2{
       target_->process(write_query::create(
           buf_span.subspan(0, this->kStripSz), 0,
@@ -126,7 +132,7 @@ TEST_F(RAID0, FailureAtSubmitWrite) {
   EXPECT_EQ(r2, EIO);
 }
 
-TEST_F(RAID0, FailureAtCompleteWrite) {
+TEST_F(RAID0, OfflineDueToBackendFailureAtCompleteWrite) {
   auto buf{
       std::unique_ptr<std::byte const[]>{
           mm::make_unique_for_overwrite_bytes(this->kStripeSz),
@@ -149,6 +155,8 @@ TEST_F(RAID0, FailureAtCompleteWrite) {
           [](write_query const &wq) { EXPECT_EQ(wq.err(), EIO); })),
   };
   EXPECT_EQ(r1, 0);
+
+  EXPECT_STRCASEEQ(target_->state().c_str(), "offline");
 
   auto const r2{
       target_->process(write_query::create(
