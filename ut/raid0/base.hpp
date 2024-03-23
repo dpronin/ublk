@@ -32,7 +32,7 @@ protected:
     backend_ctxs_.resize(be_cfg.strips_per_stripe_nr);
     std::ranges::generate(backend_ctxs_, [] -> backend_ctx {
       return {
-          .h = std::make_shared<ut::MockRWHandler>(),
+          .h = std::make_shared<testing::StrictMock<ut::MockRWHandler>>(),
       };
     });
 

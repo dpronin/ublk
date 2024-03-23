@@ -33,8 +33,8 @@ protected:
 
   void SetUp() override {
     hs_.resize(kStripsInStripeNr);
-    std::ranges::generate(hs_,
-                          [] { return std::make_shared<ut::MockRWHandler>(); });
+    std::ranges::generate(
+        hs_, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
     target_ = std::make_unique<ublk::raid0::Target>(kStripSz, hs_);
   }
 

@@ -36,8 +36,8 @@ TEST_P(RAID4, TestReading) {
   auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
-  std::ranges::generate(hs,
-                        [] { return std::make_shared<ut::MockRWHandler>(); });
+  std::ranges::generate(
+      hs, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
 
   auto const storage_sz{param.strip_sz * param.stripes_nr};
   auto const storages{

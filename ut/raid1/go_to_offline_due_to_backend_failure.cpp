@@ -34,8 +34,8 @@ protected:
 
   void SetUp() override {
     hs_.resize(kMirrorsNr);
-    std::ranges::generate(hs_,
-                          [] { return std::make_shared<ut::MockRWHandler>(); });
+    std::ranges::generate(
+        hs_, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
     target_ = std::make_unique<ublk::raid1::Target>(kReadStripSz, hs_);
   }
 
