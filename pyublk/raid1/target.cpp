@@ -23,7 +23,10 @@ namespace ublk::raid1 {
 class Target::impl final {
 public:
   explicit impl(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
-      : be_(std::make_unique<backend>(strip_sz, std::move(hs))), fsm_(*be_) {}
+      : ctx_{
+          .be = std::make_unique<backend>(strip_sz, std::move(hs)),
+        },
+        fsm_(ctx_) {}
 
   std::string state() const {
     auto r{std::string{}};
@@ -74,7 +77,7 @@ public:
   }
 
 private:
-  std::unique_ptr<backend> be_;
+  fsm::ctx ctx_;
   boost::sml::sm<fsm::transition_table, boost::sml::process_queue<std::queue>>
       fsm_;
 };
@@ -82,6 +85,11 @@ private:
 Target::Target(uint64_t read_strip_sz,
                std::vector<std::shared_ptr<IRWHandler>> hs)
     : pimpl_(std::make_unique<impl>(read_strip_sz, std::move(hs))) {}
+
+Target::~Target() noexcept = default;
+
+Target::Target(Target &&) noexcept = default;
+Target &Target::operator=(Target &&) noexcept = default;
 
 std::string Target::state() const { return pimpl_->state(); }
 
@@ -92,10 +100,5 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
   return pimpl_->process(std::move(wq));
 }
-
-Target::~Target() noexcept = default;
-
-Target::Target(Target &&) noexcept = default;
-Target &Target::operator=(Target &&) noexcept = default;
 
 } // namespace ublk::raid1
