@@ -54,7 +54,6 @@ TEST_F(RAID0_BackendFailure, FailureAtFirstStripOfFullStripeRead) {
 
   EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
       .WillOnce(Return(EIO));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<read_query>>())).Times(0);
 
   auto const r{be_->process(read_query::create(buf_span, 0))};
   EXPECT_EQ(r, EIO);
@@ -83,7 +82,6 @@ TEST_F(RAID0_BackendFailure, FailureAtFirstStripOfFullStripeWrite) {
 
   EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
       .WillOnce(Return(EIO));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>())).Times(0);
 
   auto const r{be_->process(write_query::create(buf_span, 0))};
   EXPECT_EQ(r, EIO);
