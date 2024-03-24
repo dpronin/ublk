@@ -19,6 +19,7 @@ Target::Target(mm::uptrwd<std::byte[]> mem, uint64_t sz) noexcept
 
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
   assert(rq);
+  assert(!rq->buf().empty());
 
   if (mem_sz_ < rq->offset() + rq->buf().size()) [[unlikely]]
     return EINVAL;
@@ -35,6 +36,7 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
 
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
   assert(wq);
+  assert(!wq->buf().empty());
 
   if (mem_sz_ < wq->offset() + wq->buf().size()) [[unlikely]]
     return EINVAL;
