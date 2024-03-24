@@ -25,7 +25,7 @@ template <std::unsigned_integral Key, typename T> class flat_lru {
 public:
   static std::unique_ptr<flat_lru<Key, T>> create(uint64_t cache_len,
                                                   uint64_t cache_item_sz) {
-    auto cache = std::unique_ptr<flat_lru<Key, T>>{};
+    auto cache{std::unique_ptr<flat_lru<Key, T>>{}};
     if (cache_len && cache_item_sz) {
       cache = std::unique_ptr<flat_lru<Key, T>>(new flat_lru<Key, T>{
           cache_len,
