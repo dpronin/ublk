@@ -5,11 +5,8 @@ add_executable(raid5_ut
 )
 
 target_link_libraries(raid5_ut PRIVATE
-    gtest::gtest
-    ublk::mm
     ublk::raid5
-    ublk::ut::helpers
-    ublk::utils
+    ublk::ut
 )
 
 add_test(NAME RAID5 COMMAND raid5_ut)

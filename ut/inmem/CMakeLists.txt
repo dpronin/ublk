@@ -3,11 +3,8 @@ add_executable(inmem_ut
 )
 
 target_link_libraries(inmem_ut PRIVATE
-    gtest::gtest
-    ublk::mm
     ublk::inmem
-    ublk::ut::helpers
-    ublk::utils
+    ublk::ut
 )
 
 add_test(NAME INMEM COMMAND inmem_ut)

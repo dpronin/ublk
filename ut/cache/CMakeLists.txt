@@ -3,11 +3,8 @@ add_executable(cache_ut
 )
 
 target_link_libraries(cache_ut PRIVATE
-    gtest::gtest
-    ublk::mm
     ublk::cache
-    ublk::ut::helpers
-    ublk::utils
+    ublk::ut
 )
 
 add_test(NAME CACHE COMMAND cache_ut)

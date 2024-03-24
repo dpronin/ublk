@@ -2,17 +2,19 @@ find_package(GTest CONFIG REQUIRED)
 
 include(CTest)
 
-add_library(ublk_ut_helpers INTERFACE
+add_library(ublk_ut INTERFACE
     helpers.hpp
 )
-target_link_libraries(ublk_ut_helpers INTERFACE
+target_link_libraries(ublk_ut INTERFACE
     gtest::gtest
+    ublk::mm
+    ublk::utils
 )
-target_include_directories(ublk_ut_helpers INTERFACE
+target_include_directories(ublk_ut INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
-add_library(ublk::ut::helpers ALIAS ublk_ut_helpers)
+add_library(ublk::ut ALIAS ublk_ut)
 
 add_subdirectory(cache)
 add_subdirectory(inmem)
