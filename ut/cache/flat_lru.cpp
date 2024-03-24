@@ -5,6 +5,9 @@
 #include <cstdint>
 
 #include <algorithm>
+#include <random>
+#include <ranges>
+#include <vector>
 
 #include "mm/mem.hpp"
 
@@ -44,7 +47,7 @@ TEST(Cache_FlatLRU, CreateInvalid) {
 }
 
 TEST(Cache_FlatLRU, InsertAndFind) {
-  constexpr auto kCacheLenMax{5uz};
+  constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{16uz};
 
   auto cache{
@@ -85,6 +88,79 @@ TEST(Cache_FlatLRU, InsertAndFind) {
     EXPECT_EQ(buf.size(), kCacheItemSz);
     EXPECT_THAT(buf, ElementsAreArray(buf_dup.get(), kCacheItemSz));
   }
+}
+
+TEST(Cache_FlatLRU, Invalidate) {
+  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheItemSz{1uz};
+
+  auto cache{
+      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
+                                                         kCacheItemSz),
+  };
+  ASSERT_TRUE(cache);
+
+  auto bufs_pairs{
+      std::vector<std::pair<uint64_t, std::unique_ptr<std::byte[]>>>{
+          cache->len_max(),
+      },
+  };
+  std::ranges::generate(
+      bufs_pairs, [i = 0uz] mutable -> decltype(bufs_pairs)::value_type {
+        return {i++, mm::make_unique_for_overwrite_bytes(kCacheItemSz)};
+      });
+
+  auto rd{std::random_device{}};
+  std::ranges::shuffle(bufs_pairs, rd);
+
+  for (auto &[key, buf] : bufs_pairs)
+    cache->update({key, std::move(buf)});
+
+  for (auto key : bufs_pairs | std::views::keys)
+    EXPECT_TRUE(cache->exists(key));
+
+  std::vector<uint64_t> keys;
+  for (auto key : bufs_pairs | std::views::keys) {
+    cache->invalidate(key);
+    keys.push_back(key);
+    for (auto key_prev : keys | std::views::reverse)
+      EXPECT_FALSE(cache->exists(key_prev));
+  }
+}
+
+TEST(Cache_FlatLRU, InvalidateRange) {
+  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheItemSz{1uz};
+
+  auto cache{
+      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
+                                                         kCacheItemSz),
+  };
+  ASSERT_TRUE(cache);
+
+  auto bufs_pairs{
+      std::vector<std::pair<uint64_t, std::unique_ptr<std::byte[]>>>{
+          cache->len_max(),
+      },
+  };
+  std::ranges::generate(
+      bufs_pairs, [i = 0uz] mutable -> decltype(bufs_pairs)::value_type {
+        return {i++, mm::make_unique_for_overwrite_bytes(kCacheItemSz)};
+      });
+
+  auto rd{std::random_device{}};
+  std::ranges::shuffle(bufs_pairs, rd);
+
+  for (auto &[key, buf] : bufs_pairs)
+    cache->update({key, std::move(buf)});
+
+  for (auto key : bufs_pairs | std::views::keys)
+    EXPECT_TRUE(cache->exists(key));
+
+  cache->invalidate_range({0uz, bufs_pairs.size() - 1});
+
+  for (auto key : bufs_pairs | std::views::keys)
+    EXPECT_FALSE(cache->exists(key));
 }
 
 } // namespace ublk::ut::cache
