@@ -116,12 +116,16 @@ TEST(Cache_FlatLRU, Invalidate) {
   for (auto &[key, buf] : bufs_pairs)
     cache->update({key, std::move(buf)});
 
-  for (auto key : bufs_pairs | std::views::keys)
-    EXPECT_TRUE(cache->exists(key));
-
   std::vector<uint64_t> keys;
-  for (auto key : bufs_pairs | std::views::keys) {
+  while (!bufs_pairs.empty()) {
+    for (auto key : bufs_pairs | std::views::keys)
+      EXPECT_TRUE(cache->exists(key));
+
+    auto const key{bufs_pairs.back().first};
+    bufs_pairs.pop_back();
+
     cache->invalidate(key);
+
     keys.push_back(key);
     for (auto key_prev : keys | std::views::reverse)
       EXPECT_FALSE(cache->exists(key_prev));
