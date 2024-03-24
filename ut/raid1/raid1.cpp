@@ -39,8 +39,8 @@ TEST_P(RAID1, TestReading) {
       hs, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
 
   auto const storages{
-      ut::make_randomized_storages<std::byte const>(param.hs_storage_sz,
-                                                    hs.size()),
+      ut::make_randomized_unique_storages<std::byte const>(param.hs_storage_sz,
+                                                           hs.size()),
   };
   auto const storage_spans{
       ut::make_storage_spans(storages, param.hs_storage_sz),
@@ -85,7 +85,8 @@ TEST_P(RAID1, TestWriting) {
                         [] { return std::make_shared<ut::MockRWHandler>(); });
 
   auto const storages{
-      ut::make_zeroed_storages<std::byte>(param.hs_storage_sz, hs.size()),
+      ut::make_zeroed_unique_storages<std::byte>(param.hs_storage_sz,
+                                                 hs.size()),
   };
   auto const storage_spans{
       ut::make_storage_spans(storages, param.hs_storage_sz),
@@ -103,7 +104,7 @@ TEST_P(RAID1, TestWriting) {
   /* clang-format on */
 
   auto const buf_sz{param.hs_storage_sz};
-  auto const buf{mm::make_unique_random_bytes(buf_sz)};
+  auto const buf{mm::make_unique_randomized_bytes(buf_sz)};
   auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
   tgt.process(write_query::create(buf_span, 0));

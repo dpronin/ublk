@@ -41,7 +41,8 @@ TEST_P(RAID4, TestReading) {
 
   auto const storage_sz{param.strip_sz * param.stripes_nr};
   auto const storages{
-      ut::make_randomized_storages<std::byte const>(storage_sz, hs.size() - 1),
+      ut::make_randomized_unique_storages<std::byte const>(storage_sz,
+                                                           hs.size() - 1),
   };
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
@@ -80,7 +81,7 @@ TEST_P(RAID4, TestWriting) {
 
   auto const storage_sz{param.strip_sz * param.stripes_nr};
   auto const storages{
-      ut::make_zeroed_storages<std::byte>(storage_sz, hs.size()),
+      ut::make_zeroed_unique_storages<std::byte>(storage_sz, hs.size()),
   };
   auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
 
@@ -94,7 +95,7 @@ TEST_P(RAID4, TestWriting) {
   /* clang-format on */
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
-  auto const buf{mm::make_unique_random_bytes(buf_sz)};
+  auto const buf{mm::make_unique_randomized_bytes(buf_sz)};
   auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
   tgt.process(write_query::create(buf_span, 0));

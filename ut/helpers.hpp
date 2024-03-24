@@ -59,19 +59,28 @@ make_storage_spans(std::vector<std::unique_ptr<T[]>> const &storages,
 }
 
 template <is_byte T>
-inline auto make_randomized_storages(size_t storage_sz, size_t nr) {
+inline auto make_unique_randomized_storage(size_t storage_sz) {
+  return mm::make_unique_randomized_bytes(storage_sz);
+}
+
+template <is_byte T>
+inline auto make_randomized_unique_storages(size_t storage_sz, size_t nr) {
   std::vector<std::unique_ptr<T[]>> storages{nr};
   std::ranges::generate(storages, [storage_sz] {
-    return mm::make_unique_random_bytes(storage_sz);
+    return make_unique_randomized_storage<T>(storage_sz);
   });
   return storages;
 }
 
+template <is_byte T> inline auto make_unique_zeroed_storage(size_t storage_sz) {
+  return mm::make_unique_zeroed_bytes(storage_sz);
+}
+
 template <is_byte T>
-inline auto make_zeroed_storages(size_t storage_sz, size_t nr) {
+inline auto make_zeroed_unique_storages(size_t storage_sz, size_t nr) {
   std::vector<std::unique_ptr<T[]>> storages{nr};
   std::ranges::generate(storages, [storage_sz] {
-    return mm::make_unique_zeroed_bytes(storage_sz);
+    return make_unique_zeroed_storage<T>(storage_sz);
   });
   return storages;
 }

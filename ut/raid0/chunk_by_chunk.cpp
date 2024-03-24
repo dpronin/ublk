@@ -49,7 +49,7 @@ TEST_P(ChunkByChunk, Read) {
   };
   auto const raid_storage_buf{
       std::unique_ptr<std::byte const[]>(
-          mm::make_unique_random_bytes(raid_storage_sz)),
+          mm::make_unique_randomized_bytes(raid_storage_sz)),
   };
   auto const raid_storage_buf_span{
       std::as_bytes(std::span{raid_storage_buf.get(), raid_storage_sz}),
@@ -137,7 +137,7 @@ TEST_P(ChunkByChunk, Write) {
     auto const chunk_sz{
         std::min({param.chunk_sz, stripe_sz, end_off - off}),
     };
-    auto const chunk_buf{mm::make_unique_random_bytes(chunk_sz)};
+    auto const chunk_buf{mm::make_unique_randomized_bytes(chunk_sz)};
     auto const chunk_buf_span{
         std::as_bytes(std::span{chunk_buf.get(), chunk_sz}),
     };

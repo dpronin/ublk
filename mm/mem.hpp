@@ -24,8 +24,8 @@ namespace ublk::mm {
 
 template <typename Target, typename Source = void>
 mem_t<Target> convert(mem_t<Source> from) {
-  static_assert((std::is_trivial_v<Source> ||
-                 std::is_void_v<Source>)&&std::is_trivial_v<Target>,
+  static_assert((std::is_trivial_v<Source> || std::is_void_v<Source>) &&
+                    std::is_trivial_v<Target>,
                 "Source and Target must be trivial types");
   using T = std::remove_extent_t<Target>;
   auto *to = reinterpret_cast<T *>(from.release());
@@ -117,7 +117,7 @@ inline std::unique_ptr<std::byte[]> make_unique_for_overwrite_bytes(size_t sz) {
   return std::make_unique_for_overwrite<std::byte[]>(sz);
 }
 
-inline std::unique_ptr<std::byte[]> make_unique_random_bytes(size_t sz) {
+inline std::unique_ptr<std::byte[]> make_unique_randomized_bytes(size_t sz) {
   auto buf{std::make_unique_for_overwrite<std::byte[]>(sz)};
   auto gen = make_random_bytes_generator();
   std::generate_n(buf.get(), sz, std::ref(gen));

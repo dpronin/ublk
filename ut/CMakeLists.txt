@@ -14,6 +14,7 @@ target_include_directories(ublk_ut_helpers INTERFACE
 
 add_library(ublk::ut::helpers ALIAS ublk_ut_helpers)
 
+add_subdirectory(inmem)
 add_subdirectory(raid0)
 add_subdirectory(raid1)
 add_subdirectory(raid4)
