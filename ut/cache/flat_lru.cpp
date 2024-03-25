@@ -57,12 +57,8 @@ TEST(Cache_FlatLRU, InsertAndFindNonExistent) {
   };
   ASSERT_TRUE(cache);
 
-  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
-    auto const evicted_value{cache->update({
-        key,
-        mm::make_unique_for_overwrite_bytes(kCacheItemSz),
-    })};
-  }
+  for (auto key : std::views::iota(0uz, kCacheLenMax))
+    cache->update({key, mm::make_unique_for_overwrite_bytes(kCacheItemSz)});
 
   auto rd{std::random_device{}};
   auto unexistent_keys_random_gen{
