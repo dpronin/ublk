@@ -161,7 +161,7 @@ TEST(Cache_FlatLRU, InvalidateRange) {
   for (auto key : bufs_pairs | std::views::keys)
     EXPECT_TRUE(cache->exists(key));
 
-  cache->invalidate_range({0uz, bufs_pairs.size() - 1});
+  cache->invalidate_range({0uz, bufs_pairs.size()});
 
   for (auto key : bufs_pairs | std::views::keys)
     EXPECT_FALSE(cache->exists(key));

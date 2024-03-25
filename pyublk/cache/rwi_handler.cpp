@@ -88,7 +88,7 @@ int RWIHandler::submit(std::shared_ptr<write_query> wq) noexcept {
 
   auto const chunk_id_first{wq->offset() / cache_->item_sz()};
   auto const chunk_id_last{
-      div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()) - 1,
+      div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()),
   };
 
   auto new_wq{

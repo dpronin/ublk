@@ -111,7 +111,7 @@ private:
     auto const first =
         std::ranges::lower_bound(cache_, range.first, keys_cmp{}, key_proj);
     auto const last =
-        std::ranges::upper_bound(std::ranges::subrange{first, cache_.end()},
+        std::ranges::lower_bound(std::ranges::subrange{first, cache_.end()},
                                  range.second, keys_cmp{}, key_proj);
     return std::views::iota(first - cache_.begin(), last - cache_.begin());
   }
