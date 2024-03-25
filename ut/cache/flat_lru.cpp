@@ -211,8 +211,11 @@ TEST(Cache_FlatLRU, Invalidate) {
     cache->invalidate(key);
 
     keys.push_back(key);
-    for (auto key_prev : keys | std::views::reverse)
+    for (auto key_prev : keys | std::views::reverse) {
       EXPECT_FALSE(cache->exists(key_prev));
+      auto const buf{cache->find(key_prev)};
+      EXPECT_TRUE(buf.empty());
+    }
   }
 }
 
@@ -247,8 +250,11 @@ TEST(Cache_FlatLRU, InvalidateRange) {
 
   cache->invalidate_range({0uz, bufs_pairs.size()});
 
-  for (auto key : bufs_pairs | std::views::keys)
+  for (auto key : bufs_pairs | std::views::keys) {
     EXPECT_FALSE(cache->exists(key));
+    auto const buf{cache->find(key)};
+    EXPECT_TRUE(buf.empty());
+  }
 }
 
 } // namespace ublk::ut::cache
