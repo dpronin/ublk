@@ -70,9 +70,10 @@ TEST(Cache_FlatLRU, InsertAndFind) {
   std::ranges::transform(
       bufs_pairs, bufs_pairs_dup.begin(),
       [](auto const &buf_pair) -> decltype(bufs_pairs)::value_type {
-        auto buf_dup{mm::make_unique_for_overwrite_bytes(kCacheItemSz)};
-        std::copy_n(buf_pair.second.get(), kCacheItemSz, buf_dup.get());
-        return {buf_pair.first, std::move(buf_dup)};
+        return {
+            buf_pair.first,
+            mm::duplicate_unique(buf_pair.second, kCacheItemSz),
+        };
       });
 
   auto rd{std::random_device{}};
@@ -85,7 +86,6 @@ TEST(Cache_FlatLRU, InsertAndFind) {
 
   for (auto const &[key, buf_dup] : bufs_pairs_dup) {
     auto const buf{cache->find(key)};
-    EXPECT_EQ(buf.size(), kCacheItemSz);
     EXPECT_THAT(buf, ElementsAreArray(buf_dup.get(), kCacheItemSz));
   }
 }
