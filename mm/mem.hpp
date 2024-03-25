@@ -13,6 +13,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "utils/algo.hpp"
+#include "utils/concepts.hpp"
 #include "utils/page.hpp"
 #include "utils/random.hpp"
 #include "utils/size_units.hpp"
@@ -113,8 +115,13 @@ inline std::unique_ptr<std::byte[]> make_unique_zeroed_bytes(size_t sz) {
   return std::make_unique<std::byte[]>(sz);
 }
 
+template <typename T>
+inline std::unique_ptr<T[]> make_unique_for_overwrite_array(size_t sz) {
+  return std::make_unique_for_overwrite<T[]>(sz);
+}
+
 inline std::unique_ptr<std::byte[]> make_unique_for_overwrite_bytes(size_t sz) {
-  return std::make_unique_for_overwrite<std::byte[]>(sz);
+  return make_unique_for_overwrite_array<std::byte>(sz);
 }
 
 inline std::unique_ptr<std::byte[]> make_unique_randomized_bytes(size_t sz) {
@@ -124,8 +131,22 @@ inline std::unique_ptr<std::byte[]> make_unique_randomized_bytes(size_t sz) {
   return buf;
 }
 
-inline uptrwd<std::byte[]> make_unique_bytes(alloc_mode_new, size_t sz) {
-  return std::make_unique<std::byte[]>(sz);
+template <typename T>
+inline std::unique_ptr<T[]> make_unique_array(alloc_mode_new, size_t sz) {
+  return std::make_unique<T[]>(sz);
+}
+
+inline std::unique_ptr<std::byte[]> make_unique_bytes(alloc_mode_new,
+                                                      size_t sz) {
+  return make_unique_array<std::byte>(alloc_mode_new{}, sz);
+}
+
+template <is_trivially_copyable T>
+inline auto duplicate_unique(std::unique_ptr<T[]> const &p, size_t sz) {
+  auto p_dup{mm::make_unique_for_overwrite_array<T>(sz)};
+  algo::copy(std::span<std::byte const>{p.get(), sz},
+             std::span<std::byte>{p_dup.get(), sz});
+  return p_dup;
 }
 
 inline uptrwd<std::byte[]> make_unique_bytes(alloc_mode_mmap param, size_t sz) {
