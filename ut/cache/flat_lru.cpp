@@ -90,6 +90,57 @@ TEST(Cache_FlatLRU, InsertAndFind) {
   }
 }
 
+TEST(Cache_FlatLRU, FindMutableAndCheckMutation) {
+  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheItemSz{16uz};
+
+  auto cache{
+      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
+                                                         kCacheItemSz),
+  };
+  ASSERT_TRUE(cache);
+
+  auto bufs_pairs{
+      std::vector<std::pair<uint64_t, std::unique_ptr<std::byte[]>>>{
+          cache->len_max(),
+      },
+  };
+  std::ranges::generate(
+      bufs_pairs, [i = 0uz] mutable -> decltype(bufs_pairs)::value_type {
+        return {i++, mm::make_unique_for_overwrite_bytes(kCacheItemSz)};
+      });
+
+  decltype(bufs_pairs) bufs_pairs_dup{cache->len_max()};
+  std::ranges::transform(
+      bufs_pairs, bufs_pairs_dup.begin(),
+      [](auto const &buf_pair) -> decltype(bufs_pairs)::value_type {
+        return {buf_pair.first, std::unique_ptr<std::byte[]>{}};
+      });
+
+  auto rd{std::random_device{}};
+  std::ranges::shuffle(bufs_pairs, rd);
+
+  for (auto &buf_pair : bufs_pairs) {
+    auto const evicted_value{cache->update(std::move(buf_pair))};
+    EXPECT_FALSE(evicted_value.has_value());
+  }
+
+  for (auto &[key, buf_dup] : bufs_pairs_dup) {
+    auto const buf{cache->find_mutable(key)};
+    ASSERT_FALSE(buf.empty());
+    ASSERT_EQ(buf.size(), kCacheItemSz);
+    std::copy_n(mm::make_unique_randomized_bytes(kCacheItemSz).get(),
+                kCacheItemSz, buf.begin());
+    buf_dup = mm::make_unique_for_overwrite_bytes(kCacheItemSz);
+    std::ranges::copy(buf, buf_dup.get());
+  }
+
+  for (auto const &[key, buf_dup] : bufs_pairs_dup) {
+    auto const buf{cache->find(key)};
+    EXPECT_THAT(buf, ElementsAreArray(buf_dup.get(), kCacheItemSz));
+  }
+}
+
 TEST(Cache_FlatLRU, Invalidate) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{1uz};
