@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include <algorithm>
+#include <limits>
 #include <random>
 #include <ranges>
 #include <vector>
@@ -63,10 +64,18 @@ TEST(Cache_FlatLRU, InsertAndFindNonExistent) {
     })};
   }
 
-  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
-    EXPECT_TRUE(cache->exists(key));
-    cache->invalidate(key);
-    auto const buf{cache->find(key)};
+  auto rd{std::random_device{}};
+  auto unexistent_keys_random_gen{
+      std::uniform_int_distribution<uint64_t>{
+          kCacheLenMax,
+          std::numeric_limits<uint64_t>::max(),
+      },
+  };
+
+  for (auto i [[maybe_unused]] : std::views::iota(0, 1024)) {
+    auto const unexistent_key{unexistent_keys_random_gen(rd)};
+    EXPECT_FALSE(cache->exists(unexistent_key));
+    auto const buf{cache->find(unexistent_key)};
     EXPECT_TRUE(buf.empty());
   }
 }
