@@ -105,7 +105,7 @@ private:
   }
 
   auto range_find(std::pair<Key, Key> range) const noexcept {
-    assert(!(range.first > range.second));
+    assert(range.first < range.second);
     auto const first{
         std::ranges::lower_bound(cache_, range.first, keys_cmp{}, key_proj),
     };
