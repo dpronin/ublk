@@ -5,6 +5,7 @@ add_library(ublk_utils INTERFACE
     concepts.hpp
     epoll.hpp
     file.hpp
+    functional.hpp
     genl.hpp
     math.hpp
     page.hpp

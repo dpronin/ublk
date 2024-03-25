@@ -17,6 +17,7 @@
 #include "mm/mem_types.hpp"
 
 #include "utils/concepts.hpp"
+#include "utils/functional.hpp"
 #include "utils/span.hpp"
 
 namespace ublk::cache {
@@ -78,18 +79,12 @@ private:
         [](value_type const &v) -> cache_item_ref_t & { return v.second.refs; },
     };
 
-    auto const less_than{
-        [](cache_item_ref_t eo) {
-          return [=](cache_item_ref_t o) { return o < eo; };
-        },
-    };
-
     auto &eo{to_refs(cache_[index])};
 
     /* clang-format off */
     for (auto &o :   std::views::all(cache_)
                    | std::views::transform(to_refs)
-                   | std::views::filter(less_than(eo))) {
+                   | std::views::filter(make_less_than(eo))) {
       ++o;
     }
     /* clang-format on */
