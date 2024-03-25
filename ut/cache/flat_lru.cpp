@@ -116,8 +116,7 @@ TEST(Cache_FlatLRU, Invalidate) {
   for (auto &[key, buf] : bufs_pairs)
     cache->update({key, std::move(buf)});
 
-  std::vector<uint64_t> keys;
-  while (!bufs_pairs.empty()) {
+  for (auto keys{std::vector<uint64_t>{}}; !bufs_pairs.empty();) {
     for (auto key : bufs_pairs | std::views::keys)
       EXPECT_TRUE(cache->exists(key));
 
