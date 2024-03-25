@@ -5,6 +5,7 @@
 #include <cstddef>
 
 #include <boost/lockfree/detail/prefix.hpp>
+
 #endif
 
 namespace ublk {
