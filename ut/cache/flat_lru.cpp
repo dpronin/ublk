@@ -46,6 +46,31 @@ TEST(Cache_FlatLRU, CreateInvalid) {
     EXPECT_FALSE(cache_null);
 }
 
+TEST(Cache_FlatLRU, InsertAndFindNonExistent) {
+  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheItemSz{1u};
+
+  auto cache{
+      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
+                                                         kCacheItemSz),
+  };
+  ASSERT_TRUE(cache);
+
+  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
+    auto const evicted_value{cache->update({
+        key,
+        mm::make_unique_for_overwrite_bytes(kCacheItemSz),
+    })};
+  }
+
+  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
+    EXPECT_TRUE(cache->exists(key));
+    cache->invalidate(key);
+    auto const buf{cache->find(key)};
+    EXPECT_TRUE(buf.empty());
+  }
+}
+
 TEST(Cache_FlatLRU, InsertAndFind) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{16uz};
