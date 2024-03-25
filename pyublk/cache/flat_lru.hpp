@@ -74,15 +74,17 @@ private:
   void touch(size_t index) const noexcept {
     assert(index < cache_.size());
 
-    auto const to_refs = [](value_type const &v) -> cache_item_ref_t & {
-      return v.second.refs;
+    auto const to_refs{
+        [](value_type const &v) -> cache_item_ref_t & { return v.second.refs; },
     };
 
-    auto const less_than = [](cache_item_ref_t eo) {
-      return [=](cache_item_ref_t o) { return o < eo; };
+    auto const less_than{
+        [](cache_item_ref_t eo) {
+          return [=](cache_item_ref_t o) { return o < eo; };
+        },
     };
 
-    auto &eo = to_refs(cache_[index]);
+    auto &eo{to_refs(cache_[index])};
 
     /* clang-format off */
     for (auto &o :   std::views::all(cache_)
@@ -96,11 +98,12 @@ private:
   }
 
   std::pair<size_t, bool> lower_bound_find(Key key) const noexcept {
-    auto const value_it =
-        std::ranges::lower_bound(cache_, key, keys_cmp{}, key_proj);
-    size_t const index = value_it - cache_.begin();
+    auto const value_it{
+        std::ranges::lower_bound(cache_, key, keys_cmp{}, key_proj),
+    };
+    auto const index{value_it - cache_.begin()};
     return {
-        index,
+        static_cast<size_t>(index),
         cache_.end() != value_it && key == key_proj(*value_it) &&
             is_valid(cache_[index]),
     };
@@ -108,11 +111,13 @@ private:
 
   auto range_find(std::pair<Key, Key> range) const noexcept {
     assert(!(range.first > range.second));
-    auto const first =
-        std::ranges::lower_bound(cache_, range.first, keys_cmp{}, key_proj);
-    auto const last =
+    auto const first{
+        std::ranges::lower_bound(cache_, range.first, keys_cmp{}, key_proj),
+    };
+    auto const last{
         std::ranges::lower_bound(std::ranges::subrange{first, cache_.end()},
-                                 range.second, keys_cmp{}, key_proj);
+                                 range.second, keys_cmp{}, key_proj),
+    };
     return std::views::iota(first - cache_.begin(), last - cache_.begin());
   }
 
@@ -142,11 +147,11 @@ public:
 
   std::optional<std::pair<Key, mm::uptrwd<T[]>>>
   update(std::pair<Key, mm::uptrwd<T[]>> value) noexcept {
-    auto evicted_value = std::optional<std::pair<Key, mm::uptrwd<T[]>>>{};
+    auto evicted_value{std::optional<std::pair<Key, mm::uptrwd<T[]>>>{}};
 
     bool should_evict{true};
 
-    auto [index, exact_match] = lower_bound_find(value.first);
+    auto [index, exact_match]{lower_bound_find(value.first)};
     if (!exact_match) {
       if (!(index < cache_.size()) || is_valid(cache_[index])) {
         if (!(cache_.size() < len_max())) [[likely]] {
@@ -204,7 +209,7 @@ public:
   bool exists(Key key) const noexcept { return lower_bound_find(key).second; }
 
   void invalidate(Key key) noexcept {
-    if (auto const [index, exact_match] = lower_bound_find(key); exact_match)
+    if (auto const [index, exact_match]{lower_bound_find(key)}; exact_match)
       invalidate(cache_[index]);
   }
 
