@@ -279,4 +279,59 @@ TEST(Cache_FlatLRU, EvictionInOrder) {
   }
 }
 
+TEST(Cache_FlatLRU, EvictionInvalidated) {
+  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheItemSz{1uz};
+  constexpr auto kKeyStride{2uz};
+  static_assert(1uz != kKeyStride,
+                "key stride must not be 1, there must be a gap in between");
+
+  auto cache{
+      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
+                                                         kCacheItemSz),
+  };
+  ASSERT_TRUE(cache);
+
+  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
+    auto const evicted_value{
+        cache->update({
+            kKeyStride * key,
+            mm::make_unique_for_overwrite_bytes(kCacheItemSz),
+        }),
+    };
+    ASSERT_FALSE(evicted_value.has_value());
+  }
+
+  {
+    auto constexpr kKeyToCheck{6uz};
+
+    cache->invalidate(kKeyToCheck);
+    ASSERT_FALSE(cache->exists(kKeyToCheck));
+
+    auto const evicted_value{
+        cache->update(
+            {kKeyToCheck, mm::make_unique_for_overwrite_bytes(kCacheItemSz)}),
+    };
+    ASSERT_TRUE(evicted_value.has_value());
+    EXPECT_EQ(evicted_value->first, kKeyToCheck);
+    EXPECT_FALSE(static_cast<bool>(evicted_value->second));
+  }
+
+  {
+    auto constexpr kKeyToInvalidate{6uz};
+
+    cache->invalidate(kKeyToInvalidate);
+    ASSERT_FALSE(cache->exists(kKeyToInvalidate));
+
+    auto const evicted_value{
+        cache->update({
+            kKeyToInvalidate - 1,
+            mm::make_unique_for_overwrite_bytes(kCacheItemSz),
+        }),
+    };
+    ASSERT_TRUE(evicted_value.has_value());
+    EXPECT_EQ(evicted_value->first, kKeyToInvalidate);
+  }
+}
+
 } // namespace ublk::ut::cache
