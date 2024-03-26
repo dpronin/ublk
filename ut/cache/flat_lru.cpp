@@ -253,7 +253,7 @@ TEST(Cache_FlatLRU, InvalidateRange) {
   }
 }
 
-TEST(Cache_FlatLRU, Eviction) {
+TEST(Cache_FlatLRU, EvictionInOrder) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{1uz};
 
