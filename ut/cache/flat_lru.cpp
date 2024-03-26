@@ -253,4 +253,30 @@ TEST(Cache_FlatLRU, InvalidateRange) {
   }
 }
 
+TEST(Cache_FlatLRU, Eviction) {
+  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheItemSz{1uz};
+
+  auto cache{
+      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
+                                                         kCacheItemSz),
+  };
+  ASSERT_TRUE(cache);
+
+  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
+    auto const evicted_value{
+        cache->update({key, mm::make_unique_for_overwrite_bytes(kCacheItemSz)}),
+    };
+    ASSERT_FALSE(evicted_value.has_value());
+  }
+
+  for (auto key : std::views::iota(kCacheLenMax, 2 * kCacheLenMax)) {
+    auto const evicted_value{
+        cache->update({key, mm::make_unique_for_overwrite_bytes(kCacheItemSz)}),
+    };
+    ASSERT_TRUE(evicted_value.has_value());
+    EXPECT_EQ(evicted_value->first, key - kCacheLenMax);
+  }
+}
+
 } // namespace ublk::ut::cache
