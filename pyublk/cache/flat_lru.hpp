@@ -54,11 +54,14 @@ private:
   using keys_eq = std::equal_to<>;
 #endif
 
-  auto cache_value_view(mm::uptrwd<T[]> const &cache_value) const noexcept {
-    return std::span{cache_value.get(), item_sz()};
+  auto data_view(value_type const &value) const noexcept {
+    return std::span{value.second.data.get(), item_sz()};
   }
 
-  void invalidate(value_type &value) noexcept { value.second.refs = len_max(); }
+  void invalidate(value_type &value) noexcept {
+    value.second.refs = len_max();
+    value.second.data.reset();
+  }
 
   bool is_valid(value_type const &value) const noexcept {
     return value.second.refs != len_max();
@@ -131,7 +134,7 @@ public:
   std::span<T const> find(Key key) const noexcept {
     if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
       touch(index);
-      return cache_value_view(cache_[index].second.data);
+      return data_view(cache_[index]);
     }
     return {};
   }
@@ -173,10 +176,9 @@ public:
 
           index = value_it - cache_.begin();
         } else {
-          index = cache_.emplace(cache_.begin() + index, value.first,
-                                 stored_type{std::move(value.second), {}}) -
-                  cache_.begin();
+          cache_.emplace(cache_.begin() + index, value.first, stored_type{});
           invalidate(cache_[index]);
+          cache_[index].second.data = std::move(value.second);
           should_evict = false;
         }
       }
