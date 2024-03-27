@@ -66,7 +66,7 @@ TEST_P(RAID1, TestReading) {
 
   tgt.process(read_query::create(buf_span, 0));
 
-  for (size_t off = 0; off < buf_span.size();
+  for (auto off{0uz}; off < buf_span.size();
        off += param.read_block_per_hs_sz) {
     auto const sid{(off / param.read_block_per_hs_sz) % hs.size()};
     auto const s1{

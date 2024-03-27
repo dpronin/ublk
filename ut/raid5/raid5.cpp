@@ -66,7 +66,7 @@ TEST_P(RAID5, SuccessfulReadingAllStripesAtOnce) {
   std::vector<size_t> sids(hs.size());
   std::iota(sids.begin(), sids.end(), 0);
 
-  for (size_t off = 0; off < buf_span.size(); off += param.strip_sz) {
+  for (auto off{0uz}; off < buf_span.size(); off += param.strip_sz) {
     auto const stripe_id{off / (param.strip_sz * (hs.size() - 1))};
     auto const sid_parity{hs.size() - (stripe_id % hs.size()) - 1};
     std::vector<size_t> sids_rotated(sids.size());
@@ -114,7 +114,7 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
     std::vector<size_t> sids(hs.size());
     std::iota(sids.begin(), sids.end(), 0);
 
-    for (size_t off = 0; off < buf_span.size(); off += param.strip_sz) {
+    for (auto off{0uz}; off < buf_span.size(); off += param.strip_sz) {
       auto const stripe_id{off / (param.strip_sz * (hs.size() - 1))};
       auto const sid_parity{hs.size() - (stripe_id % hs.size()) - 1};
       std::vector<size_t> sids_rotated(sids.size());
@@ -137,14 +137,14 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
                       [i, op = std::bit_xor<>{}](auto &&arg1, auto &&arg2) {
                         using T1 = std::decay_t<decltype(arg1)>;
                         using T2 = std::decay_t<decltype(arg2)>;
-                        if constexpr (std::is_same_v<T1, std::byte>) {
-                          if constexpr (std::is_same_v<T2, std::byte>) {
+                        if constexpr (std::same_as<T1, std::byte>) {
+                          if constexpr (std::same_as<T2, std::byte>) {
                             return op(arg1, arg2);
                           } else {
                             return op(arg1, arg2[i]);
                           }
                         } else {
-                          if constexpr (std::is_same_v<T2, std::byte>) {
+                          if constexpr (std::same_as<T2, std::byte>) {
                             return op(arg1[i], arg2);
                           } else {
                             return op(arg1[i], arg2[i]);
