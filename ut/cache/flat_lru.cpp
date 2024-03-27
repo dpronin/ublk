@@ -328,4 +328,78 @@ TEST(Cache_FlatLRU, EvictInvalidatedEntryInsertOffByOneEntry) {
   EXPECT_EQ(evicted_value->first, kKeyToInvalidate);
 }
 
+TEST(Cache_FlatLRU, InvalidateLessInsertEntryEvictInvalidated) {
+  constexpr auto kCacheLenMax{16uz};
+  constexpr auto kCacheItemSz{1uz};
+  constexpr auto kKeyToInsert{7uz};
+  static_assert((kKeyToInsert < kCacheLenMax) && (kKeyToInsert % 2));
+  constexpr auto kKeyToInvalidate{4uz};
+  static_assert((kKeyToInvalidate < kKeyToInsert) &&
+                0 == (kKeyToInvalidate % 2));
+  constexpr auto kKeyStride{2uz};
+  static_assert(0 == (kKeyStride % 2), "key stride must be even");
+
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
+  ASSERT_TRUE(cache);
+
+  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
+    auto const evicted_value{
+        cache->update({
+            kKeyStride * key,
+            mm::make_unique_for_overwrite_bytes(kCacheItemSz),
+        }),
+    };
+    ASSERT_FALSE(evicted_value.has_value());
+  }
+
+  cache->invalidate(kKeyToInvalidate);
+  ASSERT_FALSE(cache->exists(kKeyToInvalidate));
+
+  auto const evicted_value{
+      cache->update({
+          kKeyToInsert,
+          mm::make_unique_for_overwrite_bytes(kCacheItemSz),
+      }),
+  };
+  ASSERT_TRUE(evicted_value.has_value());
+  EXPECT_EQ(evicted_value->first, kKeyToInvalidate);
+}
+
+TEST(Cache_FlatLRU, InvalidateGreaterInsertEntryEvictInvalidated) {
+  constexpr auto kCacheLenMax{16uz};
+  constexpr auto kCacheItemSz{1uz};
+  constexpr auto kKeyToInsert{7uz};
+  static_assert((kKeyToInsert < kCacheLenMax) && (kKeyToInsert % 2));
+  constexpr auto kKeyToInvalidate{12uz};
+  static_assert((kKeyToInvalidate > kKeyToInsert) &&
+                0 == (kKeyToInvalidate % 2));
+  constexpr auto kKeyStride{2uz};
+  static_assert(0 == (kKeyStride % 2), "key stride must be even");
+
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
+  ASSERT_TRUE(cache);
+
+  for (auto key : std::views::iota(0uz, kCacheLenMax)) {
+    auto const evicted_value{
+        cache->update({
+            kKeyStride * key,
+            mm::make_unique_for_overwrite_bytes(kCacheItemSz),
+        }),
+    };
+    ASSERT_FALSE(evicted_value.has_value());
+  }
+
+  cache->invalidate(kKeyToInvalidate);
+  ASSERT_FALSE(cache->exists(kKeyToInvalidate));
+
+  auto const evicted_value{
+      cache->update({
+          kKeyToInsert,
+          mm::make_unique_for_overwrite_bytes(kCacheItemSz),
+      }),
+  };
+  ASSERT_TRUE(evicted_value.has_value());
+  EXPECT_EQ(evicted_value->first, kKeyToInvalidate);
+}
+
 } // namespace ublk::ut::cache
