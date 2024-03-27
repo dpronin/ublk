@@ -102,8 +102,8 @@ struct handlers_ops {
 };
 
 auto backend_device_open(std::filesystem::path const &path) {
-  return open(path, O_RDWR | O_CREAT | O_DIRECT,
-              S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+  return sys::open(path, O_RDWR | O_CREAT | O_DIRECT,
+                   S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 }
 
 handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
@@ -395,10 +395,10 @@ void Master::map(bdev_map_param const &param) {
     throw std::invalid_argument(
         std::format("'{}' target does not exist", param.target_name));
 
-  auto nl_sock = genl::sock_open();
-  auto msg = genl::msg_alloc();
+  auto nl_sock{sys::genl::sock_open()};
+  auto msg{sys::genl::msg_alloc()};
 
-  genlmsg_put(msg.get(), 0, 0, genl::resolve(*nl_sock), 0, 0,
+  genlmsg_put(msg.get(), 0, 0, sys::genl::resolve(*nl_sock), 0, 0,
               UBLKDRV_GENL_BDEV_CMD_CREATE, 1);
 
   nla_put_string(msg.get(), UBLKDRV_GENL_BDEV_ATTR_NAME_SUFFIX,
@@ -409,7 +409,7 @@ void Master::map(bdev_map_param const &param) {
   if (param.read_only)
     nla_put_flag(msg.get(), UBLKDRV_GENL_BDEV_ATTR_READ_ONLY);
 
-  genl::auto_send(*nl_sock, *msg);
+  sys::genl::auto_send(*nl_sock, *msg);
 
   nl_sock.reset();
 
@@ -437,15 +437,15 @@ void Master::map(bdev_map_param const &param) {
 }
 
 void Master::unmap(bdev_unmap_param const &param) {
-  auto nl_sock = genl::sock_open();
-  auto msg = genl::msg_alloc();
+  auto nl_sock{sys::genl::sock_open()};
+  auto msg{sys::genl::msg_alloc()};
 
-  genlmsg_put(msg.get(), 0, 0, genl::resolve(*nl_sock), 0, 0,
+  genlmsg_put(msg.get(), 0, 0, sys::genl::resolve(*nl_sock), 0, 0,
               UBLKDRV_GENL_BDEV_CMD_DESTROY, 1);
   nla_put_string(msg.get(), UBLKDRV_GENL_BDEV_ATTR_NAME_SUFFIX,
                  param.bdev_suffix.data());
 
-  genl::auto_send(*nl_sock, *msg);
+  sys::genl::auto_send(*nl_sock, *msg);
 }
 
 void Master::create(target_create_param const &param) {

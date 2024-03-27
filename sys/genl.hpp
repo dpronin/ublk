@@ -9,7 +9,7 @@
 #include <netlink/msg.h>
 #include <netlink/socket.h>
 
-namespace ublk::genl {
+namespace ublk::sys::genl {
 
 inline auto sock_alloc() noexcept {
   return std::unique_ptr<nl_sock, decltype(&::nl_socket_free)>{
@@ -49,4 +49,4 @@ inline auto auto_send(nl_sock &sock, nl_msg &msg) noexcept {
   return ::nl_send_auto_complete(&sock, &msg);
 }
 
-} // namespace ublk::genl
+} // namespace ublk::sys::genl

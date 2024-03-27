@@ -8,7 +8,7 @@
 
 #include "file.hpp"
 
-namespace ublk {
+namespace ublk::sys {
 
 template <typename... Args> mm::uptrwd<int const> epoll_create1(Args... args) {
   int err{0};
@@ -26,4 +26,4 @@ template <typename... Args> mm::uptrwd<int const> epoll_create1(Args... args) {
   throw std::system_error(err, std::generic_category());
 }
 
-} // namespace ublk
+} // namespace ublk::sys

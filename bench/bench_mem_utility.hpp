@@ -20,7 +20,7 @@ namespace ublk::bench {
 inline auto make_buffer(size_t sz) {
   auto buf = make_unique_bytes(mm::alloc_mode_mmap{}, sz);
 
-  auto const page_size = get_page_size();
+  auto const page_size = sys::page_size();
   /* initialize a first byte of each page to prevent page faults while
    * benchmarking */
   auto gen = make_random_bytes_generator();

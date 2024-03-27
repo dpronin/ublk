@@ -44,7 +44,7 @@ public:
     if (n > std::numeric_limits<size_t>::max() / sizeof(T))
       throw std::bad_array_new_length();
 
-    if (auto const alignment = std::max(get_page_size(), alignof(T));
+    if (auto const alignment = std::max(sys::page_size(), alignof(T));
         alignment > 0) {
       if (auto *p =
               static_cast<T *>(a_->allocate_aligned(alignment, sizeof(T) * n)))

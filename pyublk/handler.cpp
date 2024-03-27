@@ -31,13 +31,15 @@
 
 #include "sys/file.hpp"
 
+using namespace ublk;
+
 namespace {
 
 struct handler_ctx {
-  std::unique_ptr<ublk::qublkcmd_t> qcmd;
-  std::unique_ptr<ublk::IHandler<int(ublkdrv_cmd const &) noexcept>> handler;
+  std::unique_ptr<qublkcmd_t> qcmd;
+  std::unique_ptr<IHandler<int(ublkdrv_cmd const &) noexcept>> handler;
 
-  ublk::mm::uptrwd<int const> fd;
+  mm::uptrwd<int const> fd;
   std::unique_ptr<boost::asio::posix::stream_descriptor> sd;
 
   uint32_t cmds;
@@ -45,12 +47,12 @@ struct handler_ctx {
   uint32_t last_cmds;
 };
 
-ublk::mm::uptrwd<int const> fd_open(ublk::evpaths_t const &evpaths) {
-  auto fd = ublk::mm::uptrwd<int const>{};
+mm::uptrwd<int const> fd_open(evpaths_t const &evpaths) {
+  auto fd = mm::uptrwd<int const>{};
 
   if (auto it = evpaths.find(UBLKDRV_UIO_KERNEL_TO_USER_DIR_SUFFIX);
       it != evpaths.end()) {
-    fd = ublk::open(it->second, O_RDWR);
+    fd = sys::open(it->second, O_RDWR);
     assert(fd);
   } else {
     throw std::invalid_argument(std::format(

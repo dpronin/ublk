@@ -10,7 +10,7 @@
 
 #include "mm/mem_types.hpp"
 
-namespace ublk {
+namespace ublk::sys {
 
 namespace detail {
 
@@ -47,4 +47,4 @@ Target read_from_as(std::filesystem::path const &attr_path,
   return v;
 }
 
-} // namespace ublk
+} // namespace ublk::sys
