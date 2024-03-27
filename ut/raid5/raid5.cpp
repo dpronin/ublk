@@ -44,7 +44,7 @@ TEST_P(RAID5, TestReading) {
       ut::make_randomized_unique_storages<std::byte const>(storage_sz,
                                                            hs.size()),
   };
-  auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
+  auto const storage_spans{ut::storages_to_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
 
@@ -93,7 +93,7 @@ TEST_P(RAID5, TestWriting) {
   auto const storages{
       ut::make_zeroed_unique_storages<std::byte>(storage_sz, hs.size()),
   };
-  auto const storage_spans{ut::make_storage_spans(storages, storage_sz)};
+  auto const storage_spans{ut::storages_to_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
   /* clang-format off */

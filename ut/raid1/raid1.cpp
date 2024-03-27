@@ -43,7 +43,7 @@ TEST_P(RAID1, TestReading) {
                                                            hs.size()),
   };
   auto const storage_spans{
-      ut::make_storage_spans(storages, param.hs_storage_sz),
+      ut::storages_to_spans(storages, param.hs_storage_sz),
   };
 
   auto const reads_nr{
@@ -89,7 +89,7 @@ TEST_P(RAID1, TestWriting) {
                                                  hs.size()),
   };
   auto const storage_spans{
-      ut::make_storage_spans(storages, param.hs_storage_sz),
+      ut::storages_to_spans(storages, param.hs_storage_sz),
   };
 
   auto tgt{
