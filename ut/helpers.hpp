@@ -57,6 +57,19 @@ inline auto storages_to_spans(std::vector<std::unique_ptr<T[]>> const &storages,
   return storage_spans;
 }
 
+template <is_byte T>
+inline auto
+storages_to_const_spans(std::vector<std::unique_ptr<T[]>> const &storages,
+                        size_t storage_sz) {
+  std::vector<std::span<T const>> storage_spans{storages.size()};
+  std::ranges::transform(
+      storages, storage_spans.begin(),
+      [storage_sz](auto const &storage) -> std::span<T const> {
+        return {storage.get(), storage_sz};
+      });
+  return storage_spans;
+}
+
 inline auto make_unique_for_overwrite_storage(size_t storage_sz) {
   return mm::make_unique_for_overwrite_bytes(storage_sz);
 }

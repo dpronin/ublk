@@ -39,11 +39,11 @@ TEST_P(RAID1, TestReading) {
       hs, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
 
   auto const storages{
-      ut::make_randomized_unique_storages<std::byte const>(param.hs_storage_sz,
-                                                           hs.size()),
+      ut::make_unique_randomized_storages(param.hs_storage_sz, hs.size()),
   };
+
   auto const storage_spans{
-      ut::storages_to_spans(storages, param.hs_storage_sz),
+      ut::storages_to_const_spans(storages, param.hs_storage_sz),
   };
 
   auto const reads_nr{
@@ -85,8 +85,7 @@ TEST_P(RAID1, TestWriting) {
                         [] { return std::make_shared<ut::MockRWHandler>(); });
 
   auto const storages{
-      ut::make_zeroed_unique_storages<std::byte>(param.hs_storage_sz,
-                                                 hs.size()),
+      ut::make_unique_zeroed_storages(param.hs_storage_sz, hs.size()),
   };
   auto const storage_spans{
       ut::storages_to_spans(storages, param.hs_storage_sz),

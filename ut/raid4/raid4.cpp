@@ -32,7 +32,7 @@ struct RAID4Param {
 
 using RAID4 = TestWithParam<RAID4Param>;
 
-TEST_P(RAID4, TestReading) {
+TEST_P(RAID4, SuccessfulReadingAllStripesAtOnce) {
   auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
@@ -41,10 +41,9 @@ TEST_P(RAID4, TestReading) {
 
   auto const storage_sz{param.strip_sz * param.stripes_nr};
   auto const storages{
-      ut::make_randomized_unique_storages<std::byte const>(storage_sz,
-                                                           hs.size() - 1),
+      ut::make_unique_randomized_storages(storage_sz, hs.size() - 1),
   };
-  auto const storage_spans{ut::storages_to_spans(storages, storage_sz)};
+  auto const storage_spans{ut::storages_to_const_spans(storages, storage_sz)};
 
   auto tgt{ublk::raid4::Target{param.strip_sz, {hs.begin(), hs.end()}}};
   /* clang-format off */
@@ -72,7 +71,7 @@ TEST_P(RAID4, TestReading) {
   }
 }
 
-TEST_P(RAID4, TestWritingAllStripesAtOnce) {
+TEST_P(RAID4, SuccessfulWritingAllStripesAtOnceTwice) {
   auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
@@ -81,7 +80,7 @@ TEST_P(RAID4, TestWritingAllStripesAtOnce) {
 
   auto const storage_sz{param.strip_sz * param.stripes_nr};
   auto const storages{
-      ut::make_unique_zeroed_storages<std::byte>(storage_sz, hs.size()),
+      ut::make_unique_zeroed_storages(storage_sz, hs.size()),
   };
   auto const storage_spans{ut::storages_to_spans(storages, storage_sz)};
 

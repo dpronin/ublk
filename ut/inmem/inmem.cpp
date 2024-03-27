@@ -18,11 +18,11 @@ using namespace testing;
 
 namespace ublk::ut::inmem {
 
-TEST(INMEM, TestSuccessReading) {
+TEST(INMEM, SuccessfulReadingTheWholeStorage) {
   constexpr auto kStorageSz{4_KiB};
 
-  auto storage{ut::make_unique_randomized_storage<std::byte>(kStorageSz)};
-  auto const storage_span{std::span{storage.get(), kStorageSz}};
+  auto storage{ut::make_unique_randomized_storage(kStorageSz)};
+  auto *p_storage{storage.get()};
 
   auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
@@ -35,10 +35,10 @@ TEST(INMEM, TestSuccessReading) {
   };
   EXPECT_EQ(res, 0);
 
-  EXPECT_THAT(buf_span, ElementsAreArray(storage_span));
+  EXPECT_THAT(buf_span, ElementsAreArray(p_storage, kStorageSz));
 }
 
-TEST(INMEM, TestFailedOutOfRangeReading) {
+TEST(INMEM, FailedOutOfRangeTheWholeStorage) {
   constexpr auto kStorageSz{512};
 
   auto storage{mm::make_unique_for_overwrite_bytes(kStorageSz)};
@@ -56,19 +56,16 @@ TEST(INMEM, TestFailedOutOfRangeReading) {
   EXPECT_EQ(res, EINVAL);
 }
 
-TEST(INMEM, TestSuccessWriting) {
+TEST(INMEM, SuccessfulWritingAtTheWholeStorage) {
   constexpr auto kStorageSz{4_KiB};
 
-  auto storage{ut::make_unique_zeroed_storage<std::byte>(kStorageSz)};
-  auto const storage_span{std::span{storage.get(), kStorageSz}};
+  auto storage{ut::make_unique_zeroed_storage(kStorageSz)};
+  auto *p_storage{storage.get()};
 
   auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
-  auto const buf{
-      std::unique_ptr<std::byte const[]>{
-          mm::make_unique_randomized_bytes(kStorageSz)},
-  };
-  auto const buf_span{std::span{buf.get(), kStorageSz}};
+  auto const buf{mm::make_unique_randomized_bytes(kStorageSz)};
+  auto const buf_span{std::span<std::byte const>{buf.get(), kStorageSz}};
 
   auto const res{
       tgt.process(write_query::create(
@@ -76,22 +73,18 @@ TEST(INMEM, TestSuccessWriting) {
   };
   EXPECT_EQ(res, 0);
 
-  EXPECT_THAT(buf_span, ElementsAreArray(storage_span));
+  EXPECT_THAT(buf_span, ElementsAreArray(p_storage, kStorageSz));
 }
 
-TEST(INMEM, TestFailedOutOfRangeWriting) {
+TEST(INMEM, FailedOutOfRangeWritingAtTheWholeStorage) {
   constexpr auto kStorageSz{512};
 
   auto storage{mm::make_unique_for_overwrite_bytes(kStorageSz)};
 
   auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
-  auto const buf{
-      std::unique_ptr<std::byte const[]>{
-          mm::make_unique_for_overwrite_bytes(16),
-      },
-  };
-  auto const buf_span{std::span{buf.get(), 16}};
+  auto const buf{mm::make_unique_for_overwrite_bytes(16)};
+  auto const buf_span{std::span<std::byte const>{buf.get(), 16}};
 
   auto const res{
       tgt.process(write_query::create(
