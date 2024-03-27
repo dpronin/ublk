@@ -77,14 +77,14 @@ TEST(INMEM, SuccessfulWritingAtTheWholeStorage) {
 }
 
 TEST(INMEM, FailedOutOfRangeWritingAtTheWholeStorage) {
-  constexpr auto kStorageSz{512};
+  constexpr auto kStorageSz{512uz};
 
   auto storage{mm::make_unique_for_overwrite_bytes(kStorageSz)};
 
   auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
-  auto const buf{mm::make_unique_for_overwrite_bytes(16)};
-  auto const buf_span{std::span<std::byte const>{buf.get(), 16}};
+  auto const buf{mm::make_unique_for_overwrite_bytes(16uz)};
+  auto const buf_span{std::span<std::byte const>{buf.get(), 16uz}};
 
   auto const res{
       tgt.process(write_query::create(

@@ -61,7 +61,7 @@ TEST_P(RAID1, TestReading) {
   }
 
   auto const buf_sz{param.hs_storage_sz};
-  auto const buf{std::make_unique<std::byte[]>(buf_sz)};
+  auto const buf{mm::make_unique_zeroed_bytes(buf_sz)};
   auto const buf_span{std::span{buf.get(), buf_sz}};
 
   tgt.process(read_query::create(buf_span, 0));

@@ -57,7 +57,7 @@ TEST_P(RAID4, SuccessfulReadingAllStripesAtOnce) {
   EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<read_query>>())).Times(0);
 
   auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
-  auto const buf{std::make_unique<std::byte[]>(buf_sz)};
+  auto const buf{mm::make_unique_zeroed_bytes(buf_sz)};
   auto const buf_span{std::span{buf.get(), buf_sz}};
 
   tgt.process(read_query::create(buf_span, 0));

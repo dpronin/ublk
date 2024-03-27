@@ -20,8 +20,8 @@ namespace {
 
 void async_read(boost::asio::random_access_file *raf,
                 std::shared_ptr<ublk::read_query> rq) {
-  auto const offset = rq->offset();
-  auto const buf = rq->buf();
+  auto const offset{rq->offset()};
+  auto const buf{rq->buf()};
   boost::asio::async_read_at(
       *raf, offset, boost::asio::mutable_buffer(buf.data(), buf.size()),
       [=, rq = std::move(rq)](boost::system::error_code ec [[maybe_unused]],
@@ -74,8 +74,8 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
 }
 
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
-  auto const offset = wq->offset();
-  auto const buf = wq->buf();
+  auto const offset{wq->offset()};
+  auto const buf{wq->buf()};
   boost::asio::async_write_at(
       *raf_, offset, boost::asio::const_buffer(buf.data(), buf.size()),
       [wq = std::move(wq)](boost::system::error_code ec [[maybe_unused]],
