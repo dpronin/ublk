@@ -263,7 +263,7 @@ TEST(Cache_FlatLRU, EvictValidEntriesInOrder) {
 }
 
 TEST(Cache_FlatLRU, EvictInsertInvalidatedEntry) {
-  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheLenMax{8uz};
   constexpr auto kCacheItemSz{1uz};
   constexpr auto kKeyToVerify{6uz};
   static_assert(kKeyToVerify < kCacheLenMax);
@@ -294,7 +294,7 @@ TEST(Cache_FlatLRU, EvictInsertInvalidatedEntry) {
 }
 
 TEST(Cache_FlatLRU, EvictInvalidatedEntryInsertOffByOneEntry) {
-  constexpr auto kCacheLenMax{32uz};
+  constexpr auto kCacheLenMax{8uz};
   constexpr auto kCacheItemSz{1uz};
   constexpr auto kKeyToInvalidate{6uz};
   static_assert(kKeyToInvalidate < kCacheLenMax);
