@@ -109,9 +109,9 @@ auto backend_device_open(std::filesystem::path const &path) {
 handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
                               std::optional<cache_cfg> const &cache_cfg,
                               mm::uptrwd<int const> fd) {
-  auto target = std::make_shared<def::Target>(io_ctx, std::move(fd));
+  auto target{std::make_shared<def::Target>(io_ctx, std::move(fd))};
 
-  auto rw_handler = std::unique_ptr<IRWHandler>{};
+  auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler =
       std::make_unique<RWHandler>(std::make_shared<def::ReadHandler>(target),
@@ -146,10 +146,11 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
   std::ranges::transform(std::move(handlers), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
-  auto target =
-      std::make_shared<raid0::Target>(strip_sz, std::move(rw_handlers));
+  auto target{
+      std::make_shared<raid0::Target>(strip_sz, std::move(rw_handlers)),
+  };
 
-  auto rw_handler = std::unique_ptr<IRWHandler>{};
+  auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid0::ReadHandler>(target),
@@ -210,15 +211,16 @@ handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
     throw std::overflow_error(std::format(
         "read_strip_len_sectors {} is too huge", read_strip_len_sectors));
 
-  auto read_strip_sz = sectors_to_bytes(read_strip_len_sectors);
+  auto read_strip_sz{sectors_to_bytes(read_strip_len_sectors)};
   if (0 == read_strip_sz)
     read_strip_sz = sectors_to_bytes(
         bytes_to_sectors(std::numeric_limits<uint64_t>::max()));
 
-  auto target =
-      std::make_shared<raid1::Target>(read_strip_sz, std::move(rw_handlers));
+  auto target{
+      std::make_shared<raid1::Target>(read_strip_sz, std::move(rw_handlers)),
+  };
 
-  auto rw_handler = std::unique_ptr<IRWHandler>{};
+  auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid1::ReadHandler>(target),
@@ -265,8 +267,6 @@ handlers_ops make_raid1_ops(boost::asio::io_context &io_ctx,
 handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
                             std::optional<cache_cfg> const &cache_cfg,
                             std::vector<mm::uptrwd<int const>> fds) {
-  assert(!(fds.size() < 2));
-
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
       std::move(fds), std::back_inserter(default_hopss),
@@ -283,10 +283,11 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   std::ranges::transform(std::move(default_hopss), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
-  auto target =
-      std::make_shared<raid4::Target>(strip_sz, std::move(rw_handlers));
+  auto target{
+      std::make_shared<raid4::Target>(strip_sz, std::move(rw_handlers)),
+  };
 
-  auto rw_handler = std::unique_ptr<IRWHandler>{};
+  auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid4::ReadHandler>(target),
@@ -321,8 +322,6 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx,
 handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
                             std::optional<cache_cfg> const &cache_cfg,
                             std::vector<mm::uptrwd<int const>> fds) {
-  assert(!(fds.size() < 2));
-
   std::vector<handlers_ops> default_hopss;
   std::ranges::transform(
       std::move(fds), std::back_inserter(default_hopss),
@@ -339,10 +338,11 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   std::ranges::transform(std::move(default_hopss), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
-  auto target =
-      std::make_shared<raid5::Target>(strip_sz, std::move(rw_handlers));
+  auto target{
+      std::make_shared<raid5::Target>(strip_sz, std::move(rw_handlers)),
+  };
 
-  auto rw_handler = std::unique_ptr<IRWHandler>{};
+  auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid5::ReadHandler>(target),
@@ -366,7 +366,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx,
                             std::optional<cache_cfg> const &cache_cfg,
                             target_raid5_cfg const &raid5) {
-  std::vector<mm::uptrwd<int const>> fd_targets;
+  auto fd_targets{std::vector<mm::uptrwd<int const>>{}};
   std::ranges::transform(raid5.paths, std::back_inserter(fd_targets),
                          backend_device_open);
   return make_raid5_ops(io_ctx, sectors_to_bytes(raid5.strip_len_sectors),
@@ -386,9 +386,9 @@ Master::~Master() {
 }
 
 void Master::map(bdev_map_param const &param) {
-  auto target = std::shared_ptr<Target>{};
+  auto target{std::shared_ptr<Target>{}};
 
-  if (auto it = targets_.find(param.target_name); targets_.end() != it)
+  if (auto it{targets_.find(param.target_name)}; targets_.end() != it)
     target = it->second;
 
   if (!target)
@@ -413,7 +413,7 @@ void Master::map(bdev_map_param const &param) {
 
   nl_sock.reset();
 
-  if (auto const child_pid = fork(); 0 == child_pid) {
+  if (auto const child_pid{fork()}; 0 == child_pid) {
     spdlog::set_pattern("[slave %P] [%^%l%$]: %v");
     spdlog::info("started: {}", param.target_name);
     slave::run(target->io_ctx(), {
@@ -453,50 +453,55 @@ void Master::create(target_create_param const &param) {
     throw std::invalid_argument(
         std::format("{} target already exists", param.name));
 
-  auto io_ctx = std::make_unique<boost::asio::io_context>();
+  auto io_ctx{std::make_unique<boost::asio::io_context>()};
 
-  auto reader = std::shared_ptr<IReadHandler>{};
-  auto writer = std::shared_ptr<IWriteHandler>{};
-  auto flusher = std::shared_ptr<IFlushHandler>{};
-  auto discarder = std::shared_ptr<IDiscardHandler>{};
+  auto reader{std::shared_ptr<IReadHandler>{}};
+  auto writer{std::shared_ptr<IWriteHandler>{}};
+  auto flusher{std::shared_ptr<IFlushHandler>{}};
+  auto discarder{std::shared_ptr<IDiscardHandler>{}};
 
   std::visit(
       overloaded{
           [&](target_null_cfg const &) {},
           [&](target_inmem_cfg const &) {
             uint64_t const mem_sz{sectors_to_bytes(param.capacity_sectors)};
-            auto target = std::make_shared<inmem::Target>(
-                mm::get_unique_bytes_generator(kSectorSz, mem_sz)(), mem_sz);
+            auto target{
+                std::make_shared<inmem::Target>(
+                    mm::get_unique_bytes_generator(kSectorSz, mem_sz)(),
+                    mem_sz),
+            };
             reader = std::make_shared<inmem::ReadHandler>(target);
             writer = std::make_shared<inmem::WriteHandler>(target);
           },
           [&](target_default_cfg const &def) {
-            auto ops = make_default_ops(*io_ctx, param.cache,
-                                        backend_device_open(def.path));
+            auto ops{
+                make_default_ops(*io_ctx, param.cache,
+                                 backend_device_open(def.path)),
+            };
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid0_cfg const &raid0) {
-            auto ops = make_raid0_ops(*io_ctx, param.cache, raid0);
+            auto ops{make_raid0_ops(*io_ctx, param.cache, raid0)};
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid1_cfg const &raid1) {
-            auto ops = make_raid1_ops(*io_ctx, param.cache, raid1);
+            auto ops{make_raid1_ops(*io_ctx, param.cache, raid1)};
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid4_cfg const &raid4) {
-            auto ops = make_raid4_ops(*io_ctx, param.cache, raid4);
+            auto ops{make_raid4_ops(*io_ctx, param.cache, raid4)};
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
           },
           [&](target_raid5_cfg const &raid5) {
-            auto ops = make_raid5_ops(*io_ctx, param.cache, raid5);
+            auto ops{make_raid5_ops(*io_ctx, param.cache, raid5)};
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
             flusher = std::move(ops.flusher);
@@ -509,9 +514,10 @@ void Master::create(target_create_param const &param) {
                                      return make_raid1_ops(*io_ctx, {}, raid1);
                                    });
 
-            auto ops =
+            auto ops{
                 make_raid0_ops(sectors_to_bytes(raid10.strip_len_sectors),
-                               param.cache, std::move(raid1s_ops));
+                               param.cache, std::move(raid1s_ops)),
+            };
 
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
@@ -525,9 +531,10 @@ void Master::create(target_create_param const &param) {
                                      return make_raid4_ops(*io_ctx, {}, raid4);
                                    });
 
-            auto ops =
+            auto ops{
                 make_raid0_ops(sectors_to_bytes(raid40.strip_len_sectors),
-                               param.cache, std::move(raid4s_ops));
+                               param.cache, std::move(raid4s_ops)),
+            };
 
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
@@ -541,9 +548,10 @@ void Master::create(target_create_param const &param) {
                                      return make_raid5_ops(*io_ctx, {}, raid5);
                                    });
 
-            auto ops =
+            auto ops{
                 make_raid0_ops(sectors_to_bytes(raid50.strip_len_sectors),
-                               param.cache, std::move(raid5s_ops));
+                               param.cache, std::move(raid5s_ops)),
+            };
 
             reader = std::move(ops.reader);
             writer = std::move(ops.writer);
