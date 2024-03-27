@@ -10,6 +10,8 @@
 #include <span>
 #include <vector>
 
+#include <range/v3/view/concat.hpp>
+
 #include "mm/mem.hpp"
 
 #include "utils/size_units.hpp"
@@ -63,17 +65,13 @@ TEST_P(RAID5, SuccessfulReadingAllStripesAtOnce) {
 
   tgt.process(read_query::create(buf_span, 0));
 
-  std::vector<size_t> sids(hs.size());
-  std::iota(sids.begin(), sids.end(), 0);
-
   for (auto off{0uz}; off < buf_span.size(); off += param.strip_sz) {
     auto const stripe_id{off / (param.strip_sz * (hs.size() - 1))};
     auto const sid_parity{hs.size() - (stripe_id % hs.size()) - 1};
-    std::vector<size_t> sids_rotated(sids.size());
-    std::copy_n(sids.begin(), sid_parity, sids_rotated.begin());
-    std::rotate_copy(sids.begin() + sid_parity, sids.begin() + sid_parity + 1,
-                     sids.end(), sids_rotated.begin() + sid_parity);
-    auto const sid{sids_rotated[(off / param.strip_sz) % (hs.size() - 1)]};
+    auto const hs_first_part{std::views::iota(0uz, sid_parity)};
+    auto const hs_last_part{std::views::iota(sid_parity + 1, hs.size())};
+    auto const sids{ranges::views::concat(hs_first_part, hs_last_part)};
+    auto const sid{sids[(off / param.strip_sz) % (hs.size() - 1)]};
     auto const soff{stripe_id * param.strip_sz};
     auto const s1{std::as_bytes(buf_span.subspan(off, param.strip_sz))};
     auto const s2{storage_spans[sid].subspan(soff, param.strip_sz)};
@@ -111,17 +109,13 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
 
     tgt.process(write_query::create(buf_span, 0));
 
-    std::vector<size_t> sids(hs.size());
-    std::iota(sids.begin(), sids.end(), 0);
-
     for (auto off{0uz}; off < buf_span.size(); off += param.strip_sz) {
       auto const stripe_id{off / (param.strip_sz * (hs.size() - 1))};
       auto const sid_parity{hs.size() - (stripe_id % hs.size()) - 1};
-      std::vector<size_t> sids_rotated(sids.size());
-      std::copy_n(sids.begin(), sid_parity, sids_rotated.begin());
-      std::rotate_copy(sids.begin() + sid_parity, sids.begin() + sid_parity + 1,
-                       sids.end(), sids_rotated.begin() + sid_parity);
-      auto const sid{sids_rotated[(off / param.strip_sz) % (hs.size() - 1)]};
+      auto const hs_first_part{std::views::iota(0uz, sid_parity)};
+      auto const hs_last_part{std::views::iota(sid_parity + 1, hs.size())};
+      auto const sids{ranges::views::concat(hs_first_part, hs_last_part)};
+      auto const sid{sids[(off / param.strip_sz) % (hs.size() - 1)]};
       auto const soff{stripe_id * param.strip_sz};
       auto const s1{buf_span.subspan(off, param.strip_sz)};
       auto const s2{
