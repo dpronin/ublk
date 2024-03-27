@@ -56,6 +56,7 @@ find_package(sml CONFIG REQUIRED)
 find_package(liburing CONFIG REQUIRED)
 find_package(libnl CONFIG REQUIRED)
 
+add_subdirectory(sys)
 add_subdirectory(utils)
 add_subdirectory(mm)
 add_subdirectory(pyublk)

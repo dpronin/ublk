@@ -17,6 +17,7 @@ add_library(ublk_mm STATIC
 target_include_directories(ublk_mm PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
 target_link_libraries(ublk_mm PUBLIC
     ublk::utils
+    ublk::sys
 )
 set_property(TARGET ublk_mm PROPERTY POSITION_INDEPENDENT_CODE ON)
 

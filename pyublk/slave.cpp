@@ -26,8 +26,8 @@
 
 #include "mm/mem.hpp"
 
-#include "utils/file.hpp"
-#include "utils/page.hpp"
+#include "sys/file.hpp"
+#include "sys/page.hpp"
 
 #include "cmd_acknowledger.hpp"
 #include "handler.hpp"

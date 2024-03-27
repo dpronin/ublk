@@ -86,5 +86,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ublk::raid1
     ublk::raid4
     ublk::raid5
+    ublk::sys
     ublk::utils
 )

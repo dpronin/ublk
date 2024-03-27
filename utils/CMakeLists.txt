@@ -3,12 +3,8 @@ add_library(ublk_utils INTERFACE
     align.hpp
     bitset_locker.hpp
     concepts.hpp
-    epoll.hpp
-    file.hpp
     functional.hpp
-    genl.hpp
     math.hpp
-    page.hpp
     random.hpp
     size_units.hpp
     span.hpp
@@ -22,6 +18,5 @@ target_include_directories(ublk_utils INTERFACE
 
 target_link_libraries(ublk_utils INTERFACE
     eve::eve
-    Boost::system
-    libnl::libnl
+    Boost::boost
 )

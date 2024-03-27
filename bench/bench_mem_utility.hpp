@@ -8,7 +8,8 @@
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
-#include "utils/page.hpp"
+#include "sys/page.hpp"
+
 #include "utils/random.hpp"
 #ifndef __cpp_lib_ranges_stride
 #include "utils/utility.hpp"

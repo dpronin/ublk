@@ -29,8 +29,9 @@
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
 
-#include "utils/file.hpp"
-#include "utils/genl.hpp"
+#include "sys/file.hpp"
+#include "sys/genl.hpp"
+
 #include "utils/utility.hpp"
 
 #include "cache/rw_handler.hpp"
