@@ -120,7 +120,7 @@ private:
   }
 
   size_t evict_index_find() const noexcept {
-    size_t evict_index{0};
+    auto evict_index{0uz};
     if (is_valid(cache_[evict_index])) {
       for (auto index : std::views::iota(1uz, cache_.size())) {
         if (cache_[evict_index].second.refs < cache_[index].second.refs) {
