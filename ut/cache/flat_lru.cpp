@@ -16,16 +16,17 @@
 
 using namespace testing;
 
+namespace {
+using cache_type = ublk::cache::flat_lru<uint64_t, std::byte>;
+}
+
 namespace ublk::ut::cache {
 
 TEST(Cache_FlatLRU, CreateValid) {
   constexpr auto kCacheLenMax{1uz};
   constexpr auto kCacheItemSz{1uz};
 
-  auto cache_not_null{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache_not_null{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache_not_null);
 
   EXPECT_EQ(cache_not_null->len_max(), kCacheLenMax);
@@ -38,8 +39,8 @@ TEST(Cache_FlatLRU, CreateInvalid) {
 
   auto cache_nulls{
       std::array{
-          ublk::cache::flat_lru<uint64_t, std::byte>::create(0uz, kCacheItemSz),
-          ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax, 0uz),
+          cache_type::create(0uz, kCacheItemSz),
+          cache_type::create(kCacheLenMax, 0uz),
       },
   };
 
@@ -51,10 +52,7 @@ TEST(Cache_FlatLRU, InsertAndFindNonExistent) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{1u};
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   for (auto key : std::views::iota(0uz, kCacheLenMax))
@@ -80,10 +78,7 @@ TEST(Cache_FlatLRU, InsertAndFind) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{16uz};
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   auto bufs_pairs{
@@ -124,10 +119,7 @@ TEST(Cache_FlatLRU, FindMutableAndCheckMutation) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{16uz};
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   auto bufs_pairs{
@@ -175,10 +167,7 @@ TEST(Cache_FlatLRU, Invalidate) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{1uz};
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   auto bufs_pairs{
@@ -219,10 +208,7 @@ TEST(Cache_FlatLRU, InvalidateRange) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{1uz};
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   auto bufs_pairs{
@@ -257,10 +243,7 @@ TEST(Cache_FlatLRU, EvictValidEntriesInOrder) {
   constexpr auto kCacheLenMax{32uz};
   constexpr auto kCacheItemSz{1uz};
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   for (auto key : std::views::iota(0uz, kCacheLenMax)) {
@@ -285,10 +268,7 @@ TEST(Cache_FlatLRU, EvictInsertInvalidatedEntry) {
   constexpr auto kKeyToVerify{6uz};
   static_assert(kKeyToVerify < kCacheLenMax);
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   for (auto key : std::views::iota(0uz, kCacheLenMax)) {
@@ -322,10 +302,7 @@ TEST(Cache_FlatLRU, EvictInvalidatedEntryInsertOffByOneEntry) {
   static_assert(kKeyStride > 1uz,
                 "key stride must not be 1, there must be a gap in between");
 
-  auto cache{
-      ublk::cache::flat_lru<uint64_t, std::byte>::create(kCacheLenMax,
-                                                         kCacheItemSz),
-  };
+  auto cache{cache_type::create(kCacheLenMax, kCacheItemSz)};
   ASSERT_TRUE(cache);
 
   for (auto key : std::views::iota(0uz, kCacheLenMax)) {
