@@ -119,6 +119,20 @@ private:
     return std::views::iota(first - cache_.begin(), last - cache_.begin());
   }
 
+  size_t evict_index_find() const noexcept {
+    size_t evict_index{0};
+    if (is_valid(cache_[evict_index])) {
+      for (auto index : std::views::iota(1uz, cache_.size())) {
+        if (cache_[evict_index].second.refs < cache_[index].second.refs) {
+          evict_index = index;
+          if (!is_valid(cache_[evict_index]))
+            break;
+        }
+      }
+    }
+    return evict_index;
+  }
+
 public:
   ~flat_lru() = default;
 
@@ -155,18 +169,7 @@ public:
         if (!(cache_.size() < len_max())) [[likely]] {
           auto value_it = cache_.begin() + index;
 
-          size_t evict_index{0};
-          if (is_valid(cache_[evict_index])) {
-            for (auto i : std::views::iota(1uz, cache_.size())) {
-              if (cache_[evict_index].second.refs < cache_[i].second.refs) {
-                evict_index = i;
-                if (!is_valid(cache_[evict_index]))
-                  break;
-              }
-            }
-          }
-
-          if (evict_index < index) {
+          if (auto const evict_index{evict_index_find()}; evict_index < index) {
             value_it = std::rotate(cache_.begin() + evict_index,
                                    cache_.begin() + evict_index + 1, value_it);
           } else {
