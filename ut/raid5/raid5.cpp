@@ -102,7 +102,7 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
   auto target{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
 
   for (auto const stripe_data_sz{(hs.size() - 1) * param.strip_sz};
-       auto i [[maybe_unused]] : std::views::iota(0uz, 2uz)) {
+       auto const i [[maybe_unused]] : std::views::iota(0uz, 2uz)) {
     /* clang-format off */
     for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
       EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
