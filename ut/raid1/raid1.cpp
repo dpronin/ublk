@@ -81,8 +81,8 @@ TEST_P(RAID1, TestWriting) {
   auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
-  std::ranges::generate(hs,
-                        [] { return std::make_shared<ut::MockRWHandler>(); });
+  std::ranges::generate(
+      hs, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
 
   auto const storages{
       ut::make_unique_zeroed_storages(param.hs_storage_sz, hs.size()),
