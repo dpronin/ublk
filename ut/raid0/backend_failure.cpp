@@ -53,7 +53,7 @@ TEST_F(RAID0_BackendFailure, FailureAtFirstStripOfFullStripeRead) {
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
       .WillOnce(Return(EIO));
 
   auto const r{be_->process(read_query::create(buf_span, 0))};
@@ -64,9 +64,9 @@ TEST_F(RAID0_BackendFailure, FailureAtSecondStripOfFullStripeRead) {
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeSz)};
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<read_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
       .WillOnce(Return(EIO));
 
   auto const r{be_->process(read_query::create(buf_span, 0))};
@@ -81,7 +81,7 @@ TEST_F(RAID0_BackendFailure, FailureAtFirstStripOfFullStripeWrite) {
   };
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(EIO));
 
   auto const r{be_->process(write_query::create(buf_span, 0))};
@@ -96,9 +96,9 @@ TEST_F(RAID0_BackendFailure, FailureAtSecondStripOfFullStripeWrite) {
   };
   auto buf_span{std::span{buf.get(), this->kStripeSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(EIO));
 
   auto const r{be_->process(write_query::create(buf_span, 0))};

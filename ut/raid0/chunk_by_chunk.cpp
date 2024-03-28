@@ -87,9 +87,9 @@ TEST_P(ChunkByChunk, Read) {
       auto const strip_id{req_off / target_cfg.strip_sz};
       auto const stripe_id{strip_id / target_cfg.strips_per_stripe_nr};
       auto const hid{strip_id % target_cfg.strips_per_stripe_nr};
-      EXPECT_CALL(*hs[hid], submit(An<std::shared_ptr<read_query>>()))
+      EXPECT_CALL(*hs[hid],
+                  submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
           .WillOnce([=, &target_cfg](std::shared_ptr<read_query> rq) {
-            EXPECT_TRUE(rq);
             EXPECT_EQ(rq->offset(),
                       stripe_id * target_cfg.strip_sz + strip_off);
             EXPECT_EQ(rq->buf().size(), req_storage_span.size());
@@ -162,9 +162,9 @@ TEST_P(ChunkByChunk, Write) {
       auto const strip_id{req_off / target_cfg.strip_sz};
       auto const stripe_id{strip_id / target_cfg.strips_per_stripe_nr};
       auto const hid{strip_id % target_cfg.strips_per_stripe_nr};
-      EXPECT_CALL(*hs[hid], submit(An<std::shared_ptr<write_query>>()))
+      EXPECT_CALL(*hs[hid],
+                  submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
           .WillOnce([=, &target_cfg](std::shared_ptr<write_query> wq) {
-            EXPECT_TRUE(wq);
             EXPECT_EQ(wq->offset(),
                       stripe_id * target_cfg.strip_sz + strip_off);
             EXPECT_EQ(wq->buf().size(), req_storage_span.size());

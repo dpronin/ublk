@@ -63,7 +63,7 @@ TEST_F(RAID5_StripeParity, StripeParityBecomesCoherentAtEachFullStripeWrite) {
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
   for (auto const &h : hs_) {
-    EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+    EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
         .WillRepeatedly(Return(0));
   }
 
@@ -91,7 +91,7 @@ TEST_F(RAID5_StripeParity,
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
   for (auto const &h : hs_) {
-    EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+    EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
         .WillRepeatedly(Return(0));
   }
 

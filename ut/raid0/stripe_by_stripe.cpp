@@ -61,9 +61,8 @@ TEST_P(StripeByStripe, Read) {
           stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz,
                                           target_cfg.strip_sz),
       };
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
           .WillOnce([=, &target_cfg](std::shared_ptr<read_query> rq) {
-            EXPECT_TRUE(rq);
             EXPECT_EQ(rq->offset(), target_cfg.strip_sz * stripe_id);
             EXPECT_EQ(rq->buf().size(), strip_storage_buf_span.size());
             std::ranges::copy(strip_storage_buf_span, rq->buf().begin());
@@ -113,9 +112,8 @@ TEST_P(StripeByStripe, Write) {
           stripe_storage_buf_span.subspan((strip_id++) * target_cfg.strip_sz,
                                           target_cfg.strip_sz),
       };
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
           .WillOnce([=, &target_cfg](std::shared_ptr<write_query> wq) {
-            EXPECT_TRUE(wq);
             EXPECT_EQ(wq->offset(), target_cfg.strip_sz * stripe_id);
             EXPECT_EQ(wq->buf().size(), strip_storage_buf_span.size());
             std::ranges::copy(wq->buf(), strip_storage_buf_span.begin());

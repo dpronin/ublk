@@ -54,9 +54,9 @@ TEST_F(RAID4_OnlineToOfflineTransition,
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeDataSz)};
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<read_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
       .WillOnce(Return(EIO));
 
   auto const r1{
@@ -80,11 +80,10 @@ TEST_F(RAID4_OnlineToOfflineTransition,
   auto buf{mm::make_unique_for_overwrite_bytes(this->kStripeDataSz)};
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<read_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<read_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
       .WillOnce([](std::shared_ptr<read_query> rq) {
-        EXPECT_TRUE(rq);
         rq->set_err(EIO);
         return 0;
       });
@@ -114,9 +113,9 @@ TEST_F(RAID4_OnlineToOfflineTransition,
   };
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(EIO));
 
   auto const r1{
@@ -144,11 +143,11 @@ TEST_F(RAID4_OnlineToOfflineTransition,
   };
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[2], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[2], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(EIO));
 
   auto const r1{
@@ -176,15 +175,14 @@ TEST_F(RAID4_OnlineToOfflineTransition,
   };
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce([](std::shared_ptr<write_query> wq) {
-        EXPECT_TRUE(wq);
         wq->set_err(EIO);
         return 0;
       });
-  EXPECT_CALL(*hs_[2], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[2], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
 
   auto const r1{
@@ -213,13 +211,12 @@ TEST_F(RAID4_OnlineToOfflineTransition,
   };
   auto buf_span{std::span{buf.get(), this->kStripeDataSz}};
 
-  EXPECT_CALL(*hs_[0], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[0], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[1], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[1], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce(Return(0));
-  EXPECT_CALL(*hs_[2], submit(An<std::shared_ptr<write_query>>()))
+  EXPECT_CALL(*hs_[2], submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
       .WillOnce([](std::shared_ptr<write_query> wq) {
-        EXPECT_TRUE(wq);
         wq->set_err(EIO);
         return 0;
       });

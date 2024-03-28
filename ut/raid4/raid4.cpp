@@ -84,12 +84,12 @@ TEST_P(RAID4, SuccessfulReadingAllStripesAtOnce) {
   /* clang-format off */
   for (auto const &[h, storage_span] :   std::views::zip(std::views::all(hs), storage_spans)
                                        | std::views::take(hs.size() - 1)) {
-    EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
+    EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
         .Times(param.stripes_nr)
         .WillRepeatedly(ut::make_inmem_reader(storage_span));
   }
   /* clang-format on */
-  EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<read_query>>())).Times(0);
+  EXPECT_CALL(*hs.back(), submit(Matcher<std::shared_ptr<read_query>>(NotNull()))).Times(0);
 
   auto const buf_sz{stripe_data_sz * param.stripes_nr};
   auto const buf{mm::make_unique_zeroed_bytes(buf_sz)};
@@ -125,7 +125,7 @@ TEST_P(RAID4, SuccessfulWritingAllStripesAtOnceTwice) {
        auto const i [[maybe_unused]] : std::views::iota(0uz, 2uz)) {
     /* clang-format off */
     for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
           .Times(param.stripes_nr)
           .WillRepeatedly(ut::make_inmem_writer(storage_span));
     }
@@ -178,7 +178,7 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
   for (auto const stripe_id : std::views::iota(0uz, param.stripes_nr)) {
     /* clang-format off */
     for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
           .WillOnce(ut::make_inmem_writer(storage_span));
     }
     /* clang-format on */
@@ -210,15 +210,15 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
     for (auto const &[h, storage_span] :
          std::views::zip(hs_data, storage_spans_data) |
              std::views::take(div_round_up(write_sz, param.strip_sz))) {
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
           .WillOnce(ut::make_inmem_reader(storage_span));
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
           .WillOnce(ut::make_inmem_writer(storage_span));
     }
 
-    EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<read_query>>()))
+    EXPECT_CALL(*hs.back(), submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
         .WillOnce(ut::make_inmem_reader(storage_spans.back()));
-    EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<write_query>>()))
+    EXPECT_CALL(*hs.back(), submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
         .WillOnce(ut::make_inmem_writer(storage_spans.back()));
 
     auto const buf{mm::make_unique_randomized_bytes(write_sz)};
@@ -272,18 +272,18 @@ TEST_P(RAID4, SuccessfulWritingPartialStripesWriting) {
        auto const stripe_id : std::views::iota(0uz, param.stripes_nr)) {
     for (auto const &[h, storage_span] :
          std::views::zip(hs_data, storage_spans_data)) {
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
           .WillOnce(ut::make_inmem_reader(storage_span));
     }
 
     for (auto const &[h, storage_span] :
          std::views::zip(hs_data, storage_spans_data) |
              std::views::take(div_round_up(write_sz, param.strip_sz))) {
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
           .WillOnce(ut::make_inmem_writer(storage_span));
     }
 
-    EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<write_query>>()))
+    EXPECT_CALL(*hs.back(), submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
         .WillOnce(ut::make_inmem_writer(storage_spans.back()));
 
     auto const buf{mm::make_unique_randomized_bytes(write_sz)};

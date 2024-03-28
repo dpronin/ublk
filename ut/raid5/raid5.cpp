@@ -53,7 +53,7 @@ TEST_P(RAID5, SuccessfulReadingAllStripesAtOnce) {
   auto const parity_cycle_rem{param.stripes_nr % hs.size()};
 
   for (auto i : std::views::iota(0uz, hs.size())) {
-    EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
+    EXPECT_CALL(*hs[i], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
         .Times((hs.size() - 1) * parity_full_cycles + parity_cycle_rem -
                !(i < (hs.size() - parity_cycle_rem)))
         .WillRepeatedly(ut::make_inmem_reader(storage_spans[i]));
@@ -97,7 +97,7 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
   for (auto i [[maybe_unused]] : std::views::iota(0uz, 2uz)) {
     /* clang-format off */
     for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+      EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
           .Times(param.stripes_nr)
           .WillRepeatedly(ut::make_inmem_writer(storage_span));
     }

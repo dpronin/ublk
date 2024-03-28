@@ -55,7 +55,7 @@ TEST_P(RAID1, TestReading) {
   };
 
   for (auto i : std::views::iota(0uz, hs.size())) {
-    EXPECT_CALL(*hs[i], submit(An<std::shared_ptr<read_query>>()))
+    EXPECT_CALL(*hs[i], submit(Matcher<std::shared_ptr<read_query>>(NotNull())))
         .Times(reads_nr / hs.size() + (i < (reads_nr % hs.size())))
         .WillRepeatedly(ut::make_inmem_reader(storage_spans[i]));
   }
@@ -96,7 +96,7 @@ TEST_P(RAID1, TestWriting) {
   };
   /* clang-format off */
   for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
-    EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+    EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
         .Times(1)
         .WillRepeatedly(ut::make_inmem_writer(storage_span));
   }
