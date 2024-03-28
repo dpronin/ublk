@@ -4,6 +4,7 @@
 #include <cstddef>
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <numeric>
 #include <ranges>
@@ -92,9 +93,10 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
   };
   auto const storage_spans{ut::storages_to_spans(storages, storage_sz)};
 
-  auto tgt{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
+  auto target{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
 
-  for (auto i [[maybe_unused]] : std::views::iota(0uz, 2uz)) {
+  for (auto const stripe_data_sz{(hs.size() - 1) * param.strip_sz};
+       auto i [[maybe_unused]] : std::views::iota(0uz, 2uz)) {
     /* clang-format off */
     for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
       EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
@@ -103,14 +105,14 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
     }
     /* clang-format on */
 
-    auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
+    auto const buf_sz{stripe_data_sz * param.stripes_nr};
     auto const buf{mm::make_unique_randomized_bytes(buf_sz)};
     auto const buf_span{std::as_bytes(std::span{buf.get(), buf_sz})};
 
-    tgt.process(write_query::create(buf_span, 0));
+    target.process(write_query::create(buf_span, 0));
 
     for (auto off{0uz}; off < buf_span.size(); off += param.strip_sz) {
-      auto const stripe_id{off / (param.strip_sz * (hs.size() - 1))};
+      auto const stripe_id{off / stripe_data_sz};
       auto const sid_parity{hs.size() - (stripe_id % hs.size()) - 1};
       auto const hs_first_part{std::views::iota(0uz, sid_parity)};
       auto const hs_last_part{std::views::iota(sid_parity + 1, hs.size())};
@@ -124,29 +126,7 @@ TEST_P(RAID5, SuccessfulWritingAllStripesAtOnceTwice) {
       EXPECT_THAT(s1, ElementsAreArray(s2));
     }
 
-    for (auto i : std::views::iota(0uz, param.strip_sz)) {
-      EXPECT_EQ(
-          std::reduce(storage_spans.begin(), storage_spans.end() - 1,
-                      storage_spans.end()[-1][i],
-                      [i, op = std::bit_xor<>{}](auto &&arg1, auto &&arg2) {
-                        using T1 = std::decay_t<decltype(arg1)>;
-                        using T2 = std::decay_t<decltype(arg2)>;
-                        if constexpr (std::same_as<T1, std::byte>) {
-                          if constexpr (std::same_as<T2, std::byte>) {
-                            return op(arg1, arg2);
-                          } else {
-                            return op(arg1, arg2[i]);
-                          }
-                        } else {
-                          if constexpr (std::same_as<T2, std::byte>) {
-                            return op(arg1[i], arg2);
-                          } else {
-                            return op(arg1[i], arg2[i]);
-                          }
-                        }
-                      }),
-          0_b);
-    }
+    ut::parity_verify(storage_spans, param.strip_sz);
   }
 }
 
