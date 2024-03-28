@@ -158,11 +158,18 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
   std::ranges::generate(hs,
                         [] { return std::make_shared<ut::MockRWHandler>(); });
 
+  auto const hs_data{std::views::all(hs) | std::views::take(hs.size() - 1)};
+
   auto const storage_sz{param.strip_sz * param.stripes_nr};
   auto const storages{
       ut::make_unique_zeroed_storages(storage_sz, hs.size()),
   };
   auto const storage_spans{ut::storages_to_spans(storages, storage_sz)};
+
+  auto const storage_spans_data{
+      std::views::all(storage_spans) |
+          std::views::take(storage_spans.size() - 1),
+  };
 
   auto target{ublk::raid4::Target{param.strip_sz, {hs.begin(), hs.end()}}};
 
@@ -197,16 +204,22 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
 
   parity_verify(storage_spans, param.strip_sz);
 
-  for (auto const write_sz{stripe_data_sz - 512 + 16};
+  for (auto const write_sz{stripe_data_sz / 2};
        auto const stripe_id : std::views::iota(0uz, param.stripes_nr)) {
-    /* clang-format off */
-    for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
-      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
-          .WillOnce(ut::make_inmem_writer(storage_span));
+
+    for (auto const &[h, storage_span] :
+         std::views::zip(hs_data, storage_spans_data) |
+             std::views::take(div_round_up(write_sz, param.strip_sz))) {
       EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
           .WillOnce(ut::make_inmem_reader(storage_span));
+      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+          .WillOnce(ut::make_inmem_writer(storage_span));
     }
-    /* clang-format on */
+
+    EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<read_query>>()))
+        .WillOnce(ut::make_inmem_reader(storage_spans.back()));
+    EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<write_query>>()))
+        .WillOnce(ut::make_inmem_writer(storage_spans.back()));
 
     auto const buf{mm::make_unique_randomized_bytes(write_sz)};
     auto const buf_span{std::span<std::byte const>{buf.get(), write_sz}};
@@ -227,6 +240,7 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
       off += chunk_sz;
     }
   }
+
   parity_verify(storage_spans, param.strip_sz);
 }
 
