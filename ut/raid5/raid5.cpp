@@ -27,6 +27,8 @@
 using namespace ublk;
 using namespace testing;
 
+namespace {
+
 struct RAID5Param {
   size_t strip_sz;
   size_t hs_nr;
@@ -34,6 +36,8 @@ struct RAID5Param {
 };
 
 using RAID5 = TestWithParam<RAID5Param>;
+
+} // namespace
 
 TEST_P(RAID5, SuccessfulReadingAllStripesAtOnce) {
   auto const &param{GetParam()};
@@ -48,7 +52,9 @@ TEST_P(RAID5, SuccessfulReadingAllStripesAtOnce) {
   };
   auto const storage_spans{ut::storages_to_const_spans(storages, storage_sz)};
 
-  auto tgt{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
+  auto const stripe_data_sz{(hs.size() - 1) * param.strip_sz};
+
+  auto target{ublk::raid5::Target{param.strip_sz, {hs.begin(), hs.end()}}};
 
   auto const parity_full_cycles{param.stripes_nr / hs.size()};
   auto const parity_cycle_rem{param.stripes_nr % hs.size()};
@@ -60,14 +66,14 @@ TEST_P(RAID5, SuccessfulReadingAllStripesAtOnce) {
         .WillRepeatedly(ut::make_inmem_reader(storage_spans[i]));
   }
 
-  auto const buf_sz{(hs.size() - 1) * param.strip_sz * param.stripes_nr};
+  auto const buf_sz{stripe_data_sz * param.stripes_nr};
   auto const buf{mm::make_unique_zeroed_bytes(buf_sz)};
   auto const buf_span{std::span{buf.get(), buf_sz}};
 
-  tgt.process(read_query::create(buf_span, 0));
+  target.process(read_query::create(buf_span, 0));
 
   for (auto off{0uz}; off < buf_span.size(); off += param.strip_sz) {
-    auto const stripe_id{off / (param.strip_sz * (hs.size() - 1))};
+    auto const stripe_id{off / stripe_data_sz};
     auto const sid_parity{hs.size() - (stripe_id % hs.size()) - 1};
     auto const hs_first_part{std::views::iota(0uz, sid_parity)};
     auto const hs_last_part{std::views::iota(sid_parity + 1, hs.size())};
