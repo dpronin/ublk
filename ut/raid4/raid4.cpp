@@ -189,7 +189,7 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
 
     target.process(write_query::create(buf_span, start_off));
 
-    for (auto off{start_off}; off < start_off + buf_span.size();
+    for (auto off{start_off}; off - start_off < buf_span.size();
          off += param.strip_sz) {
       auto const sid{(off / param.strip_sz) % (hs.size() - 1)};
       auto const soff{off / stripe_data_sz * param.strip_sz};
@@ -224,12 +224,11 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
 
     auto const buf{mm::make_unique_randomized_bytes(write_sz)};
     auto const buf_span{std::span<std::byte const>{buf.get(), write_sz}};
-
     auto const start_off{stripe_id * stripe_data_sz};
 
     target.process(write_query::create(buf_span, start_off));
 
-    for (auto off{start_off}; off + start_off < buf_span.size();) {
+    for (auto off{start_off}; off - start_off < buf_span.size();) {
       auto const chunk_sz{std::min(param.strip_sz, buf_span.size() - off)};
       auto const sid{(off / param.strip_sz) % (hs.size() - 1)};
       auto const soff{off / stripe_data_sz * param.strip_sz};
@@ -308,12 +307,11 @@ TEST_P(RAID4, SuccessfulWritingPartialStripesWriting) {
 
     auto const buf{mm::make_unique_randomized_bytes(write_sz)};
     auto const buf_span{std::span<std::byte const>{buf.get(), write_sz}};
-
     auto const start_off{stripe_id * stripe_data_sz};
 
     target.process(write_query::create(buf_span, start_off));
 
-    for (auto off{start_off}; off + start_off < buf_span.size();) {
+    for (auto off{start_off}; off - start_off < buf_span.size();) {
       auto const chunk_sz{std::min(param.strip_sz, buf_span.size() - off)};
       auto const sid{(off / param.strip_sz) % (hs.size() - 1)};
       auto const soff{off / stripe_data_sz * param.strip_sz};
