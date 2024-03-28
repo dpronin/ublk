@@ -244,6 +244,71 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
   parity_verify(storage_spans, param.strip_sz);
 }
 
+TEST_P(RAID4, SuccessfulWritingPartialStripesWriting) {
+  auto const &param{GetParam()};
+
+  std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
+  std::ranges::generate(
+      hs, [] { return std::make_shared<StrictMock<ut::MockRWHandler>>(); });
+
+  auto const hs_data{std::views::all(hs) | std::views::take(hs.size() - 1)};
+
+  auto const storage_sz{param.strip_sz * param.stripes_nr};
+  auto const storages{
+      ut::make_unique_zeroed_storages(storage_sz, hs.size()),
+  };
+  auto const storage_spans{ut::storages_to_spans(storages, storage_sz)};
+
+  auto const storage_spans_data{
+      std::views::all(storage_spans) |
+          std::views::take(storage_spans.size() - 1),
+  };
+
+  auto target{ublk::raid4::Target{param.strip_sz, {hs.begin(), hs.end()}}};
+
+  auto const stripe_data_sz{(hs.size() - 1) * param.strip_sz};
+
+  for (auto const write_sz{stripe_data_sz / 2};
+       auto const stripe_id : std::views::iota(0uz, param.stripes_nr)) {
+    for (auto const &[h, storage_span] :
+         std::views::zip(hs_data, storage_spans_data)) {
+      EXPECT_CALL(*h, submit(An<std::shared_ptr<read_query>>()))
+          .WillOnce(ut::make_inmem_reader(storage_span));
+    }
+
+    for (auto const &[h, storage_span] :
+         std::views::zip(hs_data, storage_spans_data) |
+             std::views::take(div_round_up(write_sz, param.strip_sz))) {
+      EXPECT_CALL(*h, submit(An<std::shared_ptr<write_query>>()))
+          .WillOnce(ut::make_inmem_writer(storage_span));
+    }
+
+    EXPECT_CALL(*hs.back(), submit(An<std::shared_ptr<write_query>>()))
+        .WillOnce(ut::make_inmem_writer(storage_spans.back()));
+
+    auto const buf{mm::make_unique_randomized_bytes(write_sz)};
+    auto const buf_span{std::span<std::byte const>{buf.get(), write_sz}};
+
+    auto const start_off{stripe_id * stripe_data_sz};
+
+    target.process(write_query::create(buf_span, start_off));
+
+    for (auto off{start_off}; off + start_off < buf_span.size();) {
+      auto const chunk_sz{std::min(param.strip_sz, buf_span.size() - off)};
+      auto const sid{(off / param.strip_sz) % (hs.size() - 1)};
+      auto const soff{off / stripe_data_sz * param.strip_sz};
+      auto const s1{buf_span.subspan(off - start_off, chunk_sz)};
+      auto const s2{
+          std::as_bytes(storage_spans[sid].subspan(soff, chunk_sz)),
+      };
+      EXPECT_THAT(s1, ElementsAreArray(s2));
+      off += chunk_sz;
+    }
+  }
+
+  parity_verify(storage_spans, param.strip_sz);
+}
+
 INSTANTIATE_TEST_SUITE_P(RAID4_Operations, RAID4,
                          Values(
                              RAID4Param{
