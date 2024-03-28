@@ -35,33 +35,6 @@ struct RAID4Param {
 
 using RAID4 = TestWithParam<RAID4Param>;
 
-template <is_byte T>
-void parity_verify(std::vector<std::span<T>> const &storage_spans,
-                   size_t check_sz) noexcept {
-  for (auto i : std::views::iota(0uz, check_sz)) {
-    EXPECT_EQ(std::reduce(storage_spans.begin(), storage_spans.end() - 1,
-                          storage_spans.end()[-1][i],
-                          [i, op = std::bit_xor<>{}](auto &&arg1, auto &&arg2) {
-                            using T1 = std::decay_t<decltype(arg1)>;
-                            using T2 = std::decay_t<decltype(arg2)>;
-                            if constexpr (std::same_as<T1, std::byte>) {
-                              if constexpr (std::same_as<T2, std::byte>) {
-                                return op(arg1, arg2);
-                              } else {
-                                return op(arg1, arg2[i]);
-                              }
-                            } else {
-                              if constexpr (std::same_as<T2, std::byte>) {
-                                return op(arg1[i], arg2);
-                              } else {
-                                return op(arg1[i], arg2[i]);
-                              }
-                            }
-                          }),
-              0_b);
-  }
-}
-
 } // namespace
 
 TEST_P(RAID4, SuccessfulReadingAllStripesAtOnce) {
@@ -146,7 +119,7 @@ TEST_P(RAID4, SuccessfulWritingAllStripesAtOnceTwice) {
       EXPECT_THAT(s1, ElementsAreArray(s2));
     }
 
-    parity_verify(storage_spans, param.strip_sz);
+    ut::parity_verify(storage_spans, param.strip_sz);
   }
 }
 
@@ -201,7 +174,7 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
     }
   }
 
-  parity_verify(storage_spans, param.strip_sz);
+  ut::parity_verify(storage_spans, param.strip_sz);
 
   for (auto const write_sz{stripe_data_sz / 2};
        auto const stripe_id : std::views::iota(0uz, param.stripes_nr)) {
@@ -241,7 +214,7 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
     }
   }
 
-  parity_verify(storage_spans, param.strip_sz);
+  ut::parity_verify(storage_spans, param.strip_sz);
 }
 
 TEST_P(RAID4, SuccessfulWritingPartialStripesWriting) {
@@ -324,7 +297,7 @@ TEST_P(RAID4, SuccessfulWritingPartialStripesWriting) {
     }
   }
 
-  parity_verify(storage_spans, param.strip_sz);
+  ut::parity_verify(storage_spans, param.strip_sz);
 }
 
 INSTANTIATE_TEST_SUITE_P(RAID4_Operations, RAID4,

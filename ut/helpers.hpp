@@ -7,9 +7,16 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <concepts>
+#include <functional>
 #include <memory>
+#include <numeric>
+#include <ranges>
 #include <span>
+#include <type_traits>
 #include <vector>
+
+#include "utils/concepts.hpp"
 
 #include "mm/mem.hpp"
 
@@ -104,6 +111,33 @@ inline auto make_unique_zeroed_storages(size_t storage_sz, size_t nr) {
     return make_unique_zeroed_storage(storage_sz);
   });
   return storages;
+}
+
+template <is_byte T>
+void parity_verify(std::vector<std::span<T>> const &storage_spans,
+                   size_t check_sz) noexcept {
+  for (auto i : std::views::iota(0uz, check_sz)) {
+    EXPECT_EQ(std::reduce(storage_spans.begin(), storage_spans.end() - 1,
+                          storage_spans.end()[-1][i],
+                          [i, op = std::bit_xor<>{}](auto &&arg1, auto &&arg2) {
+                            using T1 = std::decay_t<decltype(arg1)>;
+                            using T2 = std::decay_t<decltype(arg2)>;
+                            if constexpr (std::same_as<T1, std::byte>) {
+                              if constexpr (std::same_as<T2, std::byte>) {
+                                return op(arg1, arg2);
+                              } else {
+                                return op(arg1, arg2[i]);
+                              }
+                            } else {
+                              if constexpr (std::same_as<T2, std::byte>) {
+                                return op(arg1[i], arg2);
+                              } else {
+                                return op(arg1[i], arg2[i]);
+                              }
+                            }
+                          }),
+              0_b);
+  }
 }
 
 } // namespace ublk::ut
