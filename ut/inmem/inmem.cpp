@@ -24,13 +24,13 @@ TEST(INMEM, SuccessfulReadingTheWholeStorage) {
   auto storage{ut::make_unique_randomized_storage(kStorageSz)};
   auto *p_storage{storage.get()};
 
-  auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
+  auto target{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
   auto const buf{mm::make_unique_zeroed_bytes(kStorageSz)};
   auto const buf_span{std::span{buf.get(), kStorageSz}};
 
   auto const res{
-      tgt.process(read_query::create(
+      target.process(read_query::create(
           buf_span, 0, [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
   };
   EXPECT_EQ(res, 0);
@@ -39,17 +39,17 @@ TEST(INMEM, SuccessfulReadingTheWholeStorage) {
 }
 
 TEST(INMEM, FailedOutOfRangeTheWholeStorage) {
-  constexpr auto kStorageSz{512};
+  constexpr auto kStorageSz{512uz};
 
   auto storage{mm::make_unique_for_overwrite_bytes(kStorageSz)};
 
-  auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
+  auto target{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
   auto const buf{mm::make_unique_for_overwrite_bytes(16)};
   auto const buf_span{std::span{buf.get(), 16}};
 
   auto const res{
-      tgt.process(read_query::create(
+      target.process(read_query::create(
           buf_span, kStorageSz - buf_span.size() + 1,
           [](read_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
   };
@@ -62,13 +62,13 @@ TEST(INMEM, SuccessfulWritingAtTheWholeStorage) {
   auto storage{ut::make_unique_zeroed_storage(kStorageSz)};
   auto *p_storage{storage.get()};
 
-  auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
+  auto target{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
   auto const buf{mm::make_unique_randomized_bytes(kStorageSz)};
   auto const buf_span{std::span<std::byte const>{buf.get(), kStorageSz}};
 
   auto const res{
-      tgt.process(write_query::create(
+      target.process(write_query::create(
           buf_span, 0, [](write_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
   };
   EXPECT_EQ(res, 0);
@@ -81,13 +81,13 @@ TEST(INMEM, FailedOutOfRangeWritingAtTheWholeStorage) {
 
   auto storage{mm::make_unique_for_overwrite_bytes(kStorageSz)};
 
-  auto tgt{ublk::inmem::Target{std::move(storage), kStorageSz}};
+  auto target{ublk::inmem::Target{std::move(storage), kStorageSz}};
 
   auto const buf{mm::make_unique_for_overwrite_bytes(16uz)};
   auto const buf_span{std::span<std::byte const>{buf.get(), 16uz}};
 
   auto const res{
-      tgt.process(write_query::create(
+      target.process(write_query::create(
           buf_span, kStorageSz - buf_span.size() + 1,
           [](write_query const &rq) { EXPECT_EQ(rq.err(), 0); })),
   };
