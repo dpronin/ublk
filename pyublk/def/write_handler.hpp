@@ -18,11 +18,11 @@ public:
   }
   ~WriteHandler() override = default;
 
-  WriteHandler(WriteHandler const &) = default;
-  WriteHandler &operator=(WriteHandler const &) = default;
+  WriteHandler(WriteHandler const &) = delete;
+  WriteHandler &operator=(WriteHandler const &) = delete;
 
-  WriteHandler(WriteHandler &&) = default;
-  WriteHandler &operator=(WriteHandler &&) = default;
+  WriteHandler(WriteHandler &&) = delete;
+  WriteHandler &operator=(WriteHandler &&) = delete;
 
   int submit(std::shared_ptr<write_query> wq) noexcept override {
     return target_->process(std::move(wq));

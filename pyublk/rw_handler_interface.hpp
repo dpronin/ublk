@@ -2,8 +2,8 @@
 
 #include "read_handler_interface.hpp"
 #include "read_query.hpp"
-#include "write_query.hpp"
 #include "write_handler_interface.hpp"
+#include "write_query.hpp"
 
 namespace ublk {
 
@@ -12,11 +12,11 @@ public:
   IRWHandler() = default;
   ~IRWHandler() override = default;
 
-  IRWHandler(IRWHandler const &) = default;
-  IRWHandler &operator=(IRWHandler const &) = default;
+  IRWHandler(IRWHandler const &) = delete;
+  IRWHandler &operator=(IRWHandler const &) = delete;
 
-  IRWHandler(IRWHandler &&) = default;
-  IRWHandler &operator=(IRWHandler &&) = default;
+  IRWHandler(IRWHandler &&) = delete;
+  IRWHandler &operator=(IRWHandler &&) = delete;
 
   int submit(std::shared_ptr<read_query> rq) noexcept override = 0;
   int submit(std::shared_ptr<write_query> wq) noexcept override = 0;

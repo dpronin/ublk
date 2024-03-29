@@ -9,11 +9,11 @@ public:
   FlushHandler() = default;
   ~FlushHandler() override = default;
 
-  FlushHandler(FlushHandler const &) = default;
-  FlushHandler &operator=(FlushHandler const &) = default;
+  FlushHandler(FlushHandler const &) = delete;
+  FlushHandler &operator=(FlushHandler const &) = delete;
 
-  FlushHandler(FlushHandler &&) = default;
-  FlushHandler &operator=(FlushHandler &&) = default;
+  FlushHandler(FlushHandler &&) = delete;
+  FlushHandler &operator=(FlushHandler &&) = delete;
 
   int submit(std::shared_ptr<flush_query> fq
              [[maybe_unused]]) noexcept override {

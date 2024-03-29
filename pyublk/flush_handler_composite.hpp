@@ -20,11 +20,11 @@ public:
   }
   ~FlushHandlerComposite() override = default;
 
-  FlushHandlerComposite(FlushHandlerComposite const &) = default;
-  FlushHandlerComposite &operator=(FlushHandlerComposite const &) = default;
+  FlushHandlerComposite(FlushHandlerComposite const &) = delete;
+  FlushHandlerComposite &operator=(FlushHandlerComposite const &) = delete;
 
-  FlushHandlerComposite(FlushHandlerComposite &&) = default;
-  FlushHandlerComposite &operator=(FlushHandlerComposite &&) = default;
+  FlushHandlerComposite(FlushHandlerComposite &&) = delete;
+  FlushHandlerComposite &operator=(FlushHandlerComposite &&) = delete;
 
   int submit(std::shared_ptr<flush_query> fq) noexcept override {
     std::ranges::for_each(

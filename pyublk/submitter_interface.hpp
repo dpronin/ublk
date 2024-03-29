@@ -9,11 +9,11 @@ public:
   ISubmitter() = default;
   virtual ~ISubmitter() = default;
 
-  ISubmitter(ISubmitter const &) = default;
-  ISubmitter &operator=(ISubmitter const &) = default;
+  ISubmitter(ISubmitter const &) = delete;
+  ISubmitter &operator=(ISubmitter const &) = delete;
 
-  ISubmitter(ISubmitter &&) noexcept = default;
-  ISubmitter &operator=(ISubmitter &&) noexcept = default;
+  ISubmitter(ISubmitter &&) noexcept = delete;
+  ISubmitter &operator=(ISubmitter &&) noexcept = delete;
 
   virtual R submit(Args...) = 0;
 };
@@ -23,11 +23,11 @@ public:
   ISubmitter() = default;
   virtual ~ISubmitter() = default;
 
-  ISubmitter(ISubmitter const &) = default;
-  ISubmitter &operator=(ISubmitter const &) = default;
+  ISubmitter(ISubmitter const &) = delete;
+  ISubmitter &operator=(ISubmitter const &) = delete;
 
-  ISubmitter(ISubmitter &&) noexcept = default;
-  ISubmitter &operator=(ISubmitter &&) noexcept = default;
+  ISubmitter(ISubmitter &&) noexcept = delete;
+  ISubmitter &operator=(ISubmitter &&) noexcept = delete;
 
   virtual R submit(Args...) noexcept = 0;
 };

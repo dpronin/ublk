@@ -9,11 +9,11 @@ public:
   DiscardHandler() = default;
   ~DiscardHandler() override = default;
 
-  DiscardHandler(DiscardHandler const &) = default;
-  DiscardHandler &operator=(DiscardHandler const &) = default;
+  DiscardHandler(DiscardHandler const &) = delete;
+  DiscardHandler &operator=(DiscardHandler const &) = delete;
 
-  DiscardHandler(DiscardHandler &&) = default;
-  DiscardHandler &operator=(DiscardHandler &&) = default;
+  DiscardHandler(DiscardHandler &&) = delete;
+  DiscardHandler &operator=(DiscardHandler &&) = delete;
 
   int submit(std::shared_ptr<discard_query> dq
              [[maybe_unused]]) noexcept override {

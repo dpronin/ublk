@@ -18,11 +18,11 @@ public:
   }
   ~ReadHandler() override = default;
 
-  ReadHandler(ReadHandler const &) = default;
-  ReadHandler &operator=(ReadHandler const &) = default;
+  ReadHandler(ReadHandler const &) = delete;
+  ReadHandler &operator=(ReadHandler const &) = delete;
 
-  ReadHandler(ReadHandler &&) = default;
-  ReadHandler &operator=(ReadHandler &&) = default;
+  ReadHandler(ReadHandler &&) = delete;
+  ReadHandler &operator=(ReadHandler &&) = delete;
 
   int submit(std::shared_ptr<read_query> rq) noexcept override {
     return target_->process(std::move(rq));

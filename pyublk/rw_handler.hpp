@@ -11,7 +11,7 @@
 
 namespace ublk {
 
-class RWHandler : public IRWHandler {
+class RWHandler final : public IRWHandler {
 public:
   explicit RWHandler(std::shared_ptr<IReadHandler> rh,
                      std::shared_ptr<IWriteHandler> wh)
@@ -21,11 +21,11 @@ public:
   }
   ~RWHandler() override = default;
 
-  RWHandler(RWHandler const &) = default;
-  RWHandler &operator=(RWHandler const &) = default;
+  RWHandler(RWHandler const &) = delete;
+  RWHandler &operator=(RWHandler const &) = delete;
 
-  RWHandler(RWHandler &&) = default;
-  RWHandler &operator=(RWHandler &&) = default;
+  RWHandler(RWHandler &&) = delete;
+  RWHandler &operator=(RWHandler &&) = delete;
 
   int submit(std::shared_ptr<read_query> rq) noexcept override {
     return rh_->submit(std::move(rq));
