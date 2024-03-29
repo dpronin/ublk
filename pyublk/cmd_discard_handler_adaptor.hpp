@@ -35,7 +35,7 @@ struct fmt::formatter<ublkdrv_cmd_discard> : fmt::formatter<std::string> {
   decltype(auto) format(ublkdrv_cmd_discard cmd, format_context &ctx) {
     std::ostringstream oss;
     oss << cmd;
-    return fmt::format_to(ctx.out(), "{}", oss.str());
+    return std::format_to(ctx.out(), "{}", oss.str());
   }
 };
 

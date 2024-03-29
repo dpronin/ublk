@@ -21,13 +21,14 @@ inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_ack const &cmd) {
   return out;
 }
 
-template <> struct fmt::formatter<ublkdrv_cmd_ack> : fmt::formatter<std::string> {
-  auto format(ublkdrv_cmd_ack const &cmd, format_context &ctx)
-      -> decltype(ctx.out()) {
+template <>
+struct fmt::formatter<ublkdrv_cmd_ack> : fmt::formatter<std::string> {
+  auto format(ublkdrv_cmd_ack const &cmd,
+              format_context &ctx) -> decltype(ctx.out()) {
 
     std::ostringstream oss;
     oss << cmd;
-    return fmt::format_to(ctx.out(), "{}", oss.str());
+    return std::format_to(ctx.out(), "{}", oss.str());
   }
 };
 
