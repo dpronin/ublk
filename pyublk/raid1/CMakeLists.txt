@@ -2,7 +2,7 @@ add_library(ublk_raid1 STATIC
     backend.cpp
     backend.hpp
     fsm.hpp
-    read_handler.hpp
+    rdq_submitter.hpp
     target.cpp
     target.hpp
     wrq_submitter.hpp

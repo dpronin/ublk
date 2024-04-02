@@ -1,5 +1,5 @@
 add_library(ublk_inmem STATIC
-    read_handler.hpp
+    rdq_submitter.hpp
     target.cpp
     target.hpp
     wrq_submitter.hpp

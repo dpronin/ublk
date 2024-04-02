@@ -10,19 +10,19 @@
 
 namespace ublk::raid4 {
 
-class ReadHandler : public IRDQSubmitter {
+class RDQSubmitter : public IRDQSubmitter {
 public:
-  explicit ReadHandler(std::shared_ptr<Target> target)
+  explicit RDQSubmitter(std::shared_ptr<Target> target)
       : target_(std::move(target)) {
     assert(target_);
   }
-  ~ReadHandler() override = default;
+  ~RDQSubmitter() override = default;
 
-  ReadHandler(ReadHandler const &) = delete;
-  ReadHandler &operator=(ReadHandler const &) = delete;
+  RDQSubmitter(RDQSubmitter const &) = delete;
+  RDQSubmitter &operator=(RDQSubmitter const &) = delete;
 
-  ReadHandler(ReadHandler &&) = delete;
-  ReadHandler &operator=(ReadHandler &&) = delete;
+  RDQSubmitter(RDQSubmitter &&) = delete;
+  RDQSubmitter &operator=(RDQSubmitter &&) = delete;
 
   int submit(std::shared_ptr<read_query> rq) noexcept override {
     return target_->process(std::move(rq));

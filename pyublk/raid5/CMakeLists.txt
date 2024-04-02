@@ -1,5 +1,5 @@
 add_library(ublk_raid5 STATIC
-    read_handler.hpp
+    rdq_submitter.hpp
     target.cpp
     target.hpp
     wrq_submitter.hpp

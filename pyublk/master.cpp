@@ -52,7 +52,7 @@
 #include "flush_handler_composite.hpp"
 #include "flush_handler_interface.hpp"
 #include "rdq_submitter_interface.hpp"
-#include "read_handler.hpp"
+#include "rdq_submitter.hpp"
 #include "rw_handler.hpp"
 #include "sector.hpp"
 #include "target.hpp"
@@ -63,31 +63,31 @@
 
 #include "null/discard_handler.hpp"
 #include "null/flush_handler.hpp"
-#include "null/read_handler.hpp"
+#include "null/rdq_submitter.hpp"
 #include "null/wrq_submitter.hpp"
 
-#include "inmem/read_handler.hpp"
+#include "inmem/rdq_submitter.hpp"
 #include "inmem/target.hpp"
 #include "inmem/wrq_submitter.hpp"
 
 #include "def/flush_handler.hpp"
-#include "def/read_handler.hpp"
+#include "def/rdq_submitter.hpp"
 #include "def/target.hpp"
 #include "def/wrq_submitter.hpp"
 
-#include "raid0/read_handler.hpp"
+#include "raid0/rdq_submitter.hpp"
 #include "raid0/target.hpp"
 #include "raid0/wrq_submitter.hpp"
 
-#include "raid1/read_handler.hpp"
+#include "raid1/rdq_submitter.hpp"
 #include "raid1/target.hpp"
 #include "raid1/wrq_submitter.hpp"
 
-#include "raid4/read_handler.hpp"
+#include "raid4/rdq_submitter.hpp"
 #include "raid4/target.hpp"
 #include "raid4/wrq_submitter.hpp"
 
-#include "raid5/read_handler.hpp"
+#include "raid5/rdq_submitter.hpp"
 #include "raid5/target.hpp"
 #include "raid5/wrq_submitter.hpp"
 
@@ -114,7 +114,7 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
   auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler =
-      std::make_unique<RWHandler>(std::make_shared<def::ReadHandler>(target),
+      std::make_unique<RWHandler>(std::make_shared<def::RDQSubmitter>(target),
                                   std::make_shared<def::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
@@ -126,7 +126,7 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
   auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
-      .reader = std::make_shared<ReadHandler>(sp_rw_handler),
+      .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<def::FlushHandler>(target),
   };
@@ -153,7 +153,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
   auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
-      std::make_shared<raid0::ReadHandler>(target),
+      std::make_shared<raid0::RDQSubmitter>(target),
       std::make_shared<raid0::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
@@ -165,7 +165,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
   auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
-      .reader = std::make_shared<ReadHandler>(sp_rw_handler),
+      .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
@@ -223,7 +223,7 @@ handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
   auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
-      std::make_shared<raid1::ReadHandler>(target),
+      std::make_shared<raid1::RDQSubmitter>(target),
       std::make_shared<raid1::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
@@ -235,7 +235,7 @@ handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
   auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
-      .reader = std::make_shared<ReadHandler>(sp_rw_handler),
+      .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
@@ -290,7 +290,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
-      std::make_shared<raid4::ReadHandler>(target),
+      std::make_shared<raid4::RDQSubmitter>(target),
       std::make_shared<raid4::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
@@ -302,7 +302,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
-      .reader = std::make_shared<ReadHandler>(sp_rw_handler),
+      .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
@@ -345,7 +345,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   auto rw_handler{std::unique_ptr<IRWHandler>{}};
 
   rw_handler = std::make_unique<RWHandler>(
-      std::make_shared<raid5::ReadHandler>(target),
+      std::make_shared<raid5::RDQSubmitter>(target),
       std::make_shared<raid5::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
@@ -357,7 +357,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   auto sp_rw_handler{std::shared_ptr{std::move(rw_handler)}};
 
   return {
-      .reader = std::make_shared<ReadHandler>(sp_rw_handler),
+      .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
@@ -470,7 +470,7 @@ void Master::create(target_create_param const &param) {
                     mm::get_unique_bytes_generator(kSectorSz, mem_sz)(),
                     mem_sz),
             };
-            reader = std::make_shared<inmem::ReadHandler>(target);
+            reader = std::make_shared<inmem::RDQSubmitter>(target);
             writer = std::make_shared<inmem::WRQSubmitter>(target);
           },
           [&](target_default_cfg const &def) {
@@ -561,7 +561,7 @@ void Master::create(target_create_param const &param) {
       param.target);
 
   if (!reader)
-    reader = std::make_shared<null::ReadHandler>();
+    reader = std::make_shared<null::RDQSubmitter>();
 
   if (!writer)
     writer = std::make_shared<null::WRQSubmitter>();

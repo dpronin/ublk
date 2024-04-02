@@ -10,18 +10,18 @@
 
 namespace ublk {
 
-class ReadHandler final : public IRDQSubmitter {
+class RDQSubmitter final : public IRDQSubmitter {
 public:
-  explicit ReadHandler(std::shared_ptr<IRWHandler> rwh) : rwh_(std::move(rwh)) {
+  explicit RDQSubmitter(std::shared_ptr<IRWHandler> rwh) : rwh_(std::move(rwh)) {
     assert(rwh_);
   }
-  ~ReadHandler() override = default;
+  ~RDQSubmitter() override = default;
 
-  ReadHandler(ReadHandler const &) = delete;
-  ReadHandler &operator=(ReadHandler const &) = delete;
+  RDQSubmitter(RDQSubmitter const &) = delete;
+  RDQSubmitter &operator=(RDQSubmitter const &) = delete;
 
-  ReadHandler(ReadHandler &&) = delete;
-  ReadHandler &operator=(ReadHandler &&) = delete;
+  RDQSubmitter(RDQSubmitter &&) = delete;
+  RDQSubmitter &operator=(RDQSubmitter &&) = delete;
 
   int submit(std::shared_ptr<read_query> rq) noexcept override {
     return rwh_->submit(std::move(rq));
