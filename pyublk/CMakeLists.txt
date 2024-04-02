@@ -53,7 +53,7 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     ublk_req_handler_interface.hpp
     write_query.hpp
     write_req.hpp
-    write_handler_interface.hpp
+    wrq_submitter_interface.hpp
 )
 
 add_subdirectory(cfq)

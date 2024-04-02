@@ -13,7 +13,7 @@
 
 namespace ublk {
 
-CmdWriteHandler::CmdWriteHandler(std::shared_ptr<IWriteHandler> writer)
+CmdWriteHandler::CmdWriteHandler(std::shared_ptr<IWRQSubmitter> writer)
     : writer_(std::move(writer)) {
   assert(writer_);
 }

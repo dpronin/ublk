@@ -1,10 +1,10 @@
 #pragma once
 
-#include "write_handler_interface.hpp"
+#include "wrq_submitter_interface.hpp"
 
 namespace ublk::null {
 
-class WriteHandler : public IWriteHandler {
+class WriteHandler : public IWRQSubmitter {
 public:
   WriteHandler() = default;
   ~WriteHandler() override = default;

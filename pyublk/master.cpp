@@ -59,7 +59,7 @@
 #include "target_create_param.hpp"
 #include "ublk_req_handler_interface.hpp"
 #include "write_handler.hpp"
-#include "write_handler_interface.hpp"
+#include "wrq_submitter_interface.hpp"
 
 #include "null/discard_handler.hpp"
 #include "null/flush_handler.hpp"
@@ -97,7 +97,7 @@ namespace {
 
 struct handlers_ops {
   std::shared_ptr<IReadHandler> reader;
-  std::shared_ptr<IWriteHandler> writer;
+  std::shared_ptr<IWRQSubmitter> writer;
   std::shared_ptr<IFlushHandler> flusher;
 };
 
@@ -456,7 +456,7 @@ void Master::create(target_create_param const &param) {
   auto io_ctx{std::make_unique<boost::asio::io_context>()};
 
   auto reader{std::shared_ptr<IReadHandler>{}};
-  auto writer{std::shared_ptr<IWriteHandler>{}};
+  auto writer{std::shared_ptr<IWRQSubmitter>{}};
   auto flusher{std::shared_ptr<IFlushHandler>{}};
   auto discarder{std::shared_ptr<IDiscardHandler>{}};
 

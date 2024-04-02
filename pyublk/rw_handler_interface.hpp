@@ -2,12 +2,12 @@
 
 #include "read_handler_interface.hpp"
 #include "read_query.hpp"
-#include "write_handler_interface.hpp"
 #include "write_query.hpp"
+#include "wrq_submitter_interface.hpp"
 
 namespace ublk {
 
-class IRWHandler : public IReadHandler, public IWriteHandler {
+class IRWHandler : public IReadHandler, public IWRQSubmitter {
 public:
   IRWHandler() = default;
   ~IRWHandler() override = default;

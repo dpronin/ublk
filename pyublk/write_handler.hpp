@@ -6,11 +6,11 @@
 #include <utility>
 
 #include "rw_handler_interface.hpp"
-#include "write_handler_interface.hpp"
+#include "wrq_submitter_interface.hpp"
 
 namespace ublk {
 
-class WriteHandler final : public IWriteHandler {
+class WriteHandler final : public IWRQSubmitter {
 public:
   explicit WriteHandler(std::shared_ptr<IRWHandler> rwh)
       : rwh_(std::move(rwh)) {

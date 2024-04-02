@@ -6,11 +6,11 @@
 #include <utility>
 
 #include "target.hpp"
-#include "write_handler_interface.hpp"
+#include "wrq_submitter_interface.hpp"
 
 namespace ublk::raid0 {
 
-class WriteHandler : public IWriteHandler {
+class WriteHandler : public IWRQSubmitter {
 public:
   explicit WriteHandler(std::shared_ptr<Target> target)
       : target_(std::move(target)) {
