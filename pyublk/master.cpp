@@ -49,8 +49,8 @@
 #include "cmd_write_handler.hpp"
 #include "cmd_write_handler_adaptor.hpp"
 #include "discard_handler_interface.hpp"
+#include "flq_submitter_composite.hpp"
 #include "flq_submitter_interface.hpp"
-#include "flush_handler_composite.hpp"
 #include "rdq_submitter.hpp"
 #include "rdq_submitter_interface.hpp"
 #include "rw_handler.hpp"
@@ -62,7 +62,7 @@
 #include "wrq_submitter_interface.hpp"
 
 #include "null/discard_handler.hpp"
-#include "null/flush_handler.hpp"
+#include "null/flq_submitter.hpp"
 #include "null/rdq_submitter.hpp"
 #include "null/wrq_submitter.hpp"
 
@@ -70,7 +70,7 @@
 #include "inmem/target.hpp"
 #include "inmem/wrq_submitter.hpp"
 
-#include "def/flush_handler.hpp"
+#include "def/flq_submitter.hpp"
 #include "def/rdq_submitter.hpp"
 #include "def/target.hpp"
 #include "def/wrq_submitter.hpp"
@@ -128,7 +128,7 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
   return {
       .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
-      .flusher = std::make_shared<def::FlushHandler>(target),
+      .flusher = std::make_shared<def::FLQSubmitter>(target),
   };
 }
 
@@ -167,7 +167,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
   return {
       .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
-      .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
+      .flusher = std::make_shared<FLQSubmitterComposite>(std::move(flushers)),
   };
 }
 
@@ -237,7 +237,7 @@ handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
   return {
       .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
-      .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
+      .flusher = std::make_shared<FLQSubmitterComposite>(std::move(flushers)),
   };
 }
 
@@ -304,7 +304,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   return {
       .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
-      .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
+      .flusher = std::make_shared<FLQSubmitterComposite>(std::move(flushers)),
   };
 }
 
@@ -359,7 +359,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
   return {
       .reader = std::make_shared<RDQSubmitter>(sp_rw_handler),
       .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
-      .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
+      .flusher = std::make_shared<FLQSubmitterComposite>(std::move(flushers)),
   };
 }
 
@@ -567,7 +567,7 @@ void Master::create(target_create_param const &param) {
     writer = std::make_shared<null::WRQSubmitter>();
 
   if (!flusher)
-    flusher = std::make_shared<null::FlushHandler>();
+    flusher = std::make_shared<null::FLQSubmitter>();
 
   if (!discarder)
     discarder = std::make_shared<null::DiscardHandler>();

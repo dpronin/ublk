@@ -1,6 +1,6 @@
 add_library(ublk_null INTERFACE
     discard_handler.hpp
-    flush_handler.hpp
+    flq_submitter.hpp
     rdq_submitter.hpp
     wrq_submitter.hpp
 )

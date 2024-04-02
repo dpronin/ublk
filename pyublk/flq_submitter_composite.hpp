@@ -11,20 +11,20 @@
 
 namespace ublk {
 
-class FlushHandlerComposite : public IFLQSubmitter {
+class FLQSubmitterComposite : public IFLQSubmitter {
 public:
-  explicit FlushHandlerComposite(std::vector<std::shared_ptr<IFLQSubmitter>> hs)
+  explicit FLQSubmitterComposite(std::vector<std::shared_ptr<IFLQSubmitter>> hs)
       : hs_(std::move(hs)) {
     assert(std::ranges::all_of(
         hs_, [](auto const &h) { return static_cast<bool>(h); }));
   }
-  ~FlushHandlerComposite() override = default;
+  ~FLQSubmitterComposite() override = default;
 
-  FlushHandlerComposite(FlushHandlerComposite const &) = delete;
-  FlushHandlerComposite &operator=(FlushHandlerComposite const &) = delete;
+  FLQSubmitterComposite(FLQSubmitterComposite const &) = delete;
+  FLQSubmitterComposite &operator=(FLQSubmitterComposite const &) = delete;
 
-  FlushHandlerComposite(FlushHandlerComposite &&) = delete;
-  FlushHandlerComposite &operator=(FlushHandlerComposite &&) = delete;
+  FLQSubmitterComposite(FLQSubmitterComposite &&) = delete;
+  FLQSubmitterComposite &operator=(FLQSubmitterComposite &&) = delete;
 
   int submit(std::shared_ptr<flush_query> fq) noexcept override {
     std::ranges::for_each(

@@ -1,5 +1,5 @@
 add_library(ublk_def STATIC
-    flush_handler.hpp
+    flq_submitter.hpp
     rdq_submitter.hpp
     target.cpp
     target.hpp

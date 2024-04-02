@@ -10,19 +10,19 @@
 
 namespace ublk::def {
 
-class FlushHandler : public IFLQSubmitter {
+class FLQSubmitter : public IFLQSubmitter {
 public:
-  explicit FlushHandler(std::shared_ptr<Target> target)
+  explicit FLQSubmitter(std::shared_ptr<Target> target)
       : target_(std::move(target)) {
     assert(target_);
   }
-  ~FlushHandler() override = default;
+  ~FLQSubmitter() override = default;
 
-  FlushHandler(FlushHandler const &) = delete;
-  FlushHandler &operator=(FlushHandler const &) = delete;
+  FLQSubmitter(FLQSubmitter const &) = delete;
+  FLQSubmitter &operator=(FLQSubmitter const &) = delete;
 
-  FlushHandler(FlushHandler &&) = delete;
-  FlushHandler &operator=(FlushHandler &&) = delete;
+  FLQSubmitter(FLQSubmitter &&) = delete;
+  FLQSubmitter &operator=(FLQSubmitter &&) = delete;
 
   int submit(std::shared_ptr<flush_query> fq) noexcept override {
     return target_->process(std::move(fq));

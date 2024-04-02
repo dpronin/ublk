@@ -19,7 +19,7 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     factory_interface.hpp
     factory_shared_interface.hpp
     factory_unique_interface.hpp
-    flush_handler_composite.hpp
+    flq_submitter_composite.hpp
     flq_submitter_interface.hpp
     for_each_celld.hpp
     handler.cpp
