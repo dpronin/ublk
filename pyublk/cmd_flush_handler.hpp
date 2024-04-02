@@ -5,7 +5,7 @@
 #include <memory>
 #include <utility>
 
-#include "flush_handler_interface.hpp"
+#include "flq_submitter_interface.hpp"
 #include "flush_query.hpp"
 #include "flush_req.hpp"
 #include "handler_interface.hpp"
@@ -15,7 +15,7 @@ namespace ublk {
 class CmdFlushHandler
     : public IHandler<int(std::shared_ptr<flush_req>) noexcept> {
 public:
-  explicit CmdFlushHandler(std::shared_ptr<IFlushHandler> flusher)
+  explicit CmdFlushHandler(std::shared_ptr<IFLQSubmitter> flusher)
       : flusher_(std::move(flusher)) {
     assert(flusher_);
   }
@@ -38,7 +38,7 @@ public:
   }
 
 private:
-  std::shared_ptr<IFlushHandler> flusher_;
+  std::shared_ptr<IFLQSubmitter> flusher_;
 };
 
 } // namespace ublk

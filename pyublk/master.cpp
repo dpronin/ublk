@@ -49,10 +49,10 @@
 #include "cmd_write_handler.hpp"
 #include "cmd_write_handler_adaptor.hpp"
 #include "discard_handler_interface.hpp"
+#include "flq_submitter_interface.hpp"
 #include "flush_handler_composite.hpp"
-#include "flush_handler_interface.hpp"
-#include "rdq_submitter_interface.hpp"
 #include "rdq_submitter.hpp"
+#include "rdq_submitter_interface.hpp"
 #include "rw_handler.hpp"
 #include "sector.hpp"
 #include "target.hpp"
@@ -98,7 +98,7 @@ namespace {
 struct handlers_ops {
   std::shared_ptr<IRDQSubmitter> reader;
   std::shared_ptr<IWRQSubmitter> writer;
-  std::shared_ptr<IFlushHandler> flusher;
+  std::shared_ptr<IFLQSubmitter> flusher;
 };
 
 auto backend_device_open(std::filesystem::path const &path) {
@@ -142,7 +142,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
                                std::move(ops.reader), std::move(ops.writer));
                          });
 
-  std::vector<std::shared_ptr<IFlushHandler>> flushers;
+  std::vector<std::shared_ptr<IFLQSubmitter>> flushers;
   std::ranges::transform(std::move(handlers), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
@@ -202,7 +202,7 @@ handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
                                std::move(ops.reader), std::move(ops.writer));
                          });
 
-  std::vector<std::shared_ptr<IFlushHandler>> flushers;
+  std::vector<std::shared_ptr<IFLQSubmitter>> flushers;
   std::ranges::transform(std::move(handlers), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
@@ -279,7 +279,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
                                std::move(ops.reader), std::move(ops.writer));
                          });
 
-  std::vector<std::shared_ptr<IFlushHandler>> flushers;
+  std::vector<std::shared_ptr<IFLQSubmitter>> flushers;
   std::ranges::transform(std::move(default_hopss), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
@@ -334,7 +334,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
                                std::move(ops.reader), std::move(ops.writer));
                          });
 
-  std::vector<std::shared_ptr<IFlushHandler>> flushers;
+  std::vector<std::shared_ptr<IFLQSubmitter>> flushers;
   std::ranges::transform(std::move(default_hopss), std::back_inserter(flushers),
                          [](auto &&ops) { return std::move(ops.flusher); });
 
@@ -457,7 +457,7 @@ void Master::create(target_create_param const &param) {
 
   auto reader{std::shared_ptr<IRDQSubmitter>{}};
   auto writer{std::shared_ptr<IWRQSubmitter>{}};
-  auto flusher{std::shared_ptr<IFlushHandler>{}};
+  auto flusher{std::shared_ptr<IFLQSubmitter>{}};
   auto discarder{std::shared_ptr<IDiscardHandler>{}};
 
   std::visit(

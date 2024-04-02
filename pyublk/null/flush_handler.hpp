@@ -1,10 +1,10 @@
 #pragma once
 
-#include "flush_handler_interface.hpp"
+#include "flq_submitter_interface.hpp"
 
 namespace ublk::null {
 
-class FlushHandler : public IFlushHandler {
+class FlushHandler : public IFLQSubmitter {
 public:
   FlushHandler() = default;
   ~FlushHandler() override = default;

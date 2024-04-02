@@ -5,12 +5,12 @@
 #include <memory>
 #include <utility>
 
-#include "flush_handler_interface.hpp"
+#include "flq_submitter_interface.hpp"
 #include "target.hpp"
 
 namespace ublk::def {
 
-class FlushHandler : public IFlushHandler {
+class FlushHandler : public IFLQSubmitter {
 public:
   explicit FlushHandler(std::shared_ptr<Target> target)
       : target_(std::move(target)) {

@@ -7,13 +7,13 @@
 #include <utility>
 #include <vector>
 
-#include "flush_handler_interface.hpp"
+#include "flq_submitter_interface.hpp"
 
 namespace ublk {
 
-class FlushHandlerComposite : public IFlushHandler {
+class FlushHandlerComposite : public IFLQSubmitter {
 public:
-  explicit FlushHandlerComposite(std::vector<std::shared_ptr<IFlushHandler>> hs)
+  explicit FlushHandlerComposite(std::vector<std::shared_ptr<IFLQSubmitter>> hs)
       : hs_(std::move(hs)) {
     assert(std::ranges::all_of(
         hs_, [](auto const &h) { return static_cast<bool>(h); }));
@@ -33,7 +33,7 @@ public:
   }
 
 private:
-  std::vector<std::shared_ptr<IFlushHandler>> hs_;
+  std::vector<std::shared_ptr<IFLQSubmitter>> hs_;
 };
 
 } // namespace ublk
