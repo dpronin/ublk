@@ -5,12 +5,12 @@
 #include <memory>
 #include <utility>
 
-#include "read_handler_interface.hpp"
+#include "rdq_submitter_interface.hpp"
 #include "rw_handler_interface.hpp"
 
 namespace ublk {
 
-class ReadHandler final : public IReadHandler {
+class ReadHandler final : public IRDQSubmitter {
 public:
   explicit ReadHandler(std::shared_ptr<IRWHandler> rwh) : rwh_(std::move(rwh)) {
     assert(rwh_);

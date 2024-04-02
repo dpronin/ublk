@@ -30,7 +30,7 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     pyublk.cpp
     qublkcmd.hpp
     read_handler.hpp
-    read_handler_interface.hpp
+    rdq_submitter_interface.hpp
     req_handler_not_supp.hpp
     req_op_err_handler.hpp
     rw_handler.hpp

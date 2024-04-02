@@ -5,7 +5,7 @@
 #include <memory>
 #include <utility>
 
-#include "read_handler_interface.hpp"
+#include "rdq_submitter_interface.hpp"
 #include "rw_handler_interface.hpp"
 #include "wrq_submitter_interface.hpp"
 
@@ -13,7 +13,7 @@ namespace ublk {
 
 class RWHandler final : public IRWHandler {
 public:
-  explicit RWHandler(std::shared_ptr<IReadHandler> rh,
+  explicit RWHandler(std::shared_ptr<IRDQSubmitter> rh,
                      std::shared_ptr<IWRQSubmitter> wh)
       : rh_(std::move(rh)), wh_(std::move(wh)) {
     assert(rh_);
@@ -36,7 +36,7 @@ public:
   }
 
 private:
-  std::shared_ptr<IReadHandler> rh_;
+  std::shared_ptr<IRDQSubmitter> rh_;
   std::shared_ptr<IWRQSubmitter> wh_;
 };
 

@@ -51,8 +51,8 @@
 #include "discard_handler_interface.hpp"
 #include "flush_handler_composite.hpp"
 #include "flush_handler_interface.hpp"
+#include "rdq_submitter_interface.hpp"
 #include "read_handler.hpp"
-#include "read_handler_interface.hpp"
 #include "rw_handler.hpp"
 #include "sector.hpp"
 #include "target.hpp"
@@ -96,7 +96,7 @@ using namespace ublk;
 namespace {
 
 struct handlers_ops {
-  std::shared_ptr<IReadHandler> reader;
+  std::shared_ptr<IRDQSubmitter> reader;
   std::shared_ptr<IWRQSubmitter> writer;
   std::shared_ptr<IFlushHandler> flusher;
 };
@@ -455,7 +455,7 @@ void Master::create(target_create_param const &param) {
 
   auto io_ctx{std::make_unique<boost::asio::io_context>()};
 
-  auto reader{std::shared_ptr<IReadHandler>{}};
+  auto reader{std::shared_ptr<IRDQSubmitter>{}};
   auto writer{std::shared_ptr<IWRQSubmitter>{}};
   auto flusher{std::shared_ptr<IFlushHandler>{}};
   auto discarder{std::shared_ptr<IDiscardHandler>{}};

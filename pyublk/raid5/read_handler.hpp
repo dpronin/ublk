@@ -5,12 +5,12 @@
 #include <memory>
 #include <utility>
 
-#include "read_handler_interface.hpp"
+#include "rdq_submitter_interface.hpp"
 #include "target.hpp"
 
 namespace ublk::raid5 {
 
-class ReadHandler : public IReadHandler {
+class ReadHandler : public IRDQSubmitter {
 public:
   explicit ReadHandler(std::shared_ptr<Target> target)
       : target_(std::move(target)) {

@@ -13,7 +13,7 @@
 
 namespace ublk {
 
-CmdReadHandler::CmdReadHandler(std::shared_ptr<IReadHandler> reader)
+CmdReadHandler::CmdReadHandler(std::shared_ptr<IRDQSubmitter> reader)
     : reader_(std::move(reader)) {
   assert(reader_);
 }

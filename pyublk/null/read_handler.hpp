@@ -1,10 +1,10 @@
 #pragma once
 
-#include "read_handler_interface.hpp"
+#include "rdq_submitter_interface.hpp"
 
 namespace ublk::null {
 
-class ReadHandler : public IReadHandler {
+class ReadHandler : public IRDQSubmitter {
 public:
   ReadHandler() = default;
   ~ReadHandler() override = default;
