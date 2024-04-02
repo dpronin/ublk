@@ -2,7 +2,7 @@ add_library(ublk_inmem STATIC
     read_handler.hpp
     target.cpp
     target.hpp
-    write_handler.hpp
+    wrq_submitter.hpp
 )
 
 target_include_directories(ublk_inmem PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)

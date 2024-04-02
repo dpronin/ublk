@@ -58,38 +58,38 @@
 #include "target.hpp"
 #include "target_create_param.hpp"
 #include "ublk_req_handler_interface.hpp"
-#include "write_handler.hpp"
+#include "wrq_submitter.hpp"
 #include "wrq_submitter_interface.hpp"
 
 #include "null/discard_handler.hpp"
 #include "null/flush_handler.hpp"
 #include "null/read_handler.hpp"
-#include "null/write_handler.hpp"
+#include "null/wrq_submitter.hpp"
 
 #include "inmem/read_handler.hpp"
 #include "inmem/target.hpp"
-#include "inmem/write_handler.hpp"
+#include "inmem/wrq_submitter.hpp"
 
 #include "def/flush_handler.hpp"
 #include "def/read_handler.hpp"
 #include "def/target.hpp"
-#include "def/write_handler.hpp"
+#include "def/wrq_submitter.hpp"
 
 #include "raid0/read_handler.hpp"
 #include "raid0/target.hpp"
-#include "raid0/write_handler.hpp"
+#include "raid0/wrq_submitter.hpp"
 
 #include "raid1/read_handler.hpp"
 #include "raid1/target.hpp"
-#include "raid1/write_handler.hpp"
+#include "raid1/wrq_submitter.hpp"
 
 #include "raid4/read_handler.hpp"
 #include "raid4/target.hpp"
-#include "raid4/write_handler.hpp"
+#include "raid4/wrq_submitter.hpp"
 
 #include "raid5/read_handler.hpp"
 #include "raid5/target.hpp"
-#include "raid5/write_handler.hpp"
+#include "raid5/wrq_submitter.hpp"
 
 using namespace ublk;
 
@@ -115,7 +115,7 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
 
   rw_handler =
       std::make_unique<RWHandler>(std::make_shared<def::ReadHandler>(target),
-                                  std::make_shared<def::WriteHandler>(target));
+                                  std::make_shared<def::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
     rw_handler = std::make_unique<cache::RWHandler>(
@@ -127,7 +127,7 @@ handlers_ops make_default_ops(boost::asio::io_context &io_ctx,
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
-      .writer = std::make_shared<WriteHandler>(sp_rw_handler),
+      .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<def::FlushHandler>(target),
   };
 }
@@ -154,7 +154,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid0::ReadHandler>(target),
-      std::make_shared<raid0::WriteHandler>(target));
+      std::make_shared<raid0::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
     rw_handler = std::make_unique<cache::RWHandler>(
@@ -166,7 +166,7 @@ handlers_ops make_raid0_ops(uint64_t strip_sz,
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
-      .writer = std::make_shared<WriteHandler>(sp_rw_handler),
+      .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
 }
@@ -224,7 +224,7 @@ handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid1::ReadHandler>(target),
-      std::make_shared<raid1::WriteHandler>(target));
+      std::make_shared<raid1::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
     rw_handler = std::make_unique<cache::RWHandler>(
@@ -236,7 +236,7 @@ handlers_ops make_raid1_ops(uint64_t read_strip_len_sectors,
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
-      .writer = std::make_shared<WriteHandler>(sp_rw_handler),
+      .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
 }
@@ -291,7 +291,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid4::ReadHandler>(target),
-      std::make_shared<raid4::WriteHandler>(target));
+      std::make_shared<raid4::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
     rw_handler = std::make_unique<cache::RWHandler>(
@@ -303,7 +303,7 @@ handlers_ops make_raid4_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
-      .writer = std::make_shared<WriteHandler>(sp_rw_handler),
+      .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
 }
@@ -346,7 +346,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
   rw_handler = std::make_unique<RWHandler>(
       std::make_shared<raid5::ReadHandler>(target),
-      std::make_shared<raid5::WriteHandler>(target));
+      std::make_shared<raid5::WRQSubmitter>(target));
 
   if (cache_cfg && cache_cfg->len_sectors) {
     rw_handler = std::make_unique<cache::RWHandler>(
@@ -358,7 +358,7 @@ handlers_ops make_raid5_ops(boost::asio::io_context &io_ctx, uint64_t strip_sz,
 
   return {
       .reader = std::make_shared<ReadHandler>(sp_rw_handler),
-      .writer = std::make_shared<WriteHandler>(sp_rw_handler),
+      .writer = std::make_shared<WRQSubmitter>(sp_rw_handler),
       .flusher = std::make_shared<FlushHandlerComposite>(std::move(flushers)),
   };
 }
@@ -471,7 +471,7 @@ void Master::create(target_create_param const &param) {
                     mem_sz),
             };
             reader = std::make_shared<inmem::ReadHandler>(target);
-            writer = std::make_shared<inmem::WriteHandler>(target);
+            writer = std::make_shared<inmem::WRQSubmitter>(target);
           },
           [&](target_default_cfg const &def) {
             auto ops{
@@ -564,7 +564,7 @@ void Master::create(target_create_param const &param) {
     reader = std::make_shared<null::ReadHandler>();
 
   if (!writer)
-    writer = std::make_shared<null::WriteHandler>();
+    writer = std::make_shared<null::WRQSubmitter>();
 
   if (!flusher)
     flusher = std::make_shared<null::FlushHandler>();

@@ -10,19 +10,19 @@
 
 namespace ublk {
 
-class WriteHandler final : public IWRQSubmitter {
+class WRQSubmitter final : public IWRQSubmitter {
 public:
-  explicit WriteHandler(std::shared_ptr<IRWHandler> rwh)
+  explicit WRQSubmitter(std::shared_ptr<IRWHandler> rwh)
       : rwh_(std::move(rwh)) {
     assert(rwh_);
   }
-  ~WriteHandler() override = default;
+  ~WRQSubmitter() override = default;
 
-  WriteHandler(WriteHandler const &) = delete;
-  WriteHandler &operator=(WriteHandler const &) = delete;
+  WRQSubmitter(WRQSubmitter const &) = delete;
+  WRQSubmitter &operator=(WRQSubmitter const &) = delete;
 
-  WriteHandler(WriteHandler &&) = delete;
-  WriteHandler &operator=(WriteHandler &&) = delete;
+  WRQSubmitter(WRQSubmitter &&) = delete;
+  WRQSubmitter &operator=(WRQSubmitter &&) = delete;
 
   int submit(std::shared_ptr<write_query> wq) noexcept override {
     return rwh_->submit(std::move(wq));
