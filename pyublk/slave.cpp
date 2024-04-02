@@ -125,10 +125,14 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
         using TT = decltype(p_cmdb_raw->tail);
 
         structured_maps.p_qcmd = std::unique_ptr<qublkcmd_t>{new qublkcmd_t{
-            pos_t<TH>{new TH{structured_maps.p_cellc->cmdb_head},
-                      std::default_delete<TH>{}},
-            pos_t<TT const>{&p_cmdb_raw->tail,
-                            [cmdb]([[maybe_unused]] auto *p) {}},
+            cfq::pos_t<TH>{
+                new TH{structured_maps.p_cellc->cmdb_head},
+                std::default_delete<TH>{},
+            },
+            cfq::pos_t<TT const>{
+                &p_cmdb_raw->tail,
+                [cmdb]([[maybe_unused]] auto *p) {},
+            },
             std::span{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
         }};
       } else if (UBLKDRV_UIO_MEM_CELLC_NAME == map_name) {
@@ -157,10 +161,14 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
 
         structured_maps
             .p_qcmd_ack = std::unique_ptr<qublkcmd_ack_t>{new qublkcmd_ack_t{
-            pos_t<TH const>{
+            cfq::pos_t<TH const>{
                 &p_cellc_raw->cmdb_ack_head,
-                [cellc = structured_maps.p_cellc]([[maybe_unused]] auto *p) {}},
-            pos_t<TT>{&p_cmdb_raw->tail, [cmdb]([[maybe_unused]] auto *p) {}},
+                [cellc = structured_maps.p_cellc]([[maybe_unused]] auto *p) {},
+            },
+            cfq::pos_t<TT>{
+                &p_cmdb_raw->tail,
+                [cmdb]([[maybe_unused]] auto *p) {},
+            },
             std::span<ublkdrv_cmd_ack>{p_cmdb_raw->cmds, p_cmdb_raw->cmds_len},
         }};
       }

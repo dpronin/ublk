@@ -1,9 +1,5 @@
 pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     cells_holder.hpp
-    cfq_base.hpp
-    cfq_popper.hpp
-    cfq_pos.hpp
-    cfq_pusher.hpp
     cmd_acknowledger.cpp
     cmd_acknowledger.hpp
     cmd_discard_handler.hpp
@@ -61,6 +57,7 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     write_handler_interface.hpp
 )
 
+add_subdirectory(cfq)
 add_subdirectory(cache)
 add_subdirectory(def)
 add_subdirectory(inmem)
@@ -78,6 +75,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::system
     spdlog::spdlog
     ublk::cache
+    ublk::cfq
     ublk::def
     ublk::inmem
     ublk::mm

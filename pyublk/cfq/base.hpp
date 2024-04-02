@@ -7,17 +7,17 @@
 
 #include "utils/concepts.hpp"
 
-#include "cfq_pos.hpp"
+#include "pos.hpp"
 
-namespace ublk {
+namespace ublk::cfq {
 
-template <cfq_suitable T, std::integral I1, std::integral I2> class cfq_base {
+template <cfq_suitable T, std::integral I1, std::integral I2> class base {
 public:
   [[nodiscard]] auto capacity_full() const noexcept { return items_.size(); }
   [[nodiscard]] auto capacity() const noexcept { return capacity_full() - 1; }
 
 protected:
-  explicit cfq_base(pos_t<I1> p_head, pos_t<I2> p_tail, std::span<T> items)
+  explicit base(pos_t<I1> p_head, pos_t<I2> p_tail, std::span<T> items)
       : ph_(std::move(p_head)), pt_(std::move(p_tail)), items_(items) {
     if (!ph_)
       throw std::invalid_argument("head given cannot be empty");
@@ -31,13 +31,13 @@ protected:
     if (*pt_ > capacity_full())
       throw std::invalid_argument("tail cannot index an item out of range");
   }
-  ~cfq_base() = default;
+  ~base() = default;
 
-  cfq_base(cfq_base const &) = delete;
-  cfq_base operator=(cfq_base const &) = delete;
+  base(base const &) = delete;
+  base operator=(base const &) = delete;
 
-  cfq_base(cfq_base &&) = delete;
-  cfq_base &operator=(cfq_base &&) = delete;
+  base(base &&) = delete;
+  base &operator=(base &&) = delete;
 
 protected:
   pos_t<I1> ph_;
@@ -45,4 +45,4 @@ protected:
   std::span<T> items_;
 };
 
-} // namespace ublk
+} // namespace ublk::cfq

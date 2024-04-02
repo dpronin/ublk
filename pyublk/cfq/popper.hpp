@@ -7,28 +7,28 @@
 #include "utils/align.hpp"
 #include "utils/concepts.hpp"
 
-#include "cfq_base.hpp"
-#include "cfq_pos.hpp"
+#include "base.hpp"
+#include "pos.hpp"
 
-namespace ublk {
+namespace ublk::cfq {
 
 template <cfq_suitable T, std::integral I1, std::integral I2>
-class alignas(hardware_destructive_interference_size) cfq_popper
-    : public cfq_base<const T, I1, const I2> {
+class alignas(hardware_destructive_interference_size) popper
+    : public base<const T, I1, const I2> {
 
-  using base_t = cfq_base<const T, I1, const I2>;
+  using base_t = base<const T, I1, const I2>;
 
 public:
-  explicit cfq_popper(pos_t<I1> p_head, pos_t<const I2> p_tail,
-                      std::span<const T> items)
+  explicit popper(pos_t<I1> p_head, pos_t<const I2> p_tail,
+                  std::span<const T> items)
       : base_t(std::move(p_head), std::move(p_tail), items) {}
-  ~cfq_popper() = default;
+  ~popper() = default;
 
-  cfq_popper(cfq_popper const &) = delete;
-  cfq_popper operator=(cfq_popper const &) = delete;
+  popper(popper const &) = delete;
+  popper operator=(popper const &) = delete;
 
-  cfq_popper(cfq_popper &&) = delete;
-  cfq_popper &operator=(cfq_popper &&) = delete;
+  popper(popper &&) = delete;
+  popper &operator=(popper &&) = delete;
 
   std::optional<T> pop() noexcept(std::is_nothrow_copy_constructible_v<T> &&
                                   std::is_nothrow_destructible_v<T>) {
@@ -51,4 +51,4 @@ public:
   }
 };
 
-} // namespace ublk
+} // namespace ublk::cfq

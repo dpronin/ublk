@@ -7,28 +7,27 @@
 #include "utils/align.hpp"
 #include "utils/concepts.hpp"
 
-#include "cfq_base.hpp"
-#include "cfq_pos.hpp"
+#include "base.hpp"
+#include "pos.hpp"
 
-namespace ublk {
+namespace ublk::cfq {
 
 template <cfq_suitable T, std::integral I1, std::integral I2>
-class alignas(hardware_destructive_interference_size) cfq_pusher
-    : public cfq_base<T, const I1, I2> {
+class alignas(hardware_destructive_interference_size) pusher
+    : public base<T, const I1, I2> {
 
-  using base_t = cfq_base<T, const I1, I2>;
+  using base_t = base<T, const I1, I2>;
 
 public:
-  explicit cfq_pusher(pos_t<const I1> p_head, pos_t<I2> p_tail,
-                      std::span<T> items)
+  explicit pusher(pos_t<const I1> p_head, pos_t<I2> p_tail, std::span<T> items)
       : base_t(std::move(p_head), std::move(p_tail), items) {}
-  ~cfq_pusher() = default;
+  ~pusher() = default;
 
-  cfq_pusher(cfq_pusher const &) = delete;
-  cfq_pusher operator=(cfq_pusher const &) = delete;
+  pusher(pusher const &) = delete;
+  pusher operator=(pusher const &) = delete;
 
-  cfq_pusher(cfq_pusher &&) = delete;
-  cfq_pusher &operator=(cfq_pusher &&) = delete;
+  pusher(pusher &&) = delete;
+  pusher &operator=(pusher &&) = delete;
 
   bool push(T const &v) noexcept(std::is_nothrow_copy_constructible_v<T>) {
     auto const pt = *this->pt_;
@@ -41,4 +40,4 @@ public:
   }
 };
 
-} // namespace ublk
+} // namespace ublk::cfq
