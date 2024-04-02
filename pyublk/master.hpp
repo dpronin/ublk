@@ -1,6 +1,7 @@
 #pragma once
 
 #include <future>
+#include <list>
 #include <string>
 #include <unordered_map>
 
@@ -9,6 +10,7 @@
 #include "target.hpp"
 #include "target_create_param.hpp"
 #include "target_destroy_param.hpp"
+#include "targets_list_param.hpp"
 
 namespace ublk {
 
@@ -34,6 +36,8 @@ public:
   void unmap(bdev_unmap_param const &param);
   void create(target_create_param const &param);
   void destroy(target_destroy_param const &param);
+  std::list<std::pair<std::string, size_t>>
+  list(targets_list_param const &param);
 
 private:
   std::unordered_map<pid_t, std::future<void>> children_;

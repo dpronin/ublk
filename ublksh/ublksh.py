@@ -404,6 +404,23 @@ class ublksh(Cmd):
     def help_bdev_unmap(self):
         print("Unmaps an exising block device from the target")
 
+    def do_targets_list(self, arg):
+        param = ublk.targets_list_param()
+        targets = []
+
+        try:
+            targets = self.master.list(param)
+        except BaseException:
+            print("Error occurred while listing targets")
+            pass
+
+        for name, capacity_sectors in targets:
+            print("name={} capacity_sectors={}".format(
+                name, capacity_sectors))
+
+    def help_targets_list(self):
+        print("List existing targets")
+
     def default(self, inp):
         if inp == 'x' or inp == 'q':
             return self.do_exit(inp)

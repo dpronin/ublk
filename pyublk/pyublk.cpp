@@ -157,6 +157,9 @@ PYBIND11_MODULE(ublk, m) {
       .def(py::init<>())
       .def_readwrite("name", &ublk::target_destroy_param::name);
 
+  py::class_<ublk::targets_list_param>(m, "targets_list_param")
+      .def(py::init<>());
+
   py::class_<ublk::Master, std::unique_ptr<ublk::Master, py::nodelete>>(
       m, "Master")
       .def(py::init([] -> std::unique_ptr<ublk::Master, py::nodelete> {
@@ -165,5 +168,6 @@ PYBIND11_MODULE(ublk, m) {
       .def("map", &ublk::Master::map, "param"_a)
       .def("unmap", &ublk::Master::unmap, "param"_a)
       .def("create", &ublk::Master::create, "param"_a)
-      .def("destroy", &ublk::Master::destroy, "param"_a);
+      .def("destroy", &ublk::Master::destroy, "param"_a)
+      .def("list", &ublk::Master::list, "param"_a);
 }

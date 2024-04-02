@@ -5,6 +5,7 @@
 
 #include <fcntl.h>
 #include <netlink/attr.h>
+#include <ranges>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -608,4 +609,15 @@ void Master::destroy(target_destroy_param const &param) {
                       it->second.use_count() - 1));
     targets_.erase(it);
   }
+}
+
+std::list<std::pair<std::string, size_t>>
+Master::list(targets_list_param const &) {
+  /* clang-format off */
+  auto const names{
+        std::views::all(targets_)
+      | std::views::transform([](auto const &item) -> std::pair<std::string, size_t> { return {item.first, item.second->properties().capacity_sectors}; }),
+  };
+  /* clang-format on */
+  return {std::ranges::begin(names), std::ranges::end(names)};
 }
