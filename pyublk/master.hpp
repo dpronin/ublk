@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstddef>
+
 #include <future>
 #include <list>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "bdev_map_param.hpp"
 #include "bdev_unmap_param.hpp"

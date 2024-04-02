@@ -614,10 +614,10 @@ void Master::destroy(target_destroy_param const &param) {
 std::list<std::pair<std::string, size_t>>
 Master::list(targets_list_param const &) {
   /* clang-format off */
-  auto const names{
+  auto const list_view{
         std::views::all(targets_)
       | std::views::transform([](auto const &item) -> std::pair<std::string, size_t> { return {item.first, item.second->properties().capacity_sectors}; }),
   };
   /* clang-format on */
-  return {std::ranges::begin(names), std::ranges::end(names)};
+  return std::ranges::to<std::list<std::pair<std::string, size_t>>>(list_view);
 }
