@@ -23,7 +23,7 @@ public:
   explicit Target(
       std::unique_ptr<boost::asio::io_context> io_ctx,
       std::shared_ptr<
-          IFactoryUnique<rvwrap<IHandler<int(ublkdrv_cmd const &) noexcept>>(
+          IFactoryUnique<IHandler<int(ublkdrv_cmd const &) noexcept>(
               std::span<ublkdrv_celld const>, std::span<std::byte>,
               std::shared_ptr<IHandler<int(ublkdrv_cmd_ack) noexcept>>)>>
           hfactory,
@@ -49,10 +49,9 @@ public:
 
 private:
   std::unique_ptr<boost::asio::io_context> io_ctx_;
-  std::shared_ptr<
-      IFactoryUnique<rvwrap<IHandler<int(ublkdrv_cmd const &) noexcept>>(
-          std::span<ublkdrv_celld const>, std::span<std::byte>,
-          std::shared_ptr<IHandler<int(ublkdrv_cmd_ack) noexcept>>)>>
+  std::shared_ptr<IFactoryUnique<IHandler<int(ublkdrv_cmd const &) noexcept>(
+      std::span<ublkdrv_celld const>, std::span<std::byte>,
+      std::shared_ptr<IHandler<int(ublkdrv_cmd_ack) noexcept>>)>>
       hfactory_;
   target_properties props_;
 };

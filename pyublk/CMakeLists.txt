@@ -33,7 +33,6 @@ pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
     read_handler_interface.hpp
     req_handler_not_supp.hpp
     req_op_err_handler.hpp
-    rvwrap.hpp
     rw_handler.hpp
     rw_handler_interface.hpp
     sector.hpp

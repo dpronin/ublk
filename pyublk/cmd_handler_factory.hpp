@@ -13,13 +13,12 @@
 #include "cmd_handler.hpp"
 #include "factory_unique_interface.hpp"
 #include "handler_interface.hpp"
-#include "rvwrap.hpp"
 #include "ublk_req_handler_interface.hpp"
 
 namespace ublk {
 
 class CmdHandlerFactory
-    : public IFactoryUnique<rvwrap<IHandler<int(ublkdrv_cmd const &) noexcept>>(
+    : public IFactoryUnique<IHandler<int(ublkdrv_cmd const &) noexcept>(
           std::span<ublkdrv_celld const>, std::span<std::byte>,
           std::shared_ptr<IHandler<int(ublkdrv_cmd_ack) noexcept>>)> {
 public:

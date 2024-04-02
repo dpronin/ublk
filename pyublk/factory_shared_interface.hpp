@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "rvwrap.hpp"
-
 namespace ublk {
 
 template <typename> class IFactoryShared;
@@ -24,36 +22,6 @@ public:
 
 template <typename R, typename... Args>
 class IFactoryShared<R(Args...) noexcept> {
-public:
-  IFactoryShared() = default;
-  virtual ~IFactoryShared() = default;
-
-  IFactoryShared(IFactoryShared const &) = default;
-  IFactoryShared &operator=(IFactoryShared const &) = default;
-
-  IFactoryShared(IFactoryShared &&) noexcept = default;
-  IFactoryShared &operator=(IFactoryShared &&) noexcept = default;
-
-  virtual std::shared_ptr<R> create_shared(Args...) noexcept = 0;
-};
-
-template <typename R, typename... Args>
-class IFactoryShared<rvwrap<R>(Args...)> {
-public:
-  IFactoryShared() = default;
-  virtual ~IFactoryShared() = default;
-
-  IFactoryShared(IFactoryShared const &) = default;
-  IFactoryShared &operator=(IFactoryShared const &) = default;
-
-  IFactoryShared(IFactoryShared &&) noexcept = default;
-  IFactoryShared &operator=(IFactoryShared &&) noexcept = default;
-
-  virtual std::shared_ptr<R> create_shared(Args...) = 0;
-};
-
-template <typename R, typename... Args>
-class IFactoryShared<rvwrap<R>(Args...) noexcept> {
 public:
   IFactoryShared() = default;
   virtual ~IFactoryShared() = default;
