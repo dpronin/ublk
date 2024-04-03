@@ -123,7 +123,7 @@ TEST_P(RAID4, SuccessfulWritingAllStripesAtOnceTwice) {
   }
 }
 
-TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
+TEST_P(RAID4, SuccessfulWritingFullThenPartialStripes) {
   auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
@@ -228,7 +228,7 @@ TEST_P(RAID4, SuccessfulWritingFullThenPartialStripesWriting) {
   ut::parity_verify(storage_spans, param.strip_sz);
 }
 
-TEST_P(RAID4, SuccessfulWritingPartialStripesWriting) {
+TEST_P(RAID4, SuccessfulWritingPartialStripes) {
   auto const &param{GetParam()};
 
   std::vector<std::shared_ptr<ut::MockRWHandler>> hs{param.hs_nr};
