@@ -26,7 +26,6 @@ add_compile_options(
   -Wall
   -Wextra
   -Werror
-  -DBOOST_ASIO_HAS_IO_URING=1
   $<$<NOT:$<STREQUAL:$<LOWER_CASE:${CMAKE_CXX_COMPILER_ID}>,clang>>:-Wno-interference-size>
   $<$<CONFIG:Debug>:-ggdb3>
 )

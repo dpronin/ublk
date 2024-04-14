@@ -12,10 +12,14 @@ target_link_libraries(ublk_def PUBLIC
     ublk::mm
     liburing::liburing
 )
+
 target_link_libraries(ublk_def PUBLIC
     Boost::system
 )
-set_property(TARGET ublk_def PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+target_compile_definitions(ublk_def PUBLIC
+    BOOST_ASIO_HAS_IO_URING=1
+)
 
 add_library(ublk::def ALIAS ublk_def)
 
