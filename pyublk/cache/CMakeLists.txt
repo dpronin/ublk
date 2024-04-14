@@ -15,7 +15,6 @@ target_link_libraries(ublk_cache PRIVATE
     ublk::utils
     ublk::mm
 )
-set_property(TARGET ublk_cache PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::cache ALIAS ublk_cache)
 

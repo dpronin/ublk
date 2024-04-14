@@ -17,7 +17,6 @@ target_link_libraries(ublk_raid0 PUBLIC
 target_link_libraries(ublk_raid0 PRIVATE
     sml::sml
 )
-set_property(TARGET ublk_raid0 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::raid0 ALIAS ublk_raid0)
 

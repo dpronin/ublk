@@ -12,7 +12,6 @@ target_link_libraries(ublk_raid4 PUBLIC
     ublk::raidsp
     ublk::utils
 )
-set_property(TARGET ublk_raid4 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::raid4 ALIAS ublk_raid4)
 

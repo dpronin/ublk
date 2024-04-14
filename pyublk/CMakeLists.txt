@@ -1,4 +1,4 @@
-pybind11_add_module(${PROJECT_NAME} NO_EXTRAS
+add_executable(${PROJECT_NAME}
     cells_holder.hpp
     cmd_acknowledger.cpp
     cmd_acknowledger.hpp
@@ -70,6 +70,8 @@ add_subdirectory(raidsp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
+    pybind11::embed
+    $<$<CONFIG:Release>:pybind11::lto>
     Boost::headers
     Boost::system
     spdlog::spdlog
@@ -86,3 +88,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ublk::sys
     ublk::utils
 )
+
+if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Debug|RelWithDebInfo")
+    pybind11_strip(${PROJECT_NAME})
+endif()

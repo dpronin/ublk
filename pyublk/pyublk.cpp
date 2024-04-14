@@ -1,5 +1,7 @@
 #include <memory>
 
+#include <pybind11/embed.h>
+#include <pybind11/eval.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
@@ -11,8 +13,9 @@
 
 #include "master.hpp"
 
-PYBIND11_MODULE(ublk, m) {
-  namespace py = pybind11;
+namespace py = pybind11;
+
+PYBIND11_EMBEDDED_MODULE(ublk, m) {
   using namespace py::literals;
 
   m.def("version", [] { return ublk::kVersion; });
@@ -170,4 +173,10 @@ PYBIND11_MODULE(ublk, m) {
       .def("create", &ublk::Master::create, "param"_a)
       .def("destroy", &ublk::Master::destroy, "param"_a)
       .def("list", &ublk::Master::list, "param"_a);
+}
+
+int main(int argc [[maybe_unused]], const char *argv[]) {
+  py::scoped_interpreter guard{};
+  py::object scope = py::module_::import("__main__").attr("__dict__");
+  py::eval_file(argv[1], scope);
 }

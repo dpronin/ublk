@@ -19,6 +19,5 @@ target_link_libraries(ublk_mm PUBLIC
     ublk::utils
     ublk::sys
 )
-set_property(TARGET ublk_mm PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(ublk::mm ALIAS ublk_mm)
