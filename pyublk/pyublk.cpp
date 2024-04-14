@@ -1,4 +1,8 @@
+#include <exception>
+#include <format>
+#include <iostream>
 #include <memory>
+#include <stdexcept>
 
 #include <pybind11/embed.h>
 #include <pybind11/eval.h>
@@ -175,8 +179,12 @@ PYBIND11_EMBEDDED_MODULE(ublk, m) {
       .def("list", &ublk::Master::list, "param"_a);
 }
 
-int main(int argc [[maybe_unused]], const char *argv[]) {
+int main(int argc [[maybe_unused]], const char *argv[]) try {
   py::scoped_interpreter guard{};
   py::object scope = py::module_::import("__main__").attr("__dict__");
   py::eval_file(argv[1], scope);
+} catch (std::exception const &ex) {
+  std::cerr << std::format("error occurred: {}", ex.what()) << std::endl;
+} catch (...) {
+  std::cerr << "unknown error occurred" << std::endl;
 }
