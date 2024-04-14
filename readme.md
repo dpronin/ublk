@@ -2,7 +2,7 @@
 
 ## Build requirements
 
-- [cmake](https://cmake.org/) to configure the project. Minimum required version is __3.19__ if [_cmake presets_](https://cmake.org/cmake/help/v3.19/manual/cmake-presets.7.html) are going to be used, otherwise __3.12__ would do
+- [cmake](https://cmake.org/) to configure the project. Minimum required version is __3.12__ unless [_cmake presets_](https://cmake.org/cmake/help/v3.19/manual/cmake-presets.7.html) feature is going to be used requiring at least __3.19__
 - [conan 2.0](https://conan.io/) to download all the dependencies of the application and configure with a certain set of parameters. You can install __conan__ by giving a command to __pip__. To use __pip__ you need to install __python__ interpreter. I highly recommend to install a __python3__-based version and as the result use __pip3__ in order to avoid unexpected results with __conan__
 
 To install/upgrade __conan__ within system's python environment for a current linux's user give the command:
