@@ -71,7 +71,7 @@ public:
   uint64_t item_sz() const { return cache_item_sz_; }
   uint64_t len_max() const { return cache_len_max_; }
 
-  std::span<T const> find(key_type const &key) const noexcept {
+  std::span<T const> find(key_type const &key) const {
     if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
       touch(index);
       return data_view(cache_[index]);
@@ -79,48 +79,48 @@ public:
     return {};
   }
 
-  std::span<T> find_mutable(key_type const &key) noexcept {
+  std::span<T> find_mutable(key_type const &key) {
     return const_span_cast(find(key));
   }
 
   std::optional<std::pair<key_type, data_type>>
-  update(std::pair<key_type, data_type> value) noexcept;
+  update(std::pair<key_type, data_type> value);
 
   bool exists(key_type const &key) const {
     return lower_bound_find(key).second;
   }
 
-  void invalidate(key_type const &key) noexcept {
+  void invalidate(key_type const &key) {
     if (auto const [index, exact_match]{lower_bound_find(key)}; exact_match)
       invalidate(cache_[index]);
   }
 
-  void invalidate_range(std::pair<key_type, key_type> const &range) noexcept {
+  void invalidate_range(std::pair<key_type, key_type> const &range) {
     for (auto index : range_find(range))
       invalidate(cache_[index]);
   }
 
 private:
-  auto data_view(value_type const &value) const noexcept {
+  auto data_view(value_type const &value) const {
     return std::span{value.second.data.get(), item_sz()};
   }
 
-  void invalidate(value_type &value) noexcept {
+  void invalidate(value_type &value) {
     value.second.refs = len_max();
     value.second.data.reset();
   }
 
-  bool is_valid(value_type const &value) const noexcept {
+  bool is_valid(value_type const &value) const {
     return value.second.refs != len_max();
   }
 
   void touch(size_t index) const;
 
-  std::pair<size_t, bool> lower_bound_find(key_type const &key) const noexcept;
+  std::pair<size_t, bool> lower_bound_find(key_type const &key) const;
 
-  auto range_find(std::pair<key_type, key_type> const &range) const noexcept;
+  auto range_find(std::pair<key_type, key_type> const &range) const;
 
-  size_t evict_index_find() const noexcept;
+  size_t evict_index_find() const;
 
   uint64_t cache_len_max_;
   uint64_t cache_item_sz_;
@@ -132,7 +132,7 @@ template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
   requires std::strict_weak_order<KeyCompare, Key, Key> &&
            std::equivalence_relation<KeyEqual, Key, Key>
 auto flat_lru<Key, T, KeyCompare, KeyEqual>::range_find(
-    std::pair<key_type, key_type> const &range) const noexcept {
+    std::pair<key_type, key_type> const &range) const {
   assert(range.first < range.second);
   auto const first{
       std::ranges::lower_bound(cache_, range.first, key_compare{},
@@ -149,8 +149,7 @@ auto flat_lru<Key, T, KeyCompare, KeyEqual>::range_find(
 template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
   requires std::strict_weak_order<KeyCompare, Key, Key> &&
            std::equivalence_relation<KeyEqual, Key, Key>
-size_t
-flat_lru<Key, T, KeyCompare, KeyEqual>::evict_index_find() const noexcept {
+size_t flat_lru<Key, T, KeyCompare, KeyEqual>::evict_index_find() const {
   auto evict_index{0uz};
   if (is_valid(cache_[evict_index])) {
     for (auto index : std::views::iota(1uz, cache_.size())) {
@@ -169,7 +168,7 @@ template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
            std::equivalence_relation<KeyEqual, Key, Key>
 std::pair<size_t, bool>
 flat_lru<Key, T, KeyCompare, KeyEqual>::lower_bound_find(
-    key_type const &key) const noexcept {
+    key_type const &key) const {
   auto const value_it{
       std::ranges::lower_bound(cache_, key, key_compare{},
                                cache_item_to_key_proj),
@@ -227,7 +226,7 @@ template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
   requires std::strict_weak_order<KeyCompare, Key, Key> &&
                std::equivalence_relation<KeyEqual, Key, Key>
 auto flat_lru<Key, T, KeyCompare, KeyEqual>::update(
-    std::pair<key_type, data_type> value) noexcept
+    std::pair<key_type, data_type> value)
     -> std::optional<std::pair<key_type, data_type>> {
   auto evicted_value{std::optional<std::pair<key_type, data_type>>{}};
 
