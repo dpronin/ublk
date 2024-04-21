@@ -21,13 +21,25 @@
 
 namespace ublk::cache {
 
-template <std::unsigned_integral Key, typename T> class flat_lru {
+/* clang-format off */
+template <
+  typename Key,
+  typename T,
+  typename KeyCompare = std::ranges::less,
+  typename KeyEqual = std::ranges::equal_to
+>
+/* clang-format on */
+  requires std::strict_weak_order<KeyCompare, Key, Key> &&
+           std::equivalence_relation<KeyEqual, Key, Key>
+class flat_lru {
 public:
   using key_type = Key;
   using data_type = mm::uptrwd<T[]>;
+  using key_compare = KeyCompare;
+  using key_equal = KeyEqual;
 
-  static std::unique_ptr<flat_lru<key_type, T>> create(uint64_t cache_len,
-                                                       uint64_t cache_item_sz);
+  static std::unique_ptr<flat_lru> create(uint64_t cache_len,
+                                          uint64_t cache_item_sz);
 
 private:
   using cache_item_ref_t = uint64_t;
@@ -38,11 +50,7 @@ private:
   using value_type = std::pair<key_type, stored_type>;
 
   static inline constexpr auto cache_item_to_key_proj =
-      [](value_type const &value) noexcept { return value.first; };
-  using keys_cmp = std::less<>;
-#ifndef NDEBUG
-  using keys_eq = std::equal_to<>;
-#endif
+      [](value_type const &value) { return value.first; };
 
 public:
   explicit flat_lru(uint64_t len_max, uint64_t item_sz)
@@ -63,7 +71,7 @@ public:
   uint64_t item_sz() const { return cache_item_sz_; }
   uint64_t len_max() const { return cache_len_max_; }
 
-  std::span<T const> find(key_type key) const noexcept {
+  std::span<T const> find(key_type const &key) const noexcept {
     if (auto const [index, exact_match] = lower_bound_find(key); exact_match) {
       touch(index);
       return data_view(cache_[index]);
@@ -71,21 +79,23 @@ public:
     return {};
   }
 
-  std::span<T> find_mutable(key_type key) noexcept {
+  std::span<T> find_mutable(key_type const &key) noexcept {
     return const_span_cast(find(key));
   }
 
   std::optional<std::pair<key_type, data_type>>
   update(std::pair<key_type, data_type> value) noexcept;
 
-  bool exists(key_type key) const { return lower_bound_find(key).second; }
+  bool exists(key_type const &key) const {
+    return lower_bound_find(key).second;
+  }
 
-  void invalidate(key_type key) noexcept {
+  void invalidate(key_type const &key) noexcept {
     if (auto const [index, exact_match]{lower_bound_find(key)}; exact_match)
       invalidate(cache_[index]);
   }
 
-  void invalidate_range(std::pair<key_type, key_type> range) noexcept {
+  void invalidate_range(std::pair<key_type, key_type> const &range) noexcept {
     for (auto index : range_find(range))
       invalidate(cache_[index]);
   }
@@ -106,9 +116,9 @@ private:
 
   void touch(size_t index) const;
 
-  std::pair<size_t, bool> lower_bound_find(key_type key) const noexcept;
+  std::pair<size_t, bool> lower_bound_find(key_type const &key) const noexcept;
 
-  auto range_find(std::pair<key_type, key_type> range) const noexcept;
+  auto range_find(std::pair<key_type, key_type> const &range) const noexcept;
 
   size_t evict_index_find() const noexcept;
 
@@ -118,24 +128,29 @@ private:
   std::vector<value_type> cache_;
 };
 
-template <std::unsigned_integral key_type, typename T>
-auto flat_lru<key_type, T>::range_find(
-    std::pair<key_type, key_type> range) const noexcept {
+template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
+  requires std::strict_weak_order<KeyCompare, Key, Key> &&
+           std::equivalence_relation<KeyEqual, Key, Key>
+auto flat_lru<Key, T, KeyCompare, KeyEqual>::range_find(
+    std::pair<key_type, key_type> const &range) const noexcept {
   assert(range.first < range.second);
   auto const first{
-      std::ranges::lower_bound(cache_, range.first, keys_cmp{},
+      std::ranges::lower_bound(cache_, range.first, key_compare{},
                                cache_item_to_key_proj),
   };
   auto const last{
       std::ranges::lower_bound(std::ranges::subrange{first, cache_.end()},
-                               range.second, keys_cmp{},
+                               range.second, key_compare{},
                                cache_item_to_key_proj),
   };
   return std::views::iota(first - cache_.begin(), last - cache_.begin());
 }
 
-template <std::unsigned_integral key_type, typename T>
-size_t flat_lru<key_type, T>::evict_index_find() const noexcept {
+template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
+  requires std::strict_weak_order<KeyCompare, Key, Key> &&
+           std::equivalence_relation<KeyEqual, Key, Key>
+size_t
+flat_lru<Key, T, KeyCompare, KeyEqual>::evict_index_find() const noexcept {
   auto evict_index{0uz};
   if (is_valid(cache_[evict_index])) {
     for (auto index : std::views::iota(1uz, cache_.size())) {
@@ -149,35 +164,46 @@ size_t flat_lru<key_type, T>::evict_index_find() const noexcept {
   return evict_index;
 }
 
-template <std::unsigned_integral key_type, typename T>
+template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
+  requires std::strict_weak_order<KeyCompare, Key, Key> &&
+           std::equivalence_relation<KeyEqual, Key, Key>
 std::pair<size_t, bool>
-flat_lru<key_type, T>::lower_bound_find(key_type key) const noexcept {
+flat_lru<Key, T, KeyCompare, KeyEqual>::lower_bound_find(
+    key_type const &key) const noexcept {
   auto const value_it{
-      std::ranges::lower_bound(cache_, key, keys_cmp{}, cache_item_to_key_proj),
+      std::ranges::lower_bound(cache_, key, key_compare{},
+                               cache_item_to_key_proj),
   };
   auto const index{value_it - cache_.begin()};
   return {
       static_cast<size_t>(index),
-      cache_.end() != value_it && key == cache_item_to_key_proj(*value_it) &&
+      cache_.end() != value_it &&
+          key_equal{}(key, cache_item_to_key_proj(*value_it)) &&
           is_valid(cache_[index]),
   };
 }
 
-template <std::unsigned_integral key_type, typename T>
-std::unique_ptr<flat_lru<key_type, T>>
-flat_lru<key_type, T>::create(uint64_t cache_len, uint64_t cache_item_sz) {
-  auto cache{std::unique_ptr<flat_lru<key_type, T>>{}};
+template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
+  requires std::strict_weak_order<KeyCompare, Key, Key> &&
+               std::equivalence_relation<KeyEqual, Key, Key>
+auto flat_lru<Key, T, KeyCompare, KeyEqual>::create(
+    uint64_t cache_len, uint64_t cache_item_sz) -> std::unique_ptr<flat_lru> {
+  auto cache{std::unique_ptr<flat_lru>{}};
   if (cache_len && cache_item_sz) {
-    cache = std::unique_ptr<flat_lru<key_type, T>>(new flat_lru<key_type, T>{
-        cache_len,
-        cache_item_sz,
-    });
+    cache = std::unique_ptr<flat_lru>{
+        new flat_lru{
+            cache_len,
+            cache_item_sz,
+        },
+    };
   }
   return cache;
 }
 
-template <std::unsigned_integral key_type, typename T>
-void flat_lru<key_type, T>::touch(size_t index) const {
+template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
+  requires std::strict_weak_order<KeyCompare, Key, Key> &&
+           std::equivalence_relation<KeyEqual, Key, Key>
+void flat_lru<Key, T, KeyCompare, KeyEqual>::touch(size_t index) const {
   assert(index < cache_.size());
 
   auto const to_refs{
@@ -197,8 +223,10 @@ void flat_lru<key_type, T>::touch(size_t index) const {
   eo = 0;
 }
 
-template <std::unsigned_integral key_type, typename T>
-auto flat_lru<key_type, T>::update(
+template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
+  requires std::strict_weak_order<KeyCompare, Key, Key> &&
+               std::equivalence_relation<KeyEqual, Key, Key>
+auto flat_lru<Key, T, KeyCompare, KeyEqual>::update(
     std::pair<key_type, data_type> value) noexcept
     -> std::optional<std::pair<key_type, data_type>> {
   auto evicted_value{std::optional<std::pair<key_type, data_type>>{}};
@@ -221,7 +249,8 @@ auto flat_lru<key_type, T>::update(
 
         index = value_it - cache_.begin();
       } else {
-        cache_.emplace(cache_.begin() + index, value.first, stored_type{});
+        cache_.emplace(cache_.begin() + index,
+                       std::move_if_noexcept(value.first), stored_type{});
         invalidate(cache_[index]);
         cache_[index].second.data = std::move(value.second);
         should_evict = false;
@@ -231,7 +260,7 @@ auto flat_lru<key_type, T>::update(
 
   if (should_evict) {
     evicted_value.emplace(
-        std::exchange(cache_[index].first, value.first),
+        std::exchange(cache_[index].first, std::move_if_noexcept(value.first)),
         std::exchange(cache_[index].second.data, std::move(value.second)));
   }
 
@@ -239,8 +268,9 @@ auto flat_lru<key_type, T>::update(
 
 #ifndef NDEBUG
   if (!exact_match) {
-    assert(std::ranges::is_sorted(cache_, keys_cmp{}, cache_item_to_key_proj));
-    assert(cache_.end() == std::ranges::adjacent_find(cache_, keys_eq{},
+    assert(
+        std::ranges::is_sorted(cache_, key_compare{}, cache_item_to_key_proj));
+    assert(cache_.end() == std::ranges::adjacent_find(cache_, key_equal{},
                                                       cache_item_to_key_proj));
   }
 #endif
