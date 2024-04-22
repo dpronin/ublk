@@ -230,7 +230,7 @@ auto flat_lru<Key, T, KeyCompare, KeyEqual>::update(
     -> std::optional<std::pair<key_type, data_type>> {
   auto evicted_value{std::optional<std::pair<key_type, data_type>>{}};
 
-  bool should_evict{true};
+  bool need_update{true};
 
   auto [index, exact_match]{lower_bound_find(value.first)};
   if (!exact_match) {
@@ -252,15 +252,21 @@ auto flat_lru<Key, T, KeyCompare, KeyEqual>::update(
                        std::move_if_noexcept(value.first), stored_type{});
         invalidate(cache_[index]);
         cache_[index].second.data = std::move(value.second);
-        should_evict = false;
+        need_update = false;
       }
     }
   }
 
-  if (should_evict) {
-    evicted_value.emplace(
-        std::exchange(cache_[index].first, std::move_if_noexcept(value.first)),
-        std::exchange(cache_[index].second.data, std::move(value.second)));
+  if (need_update) {
+    auto prev{
+        std::pair{
+            std::exchange(cache_[index].first,
+                          std::move_if_noexcept(value.first)),
+            std::exchange(cache_[index].second.data, std::move(value.second)),
+        },
+    };
+    if (prev.second)
+      evicted_value.emplace(std::move_if_noexcept(prev));
   }
 
   touch(index);
