@@ -5,7 +5,16 @@
 - [cmake](https://cmake.org/) to configure the project. Minimum required version is __3.12__ unless [_cmake presets_](https://cmake.org/cmake/help/v3.19/manual/cmake-presets.7.html) feature is going to be used requiring at least __3.19__
 - [conan 2.0](https://conan.io/) to download all the dependencies of the application and configure with a certain set of parameters. You can install __conan__ by giving a command to __pip__. To use __pip__ you need to install __python__ interpreter. I highly recommend to install a __python3__-based version and as the result use __pip3__ in order to avoid unexpected results with __conan__
 
-To install/upgrade __conan__ within system's python environment for a current linux's user give the command:
+> :information_source: In order to not accidentally harm your system python's environment you are possible to install and use [python virtual environment](https://docs.python.org/3/library/venv.html) before proceeding with conan:
+> ```bash
+> bash> python3 -m venv ${HOME}/.pyvenv
+> bash> source ${HOME}/.pyvenv/bin/activate
+> bash> pip3 install conan --upgrade
+> bash> ... (further working with pip, conan, cmake, ublksh, etc.)
+> bash> deactivate
+> ```
+
+In case you don't choose to use [python virtual environment](https://docs.python.org/3/library/venv.html) you can install/upgrade __conan__ within system's python environment for a current linux's user by giving the command:
 
 ```bash
 $ pip3 install --user conan --upgrade
