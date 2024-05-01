@@ -683,3 +683,17 @@ Finally, unload __loop__ devices driver if required:
 ```markdown
 # rmmod loop
 ```
+
+## Install
+
+### Debug configuration
+
+```bash
+$ cmake --install out/default/build/Debug --config Debug
+```
+
+### Release configuration
+
+```bash
+$ cmake --install out/default/build/Release --config Release
+```
