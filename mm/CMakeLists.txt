@@ -20,4 +20,6 @@ target_link_libraries(ublk_mm PUBLIC
     ublk::sys
 )
 
+set_target_properties(ublk_mm PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 add_library(ublk::mm ALIAS ublk_mm)

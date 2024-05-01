@@ -17,7 +17,7 @@
 
 namespace ublk {
 
-class Master {
+class __attribute__((visibility("default"))) Master {
 public:
   static Master &instance() {
     static Master obj;

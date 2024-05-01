@@ -20,6 +20,8 @@ target_link_libraries(ublk_raidsp PRIVATE
     sml::sml
 )
 
+set_target_properties(ublk_raidsp PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 add_library(ublk::raidsp ALIAS ublk_raidsp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND COVERAGE_ENABLE)

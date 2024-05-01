@@ -12,6 +12,8 @@ target_link_libraries(ublk_inmem PUBLIC
     ublk::mm
 )
 
+set_target_properties(ublk_inmem PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 add_library(ublk::inmem ALIAS ublk_inmem)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND COVERAGE_ENABLE)

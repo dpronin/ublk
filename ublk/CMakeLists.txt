@@ -1,4 +1,4 @@
-add_executable(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
     cells_holder.hpp
     cmd_acknowledger.cpp
     cmd_acknowledger.hpp
@@ -27,7 +27,6 @@ add_executable(${PROJECT_NAME}
     handler_interface.hpp
     master.cpp
     master.hpp
-    pyublk.cpp
     qublkcmd.hpp
     rdq_submitter.hpp
     rdq_submitter_interface.hpp
@@ -55,6 +54,7 @@ add_executable(${PROJECT_NAME}
     write_req.hpp
     wrq_submitter_interface.hpp
 )
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
 
 add_subdirectory(cfq)
 add_subdirectory(cache)
@@ -67,11 +67,10 @@ add_subdirectory(raid4)
 add_subdirectory(raid5)
 add_subdirectory(raidsp)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    pybind11::embed
-    $<$<CONFIG:Release>:pybind11::lto>
     Boost::headers
     Boost::system
     spdlog::spdlog
@@ -90,5 +89,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Debug|RelWithDebInfo")
-    pybind11_strip(${PROJECT_NAME})
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_STRIP} $<TARGET_FILE:${PROJECT_NAME}>)
 endif()
+
+install(TARGETS ${PROJECT_NAME} LIBRARY)
+
+add_library(ublk::ublk ALIAS ${PROJECT_NAME})
+

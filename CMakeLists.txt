@@ -21,6 +21,8 @@ list(APPEND CMAKE_MODULE_PATH
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
 add_compile_options(
   -march=native
   -Wall
@@ -58,7 +60,8 @@ find_package(libnl CONFIG REQUIRED)
 add_subdirectory(sys)
 add_subdirectory(utils)
 add_subdirectory(mm)
-add_subdirectory(pyublk)
+add_subdirectory(ublk)
+add_subdirectory(ublksh)
 
 if (UT_ENABLE)
   add_subdirectory(ut)

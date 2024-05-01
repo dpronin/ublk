@@ -16,6 +16,8 @@ target_link_libraries(ublk_cache PRIVATE
     ublk::mm
 )
 
+set_target_properties(ublk_cache PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 add_library(ublk::cache ALIAS ublk_cache)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND COVERAGE_ENABLE)

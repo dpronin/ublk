@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <exception>
 #include <format>
 #include <iostream>
@@ -10,10 +11,10 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 
-#include "bdev_map_param.hpp"
-#include "bdev_unmap_param.hpp"
-#include "target_create_param.hpp"
-#include "target_destroy_param.hpp"
+#include "ublk/bdev_map_param.hpp"
+#include "ublk/bdev_unmap_param.hpp"
+#include "ublk/target_create_param.hpp"
+#include "ublk/target_destroy_param.hpp"
 
 #include "master.hpp"
 
@@ -179,7 +180,20 @@ PYBIND11_EMBEDDED_MODULE(ublk, m) {
       .def("list", &ublk::Master::list, "param"_a);
 }
 
+namespace {
+
+[[noreturn]] void help_show(char const *program, int ec = EXIT_SUCCESS) {
+  std::cout << program << " /path/to/ublksh.py'" << std::endl;
+  _Exit(ec);
+}
+
+} // namespace
+
 int main(int argc [[maybe_unused]], const char *argv[]) try {
+  if (argc < 2) {
+    std::cerr << "path to ublksh.py is not given\n\n";
+    help_show(argv[0], EXIT_FAILURE);
+  }
   py::scoped_interpreter guard{};
   py::object scope = py::module_::import("__main__").attr("__dict__");
   py::eval_file(argv[1], scope);

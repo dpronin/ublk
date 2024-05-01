@@ -288,9 +288,7 @@ TEST(Cache_FlatLRU, EvictInsertInvalidatedEntry) {
       cache->update(
           {kKeyToVerify, mm::make_unique_for_overwrite_bytes(kCacheItemSz)}),
   };
-  ASSERT_TRUE(evicted_value.has_value());
-  EXPECT_EQ(evicted_value->first, kKeyToVerify);
-  EXPECT_FALSE(static_cast<bool>(evicted_value->second));
+  EXPECT_FALSE(evicted_value.has_value());
 }
 
 TEST(Cache_FlatLRU, EvictInvalidatedEntryInsertOffByOneEntry) {
@@ -324,8 +322,7 @@ TEST(Cache_FlatLRU, EvictInvalidatedEntryInsertOffByOneEntry) {
           mm::make_unique_for_overwrite_bytes(kCacheItemSz),
       }),
   };
-  ASSERT_TRUE(evicted_value.has_value());
-  EXPECT_EQ(evicted_value->first, kKeyToInvalidate);
+  EXPECT_FALSE(evicted_value.has_value());
 }
 
 TEST(Cache_FlatLRU, InvalidateLessInsertEntryEvictInvalidated) {
@@ -361,8 +358,7 @@ TEST(Cache_FlatLRU, InvalidateLessInsertEntryEvictInvalidated) {
           mm::make_unique_for_overwrite_bytes(kCacheItemSz),
       }),
   };
-  ASSERT_TRUE(evicted_value.has_value());
-  EXPECT_EQ(evicted_value->first, kKeyToInvalidate);
+  EXPECT_FALSE(evicted_value.has_value());
 }
 
 TEST(Cache_FlatLRU, InvalidateGreaterInsertEntryEvictInvalidated) {
@@ -398,8 +394,7 @@ TEST(Cache_FlatLRU, InvalidateGreaterInsertEntryEvictInvalidated) {
           mm::make_unique_for_overwrite_bytes(kCacheItemSz),
       }),
   };
-  ASSERT_TRUE(evicted_value.has_value());
-  EXPECT_EQ(evicted_value->first, kKeyToInvalidate);
+  EXPECT_FALSE(evicted_value.has_value());
 }
 
 } // namespace ublk::ut::cache

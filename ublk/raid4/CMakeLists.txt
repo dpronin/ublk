@@ -13,6 +13,8 @@ target_link_libraries(ublk_raid4 PUBLIC
     ublk::utils
 )
 
+set_target_properties(ublk_raid4 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 add_library(ublk::raid4 ALIAS ublk_raid4)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND COVERAGE_ENABLE)

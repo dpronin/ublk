@@ -21,6 +21,8 @@ target_compile_definitions(ublk_def PUBLIC
     BOOST_ASIO_HAS_IO_URING=1
 )
 
+set_target_properties(ublk_def PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 add_library(ublk::def ALIAS ublk_def)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND COVERAGE_ENABLE)
