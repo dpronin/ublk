@@ -619,5 +619,9 @@ Master::list(targets_list_param const &) {
       | std::views::transform([](auto const &item) -> std::pair<std::string, size_t> { return {item.first, item.second->properties().capacity_sectors}; }),
   };
   /* clang-format on */
+#ifdef __clang__
   return std::ranges::to<std::list<std::pair<std::string, size_t>>>(list_view);
+#else
+  return {std::ranges::begin(list_view), std::ranges::end(list_view)};
+#endif
 }
