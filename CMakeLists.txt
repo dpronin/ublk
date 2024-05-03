@@ -11,7 +11,7 @@ option(BENCH_ENABLE "enable benchmarks to compile along")
 option(COVERAGE_ENABLE "enable coverage to compile along")
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH

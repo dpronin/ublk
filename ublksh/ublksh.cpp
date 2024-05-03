@@ -11,6 +11,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 
+#include "resources/ublksh.py.hpp"
+
 #include "ublk/bdev_map_param.hpp"
 #include "ublk/bdev_unmap_param.hpp"
 #include "ublk/target_create_param.hpp"
@@ -184,7 +186,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] const char *argv[]) {
   py::scoped_interpreter guard{};
   try {
     py::object scope = py::module_::import("__main__").attr("__dict__");
-    py::exec(ublk::__ublksh_py_code__, scope);
+    py::exec(ublk::resources::ublksh_py_code(), scope);
   } catch (std::exception const &ex) {
     std::cerr << std::format("error occurred: {}", ex.what()) << std::endl;
     return EXIT_FAILURE;

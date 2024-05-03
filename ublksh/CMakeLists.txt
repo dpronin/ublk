@@ -1,19 +1,23 @@
-file(READ ublksh.py.in UBLKSH_PY_CODE)
+include(EmbedResources)
 
-configure_file(ublksh.py.cpp.in ${CMAKE_BINARY_DIR}/ublksh.py.cpp @ONLY)
-configure_file(ublksh.py.hpp.in ${CMAKE_BINARY_DIR}/ublksh.py.hpp @ONLY)
+add_embedded_text_resources(
+  ublk_resource_ublksh_py_code
+  OUT_DIR resources
+  HEADER ublksh.py.hpp
+  NAMESPACE ublk::resources
+  RESOURCE_NAMES ublksh_py_code
+  RESOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/resources/ublksh.py.in
+)
+add_library(ublk::resourses::ublksh_py_code ALIAS ublk_resource_ublksh_py_code)
 
 add_executable(ublksh
     ublksh.cpp
-    ${CMAKE_BINARY_DIR}/ublksh.py.cpp
-    ${CMAKE_BINARY_DIR}/ublksh.py.hpp
-)
-target_compile_options(ublksh PRIVATE
-    -include${CMAKE_BINARY_DIR}/ublksh.py.hpp
 )
 
 target_link_libraries(ublksh PRIVATE
     ublk::ublk
+    ublk::resourses::ublksh_py_code
 )
 
 target_link_libraries(ublksh PRIVATE
