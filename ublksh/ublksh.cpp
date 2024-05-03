@@ -189,16 +189,23 @@ namespace {
 
 } // namespace
 
-int main(int argc [[maybe_unused]], const char *argv[]) try {
+int main(int argc [[maybe_unused]], const char *argv[]) {
   if (argc < 2) {
     std::cerr << "path to ublksh.py is not given\n\n";
     help_show(argv[0], EXIT_FAILURE);
   }
+
   py::scoped_interpreter guard{};
-  py::object scope = py::module_::import("__main__").attr("__dict__");
-  py::eval_file(argv[1], scope);
-} catch (std::exception const &ex) {
-  std::cerr << std::format("error occurred: {}", ex.what()) << std::endl;
-} catch (...) {
-  std::cerr << "unknown error occurred" << std::endl;
+  try {
+    py::object scope = py::module_::import("__main__").attr("__dict__");
+    py::eval_file(argv[1], scope);
+  } catch (std::exception const &ex) {
+    std::cerr << std::format("error occurred: {}", ex.what()) << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    std::cerr << "unknown error occurred" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  return 0;
 }
