@@ -3,6 +3,7 @@
 import ublk
 from cmd import Cmd
 
+
 class ublksh(Cmd):
     prompt = 'ublksh > '
     master = ublk.Master()
