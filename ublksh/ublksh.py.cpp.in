@@ -1,0 +1,11 @@
+#include "ublksh.py.hpp"
+
+namespace ublk {
+
+std::string_view const __ublksh_py_code__ {
+R"ublksh_py(
+    @UBLKSH_PY_CODE@
+)ublksh_py"
+};
+
+} // namespace ublk

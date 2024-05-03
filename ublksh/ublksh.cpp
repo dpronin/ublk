@@ -1,9 +1,9 @@
 #include <cstdlib>
+
 #include <exception>
 #include <format>
 #include <iostream>
 #include <memory>
-#include <stdexcept>
 
 #include <pybind11/embed.h>
 #include <pybind11/eval.h>
@@ -180,25 +180,11 @@ PYBIND11_EMBEDDED_MODULE(ublk, m) {
       .def("list", &ublk::Master::list, "param"_a);
 }
 
-namespace {
-
-[[noreturn]] void help_show(char const *program, int ec = EXIT_SUCCESS) {
-  std::cout << program << " /path/to/ublksh.py'" << std::endl;
-  _Exit(ec);
-}
-
-} // namespace
-
-int main(int argc [[maybe_unused]], const char *argv[]) {
-  if (argc < 2) {
-    std::cerr << "path to ublksh.py is not given\n\n";
-    help_show(argv[0], EXIT_FAILURE);
-  }
-
+int main([[maybe_unused]] int argc, [[maybe_unused]] const char *argv[]) {
   py::scoped_interpreter guard{};
   try {
     py::object scope = py::module_::import("__main__").attr("__dict__");
-    py::eval_file(argv[1], scope);
+    py::exec(ublk::__ublksh_py_code__, scope);
   } catch (std::exception const &ex) {
     std::cerr << std::format("error occurred: {}", ex.what()) << std::endl;
     return EXIT_FAILURE;
@@ -206,6 +192,5 @@ int main(int argc [[maybe_unused]], const char *argv[]) {
     std::cerr << "unknown error occurred" << std::endl;
     return EXIT_FAILURE;
   }
-
   return 0;
 }
