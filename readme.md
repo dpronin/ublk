@@ -76,7 +76,7 @@ $ cmake --preset conan-debug
 $ cmake --build --preset conan-debug --parallel $(nproc)
 $ source out/default/build/Debug/generators/deactivate_conanbuild.sh
 $ source out/default/build/Debug/generators/conanrun.sh
-$ sudo out/default/build/Debug/pyublk/ublk ublksh/ublksh.py
+$ sudo out/default/build/Debug/ublksh/ublksh
 Type ? to list commands
 ublksh >
 ... Working with ublksh
@@ -94,7 +94,7 @@ $ cmake --preset conan-release
 $ cmake --build --preset conan-release --parallel $(nproc)
 $ source out/default/build/Release/generators/deactivate_conanbuild.sh
 $ source out/default/build/Release/generators/conanrun.sh
-$ sudo out/default/build/Release/pyublk/ublk ublksh/ublksh.py
+$ sudo out/default/build/Release/ublksh/ublksh
 Type ? to list commands
 ublksh >
 ... Working with ublksh
