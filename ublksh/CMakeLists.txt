@@ -1,3 +1,6 @@
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+find_package(pybind11 CONFIG REQUIRED)
+
 include(EmbedResources)
 
 add_embedded_text_resources(

@@ -1,3 +1,7 @@
+find_package(spdlog CONFIG REQUIRED)
+find_package(sml CONFIG REQUIRED)
+find_package(liburing CONFIG REQUIRED)
+
 add_library(${PROJECT_NAME} SHARED
     cells_holder.hpp
     cmd_acknowledger.cpp

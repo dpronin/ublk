@@ -1,3 +1,5 @@
+find_package(libnl CONFIG REQUIRED)
+
 add_library(ublk_sys INTERFACE
     epoll.hpp
     file.hpp
@@ -11,7 +13,6 @@ target_include_directories(ublk_sys INTERFACE
 )
 
 target_link_libraries(ublk_sys INTERFACE
-    eve::eve
     Boost::system
     libnl::libnl
 )

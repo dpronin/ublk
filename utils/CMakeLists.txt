@@ -1,3 +1,5 @@
+find_package(eve CONFIG REQUIRED)
+
 add_library(ublk_utils INTERFACE
     algo.hpp
     align.hpp
