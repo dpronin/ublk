@@ -5,7 +5,7 @@
 namespace ublk {
 
 template <typename T>
-concept cfq_suitable = std::is_trivial_v<T> && std::is_trivially_copyable_v<T>;
+concept cfq_suitable = std::is_standard_layout_v<T>;
 
 template <typename T>
 concept standard_layout = std::is_standard_layout_v<T>;
