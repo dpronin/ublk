@@ -34,9 +34,9 @@ public:
                                   std::is_nothrow_destructible_v<T>) {
     std::optional<T> v;
 
-    auto ph = __atomic_load_n(this->ph_.get(), __ATOMIC_RELAXED);
+    auto ph{__atomic_load_n(this->ph_.get(), __ATOMIC_RELAXED)};
     do {
-      if (auto const pt = __atomic_load_n(this->pt_.get(), __ATOMIC_ACQUIRE);
+      if (auto const pt{__atomic_load_n(this->pt_.get(), __ATOMIC_ACQUIRE)};
           pt == ph) [[unlikely]] {
 
         v.reset();

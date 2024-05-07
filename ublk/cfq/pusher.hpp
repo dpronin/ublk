@@ -30,12 +30,14 @@ public:
   pusher &operator=(pusher &&) = delete;
 
   bool push(T const &v) noexcept(std::is_nothrow_copy_constructible_v<T>) {
-    auto const pt = *this->pt_;
-    auto const npt = (pt + 1) % this->capacity_full();
+    auto const pt{*this->pt_};
+    auto const npt{(pt + 1) % this->capacity_full()};
     if (npt == __atomic_load_n(this->ph_.get(), __ATOMIC_RELAXED)) [[unlikely]]
       return false;
+
     this->items_[pt] = v;
     __atomic_store_n(this->pt_.get(), npt, __ATOMIC_RELEASE);
+
     return true;
   }
 };
