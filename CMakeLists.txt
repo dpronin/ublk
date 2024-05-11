@@ -33,6 +33,7 @@ add_compile_options(
   -Werror
   $<$<NOT:$<STREQUAL:$<LOWER_CASE:${CMAKE_CXX_COMPILER_ID}>,clang>>:-Wno-interference-size>
   $<$<CONFIG:Debug>:-ggdb3>
+  $<$<CONFIG:Release>:-fno-stack-protector>
 )
 
 lto_setup()
