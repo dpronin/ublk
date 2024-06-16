@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include <optional>
 #include <span>
 #include <type_traits>
@@ -12,7 +14,7 @@
 
 namespace ublk::cfq {
 
-template <cfq_suitable T, std::integral I1, std::integral I2>
+template <cfq_suitable T, std::unsigned_integral I1, std::unsigned_integral I2>
 class alignas(hardware_destructive_interference_size) popper
     : public base<const T, I1, const I2> {
 
@@ -34,18 +36,15 @@ public:
                                   std::is_nothrow_destructible_v<T>) {
     std::optional<T> v;
 
-    auto ph{__atomic_load_n(this->ph_.get(), __ATOMIC_RELAXED)};
-    do {
-      if (auto const pt{__atomic_load_n(this->pt_.get(), __ATOMIC_ACQUIRE)};
-          pt == ph) [[unlikely]] {
+    auto ch{__atomic_load_n(this->ph_.get(), __ATOMIC_RELAXED)};
+    if (auto const ct{__atomic_load_n(this->pt_.get(), __ATOMIC_ACQUIRE)};
+        ct != ch) [[likely]] {
 
-        v.reset();
-        break;
-      }
-      v = this->items_[ph];
-    } while (!__atomic_compare_exchange_n(
-        this->ph_.get(), &ph, (ph + 1) % this->capacity_full(), true,
-        __ATOMIC_RELEASE, __ATOMIC_ACQUIRE));
+      assert(ch < this->capacity_full());
+      v = this->items_[ch];
+      __atomic_store_n(this->ph_.get(), (ch + 1) % this->capacity_full(),
+                       __ATOMIC_RELEASE);
+    }
 
     return v;
   }

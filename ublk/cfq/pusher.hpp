@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include <span>
 #include <type_traits>
 #include <utility>
@@ -12,7 +14,7 @@
 
 namespace ublk::cfq {
 
-template <cfq_suitable T, std::integral I1, std::integral I2>
+template <cfq_suitable T, std::unsigned_integral I1, std::unsigned_integral I2>
 class alignas(hardware_destructive_interference_size) pusher
     : public base<T, const I1, I2> {
 
@@ -30,15 +32,16 @@ public:
   pusher &operator=(pusher &&) = delete;
 
   bool push(T const &v) noexcept(std::is_nothrow_copy_constructible_v<T>) {
-    auto const pt{*this->pt_};
-    auto const npt{(pt + 1) % this->capacity_full()};
-    if (npt == __atomic_load_n(this->ph_.get(), __ATOMIC_RELAXED)) [[unlikely]]
-      return false;
+    auto const ct{*this->pt_};
+    auto const nct{(ct + 1) % this->capacity_full()};
+    if (nct != __atomic_load_n(this->ph_.get(), __ATOMIC_RELAXED)) [[likely]] {
+      assert(ct < this->capacity_full());
+      this->items_[ct] = v;
+      __atomic_store_n(this->pt_.get(), nct, __ATOMIC_RELEASE);
+      return true;
+    }
 
-    this->items_[pt] = v;
-    __atomic_store_n(this->pt_.get(), npt, __ATOMIC_RELEASE);
-
-    return true;
+    return false;
   }
 };
 
