@@ -235,12 +235,13 @@ Then, check if your system has knowledge how to load _null_blk_ kernel module:
 
 ```bash
 $ modinfo null_blk
-filename:       /lib/modules/6.8.0/kernel/drivers/block/null_blk/null_blk.ko
+filename:       /lib/modules/6.9.3-linux/kernel/drivers/block/null_blk/null_blk.ko
 author:         Jens Axboe <axboe@kernel.dk>
 license:        GPL
-vermagic:       6.8.0 SMP preempt mod_unload
+vermagic:       6.9.3-linux SMP preempt mod_unload
 name:           null_blk
 intree:         Y
+retpoline:      Y
 depends:        configfs
 parm:           zone_max_active:Maximum number of active zones when block device is zoned. Default: 0 (no limit) (uint)
 parm:           zone_max_open:Maximum number of open zones when block device is zoned. Default: 0 (no limit) (uint)
@@ -443,14 +444,15 @@ Then, check if your system has knowledge how to load _loop_ kernel module:
 
 ```bash
 $ modinfo loop
-filename:       /lib/modules/6.8.0/kernel/drivers/block/loop.ko
+filename:       /lib/modules/6.9.3-linux/kernel/drivers/block/loop.ko
 license:        GPL
 alias:          block-major-7-*
 alias:          char-major-10-237
 alias:          devname:loop-control
-vermagic:       6.8.0 SMP preempt mod_unload
+vermagic:       6.9.3-linux SMP preempt mod_unload
 name:           loop
 intree:         Y
+retpoline:      Y
 depends:
 parm:           hw_queue_depth:Queue depth for each hardware queue. Default: 128
 parm:           max_part:Maximum number of partitions per loop device (int)
