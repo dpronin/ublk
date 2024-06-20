@@ -156,41 +156,40 @@ Let us risk to do sequential read operations by means of fio utility:
 ```markdown
 # fio --filename=/dev/ublk-0 --direct=1 --rw=read --bs=4k --ioengine=libaio --iodepth=32 --numjobs=1 --group_reporting --name=ublk-raid0-example-read-test --eta-newline=1 --readonly
 ublk-raid0-example-read-test: (g=0): rw=read, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=32
-fio-3.34
+fio-3.36
 Starting 1 process
-Jobs: 1 (f=1): [R(1)][7.7%][r=105MiB/s][r=27.0k IOPS][eta 00m:36s]
-Jobs: 1 (f=1): [R(1)][13.2%][r=109MiB/s][r=27.8k IOPS][eta 00m:33s]
-Jobs: 1 (f=1): [R(1)][18.4%][r=108MiB/s][r=27.7k IOPS][eta 00m:31s]
-Jobs: 1 (f=1): [R(1)][23.7%][r=106MiB/s][r=27.1k IOPS][eta 00m:29s]
-Jobs: 1 (f=1): [R(1)][28.9%][r=111MiB/s][r=28.5k IOPS][eta 00m:27s]
-Jobs: 1 (f=1): [R(1)][35.1%][r=125MiB/s][r=32.1k IOPS][eta 00m:24s]
-Jobs: 1 (f=1): [R(1)][40.5%][r=109MiB/s][r=27.9k IOPS][eta 00m:22s]
-Jobs: 1 (f=1): [R(1)][47.2%][r=129MiB/s][r=33.1k IOPS][eta 00m:19s]
-Jobs: 1 (f=1): [R(1)][52.8%][r=123MiB/s][r=31.6k IOPS][eta 00m:17s]
-Jobs: 1 (f=1): [R(1)][58.3%][r=95.2MiB/s][r=24.4k IOPS][eta 00m:15s]
-Jobs: 1 (f=1): [R(1)][63.9%][r=103MiB/s][r=26.3k IOPS][eta 00m:13s]
-Jobs: 1 (f=1): [R(1)][69.4%][r=112MiB/s][r=28.7k IOPS][eta 00m:11s]
-Jobs: 1 (f=1): [R(1)][75.0%][r=110MiB/s][r=28.3k IOPS][eta 00m:09s]
-Jobs: 1 (f=1): [R(1)][80.6%][r=123MiB/s][r=31.6k IOPS][eta 00m:07s]
-Jobs: 1 (f=1): [R(1)][86.1%][r=129MiB/s][r=33.1k IOPS][eta 00m:05s]
-Jobs: 1 (f=1): [R(1)][94.3%][r=129MiB/s][r=33.1k IOPS][eta 00m:02s]
-Jobs: 1 (f=1): [R(1)][100.0%][r=128MiB/s][r=32.8k IOPS][eta 00m:00s]
-ublk-raid0-example-read-test: (groupid=0, jobs=1): err= 0: pid=327122: Sat Mar  9 13:35:45 2024
-  read: IOPS=29.5k, BW=115MiB/s (121MB/s)(4096MiB/35520msec)
-    slat (nsec): min=887, max=745083, avg=2308.27, stdev=1793.58
-    clat (usec): min=64, max=19475, avg=1081.17, stdev=668.80
-     lat (usec): min=67, max=19478, avg=1083.48, stdev=668.89
+Jobs: 1 (f=1): [R(1)][9.7%][r=138MiB/s][r=35.4k IOPS][eta 00m:28s]
+Jobs: 1 (f=1): [R(1)][16.7%][r=136MiB/s][r=34.8k IOPS][eta 00m:25s]
+Jobs: 1 (f=1): [R(1)][23.3%][r=136MiB/s][r=34.8k IOPS][eta 00m:23s]
+Jobs: 1 (f=1): [R(1)][30.0%][r=131MiB/s][r=33.4k IOPS][eta 00m:21s]
+Jobs: 1 (f=1): [R(1)][36.7%][r=136MiB/s][r=34.7k IOPS][eta 00m:19s]
+Jobs: 1 (f=1): [R(1)][43.3%][r=141MiB/s][r=36.1k IOPS][eta 00m:17s]
+Jobs: 1 (f=1): [R(1)][50.0%][r=136MiB/s][r=34.8k IOPS][eta 00m:15s]
+Jobs: 1 (f=1): [R(1)][56.7%][r=131MiB/s][r=33.5k IOPS][eta 00m:13s]
+Jobs: 1 (f=1): [R(1)][63.3%][r=133MiB/s][r=34.1k IOPS][eta 00m:11s]
+Jobs: 1 (f=1): [R(1)][70.0%][r=138MiB/s][r=35.3k IOPS][eta 00m:09s]
+Jobs: 1 (f=1): [R(1)][76.7%][r=143MiB/s][r=36.6k IOPS][eta 00m:07s]
+Jobs: 1 (f=1): [R(1)][83.3%][r=128MiB/s][r=32.6k IOPS][eta 00m:05s]
+Jobs: 1 (f=1): [R(1)][90.3%][r=118MiB/s][r=30.3k IOPS][eta 00m:03s]
+Jobs: 1 (f=1): [R(1)][96.8%][r=119MiB/s][r=30.5k IOPS][eta 00m:01s]
+Jobs: 1 (f=1): [R(1)][100.0%][r=118MiB/s][r=30.2k IOPS][eta 00m:00s]
+ublk-raid0-example-read-test: (groupid=0, jobs=1): err= 0: pid=78393: Thu Jun 20 15:53:32 2024
+  read: IOPS=34.0k, BW=133MiB/s (139MB/s)(4096MiB/30822msec)
+    slat (nsec): min=838, max=1395.3k, avg=2957.56, stdev=4236.64
+    clat (usec): min=27, max=13863, avg=936.91, stdev=623.96
+     lat (usec): min=40, max=13865, avg=939.87, stdev=624.15
     clat percentiles (usec):
-     |  1.00th=[  116],  5.00th=[  192], 10.00th=[  293], 20.00th=[  490],
-     | 30.00th=[  668], 40.00th=[  832], 50.00th=[  996], 60.00th=[ 1188],
-     | 70.00th=[ 1385], 80.00th=[ 1598], 90.00th=[ 1909], 95.00th=[ 2245],
-     | 99.00th=[ 2900], 99.50th=[ 3163], 99.90th=[ 3949], 99.95th=[ 4948],
-     | 99.99th=[12387]
-   bw (  KiB/s): min=92384, max=137408, per=100.00%, avg=118138.48, stdev=11073.42, samples=71
-   iops        : min=23096, max=34352, avg=29534.62, stdev=2768.37, samples=71
-  lat (usec)   : 100=0.22%, 250=7.62%, 500=12.79%, 750=14.35%, 1000=15.21%
-  lat (msec)   : 2=41.62%, 4=8.09%, 10=0.08%, 20=0.02%
-  cpu          : usr=4.62%, sys=11.43%, ctx=985667, majf=0, minf=41
+     |  1.00th=[   92],  5.00th=[  174], 10.00th=[  265], 20.00th=[  412],
+     | 30.00th=[  545], 40.00th=[  676], 50.00th=[  824], 60.00th=[  988],
+     | 70.00th=[ 1156], 80.00th=[ 1385], 90.00th=[ 1745], 95.00th=[ 2089],
+     | 99.00th=[ 2802], 99.50th=[ 3130], 99.90th=[ 4080], 99.95th=[ 4948],
+     | 99.99th=[11207]
+   bw (  KiB/s): min=118216, max=149416, per=100.00%, avg=136347.02, stdev=8702.28, samples=61
+   iops        : min=29554, max=37354, avg=34086.75, stdev=2175.57, samples=61
+  lat (usec)   : 50=0.01%, 100=1.40%, 250=7.81%, 500=17.49%, 750=18.39%
+  lat (usec)   : 1000=15.82%
+  lat (msec)   : 2=33.16%, 4=5.82%, 10=0.10%, 20=0.01%
+  cpu          : usr=7.74%, sys=17.41%, ctx=997303, majf=0, minf=42
   IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=100.0%, >=64=0.0%
      submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
      complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.1%, 64=0.0%, >=64=0.0%
@@ -198,10 +197,10 @@ ublk-raid0-example-read-test: (groupid=0, jobs=1): err= 0: pid=327122: Sat Mar  
      latency   : target=0, window=0, percentile=100.00%, depth=32
 
 Run status group 0 (all jobs):
-   READ: bw=115MiB/s (121MB/s), 115MiB/s-115MiB/s (121MB/s-121MB/s), io=4096MiB (4295MB), run=35520-35520msec
+   READ: bw=133MiB/s (139MB/s), 133MiB/s-133MiB/s (139MB/s-139MB/s), io=4096MiB (4295MB), run=30822-30822msec
 
 Disk stats (read/write):
-  ublk-0: ios=1045025/0, merge=0/0, ticks=1126357/0, in_queue=1126357, util=99.76%
+  ublk-0: ios=1043375/0, sectors=8347000/0, merge=0/0, ticks=970237/0, in_queue=970237, util=99.69%
 ```
 
 ##### Removing RAID0 device
@@ -235,10 +234,10 @@ Then, check if your system has knowledge how to load _null_blk_ kernel module:
 
 ```bash
 $ modinfo null_blk
-filename:       /lib/modules/6.9.3-linux/kernel/drivers/block/null_blk/null_blk.ko
+filename:       /lib/modules/6.9.4-linux/kernel/drivers/block/null_blk/null_blk.ko
 author:         Jens Axboe <axboe@kernel.dk>
 license:        GPL
-vermagic:       6.9.3-linux SMP preempt mod_unload
+vermagic:       6.9.4-linux SMP preempt mod_unload
 name:           null_blk
 intree:         Y
 retpoline:      Y
@@ -340,36 +339,34 @@ Let us do sequential read operations by means of fio utility and see how it woul
 ```markdown
 # fio --filename=/dev/ublk-0 --direct=1 --rw=read --bs=128k --io_size=100000m --ioengine=libaio --iodepth=32 --numjobs=1 --group_reporting --name=ublk-raid1-example-read-test --eta-newline=1 --readonly
 ublk-raid1-example-read-test: (g=0): rw=read, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=32
-fio-3.34
+fio-3.36
 Starting 1 process
-Jobs: 1 (f=1): [R(1)][12.5%][r=4140MiB/s][r=33.1k IOPS][eta 00m:21s]
-Jobs: 1 (f=1): [R(1)][20.0%][r=3719MiB/s][r=29.8k IOPS][eta 00m:20s]
-Jobs: 1 (f=1): [R(1)][28.0%][r=3652MiB/s][r=29.2k IOPS][eta 00m:18s]
-Jobs: 1 (f=1): [R(1)][34.6%][r=3735MiB/s][r=29.9k IOPS][eta 00m:17s]
-Jobs: 1 (f=1): [R(1)][44.0%][r=4183MiB/s][r=33.5k IOPS][eta 00m:14s]
-Jobs: 1 (f=1): [R(1)][52.0%][r=3959MiB/s][r=31.7k IOPS][eta 00m:12s]
-Jobs: 1 (f=1): [R(1)][60.0%][r=4086MiB/s][r=32.7k IOPS][eta 00m:10s]
-Jobs: 1 (f=1): [R(1)][68.0%][r=4035MiB/s][r=32.3k IOPS][eta 00m:08s]
-Jobs: 1 (f=1): [R(1)][76.0%][r=3690MiB/s][r=29.5k IOPS][eta 00m:06s]
-Jobs: 1 (f=1): [R(1)][84.0%][r=4150MiB/s][r=33.2k IOPS][eta 00m:04s]
-Jobs: 1 (f=1): [R(1)][92.0%][r=4143MiB/s][r=33.1k IOPS][eta 00m:02s]
-Jobs: 1 (f=1): [R(1)][100.0%][r=3908MiB/s][r=31.3k IOPS][eta 00m:00s]
-ublk-raid1-example-read-test: (groupid=0, jobs=1): err= 0: pid=14939: Sun Mar 10 14:44:35 2024
-  read: IOPS=31.5k, BW=3943MiB/s (4135MB/s)(97.7GiB/25360msec)
-    slat (usec): min=3, max=775, avg= 7.71, stdev= 4.15
-    clat (usec): min=214, max=7832, avg=1005.97, stdev=207.37
-     lat (usec): min=222, max=7839, avg=1013.68, stdev=208.41
+Jobs: 1 (f=1): [R(1)][15.0%][r=4923MiB/s][r=39.4k IOPS][eta 00m:17s]
+Jobs: 1 (f=1): [R(1)][25.0%][r=4783MiB/s][r=38.3k IOPS][eta 00m:15s]
+Jobs: 1 (f=1): [R(1)][35.0%][r=4971MiB/s][r=39.8k IOPS][eta 00m:13s]
+Jobs: 1 (f=1): [R(1)][45.0%][r=4842MiB/s][r=38.7k IOPS][eta 00m:11s]
+Jobs: 1 (f=1): [R(1)][55.0%][r=4777MiB/s][r=38.2k IOPS][eta 00m:09s]
+Jobs: 1 (f=1): [R(1)][65.0%][r=4889MiB/s][r=39.1k IOPS][eta 00m:07s]
+Jobs: 1 (f=1): [R(1)][75.0%][r=4894MiB/s][r=39.1k IOPS][eta 00m:05s]
+Jobs: 1 (f=1): [R(1)][85.0%][r=5276MiB/s][r=42.2k IOPS][eta 00m:03s]
+Jobs: 1 (f=1): [R(1)][95.0%][r=4950MiB/s][r=39.6k IOPS][eta 00m:01s]
+Jobs: 1 (f=1): [R(1)][100.0%][r=4946MiB/s][r=39.6k IOPS][eta 00m:00s]
+ublk-raid1-example-read-test: (groupid=0, jobs=1): err= 0: pid=76443: Thu Jun 20 15:47:56 2024
+  read: IOPS=38.9k, BW=4864MiB/s (5100MB/s)(97.7GiB/20560msec)
+    slat (usec): min=2, max=2754, avg= 8.05, stdev= 7.01
+    clat (usec): min=143, max=7577, avg=813.44, stdev=290.24
+     lat (usec): min=156, max=7585, avg=821.50, stdev=291.96
     clat percentiles (usec):
-     |  1.00th=[  742],  5.00th=[  791], 10.00th=[  816], 20.00th=[  857],
-     | 30.00th=[  889], 40.00th=[  922], 50.00th=[  955], 60.00th=[  996],
-     | 70.00th=[ 1045], 80.00th=[ 1123], 90.00th=[ 1270], 95.00th=[ 1385],
-     | 99.00th=[ 1663], 99.50th=[ 1778], 99.90th=[ 2073], 99.95th=[ 2311],
-     | 99.99th=[ 6194]
-   bw (  MiB/s): min= 3425, max= 4219, per=100.00%, avg=3948.34, stdev=234.75, samples=50
-   iops        : min=27402, max=33756, avg=31586.76, stdev=1878.00, samples=50
-  lat (usec)   : 250=0.01%, 500=0.01%, 750=1.41%, 1000=59.39%
-  lat (msec)   : 2=39.05%, 4=0.12%, 10=0.02%
-  cpu          : usr=4.68%, sys=27.71%, ctx=325744, majf=0, minf=1035
+     |  1.00th=[  461],  5.00th=[  510], 10.00th=[  537], 20.00th=[  586],
+     | 30.00th=[  627], 40.00th=[  676], 50.00th=[  734], 60.00th=[  816],
+     | 70.00th=[  906], 80.00th=[ 1020], 90.00th=[ 1188], 95.00th=[ 1336],
+     | 99.00th=[ 1696], 99.50th=[ 1926], 99.90th=[ 2737], 99.95th=[ 3163],
+     | 99.99th=[ 5866]
+   bw (  MiB/s): min= 4103, max= 5285, per=100.00%, avg=4866.40, stdev=255.14, samples=41
+   iops        : min=32830, max=42282, avg=38931.22, stdev=2041.06, samples=41
+  lat (usec)   : 250=0.01%, 500=3.86%, 750=48.42%, 1000=26.19%
+  lat (msec)   : 2=21.12%, 4=0.39%, 10=0.02%
+  cpu          : usr=7.42%, sys=36.14%, ctx=379791, majf=0, minf=1034
   IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=99.9%, >=64=0.0%
      submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
      complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.1%, 64=0.0%, >=64=0.0%
@@ -377,10 +374,10 @@ ublk-raid1-example-read-test: (groupid=0, jobs=1): err= 0: pid=14939: Sun Mar 10
      latency   : target=0, window=0, percentile=100.00%, depth=32
 
 Run status group 0 (all jobs):
-   READ: bw=3943MiB/s (4135MB/s), 3943MiB/s-3943MiB/s (4135MB/s-4135MB/s), io=97.7GiB (105GB), run=25360-25360msec
+   READ: bw=4864MiB/s (5100MB/s), 4864MiB/s-4864MiB/s (5100MB/s-5100MB/s), io=97.7GiB (105GB), run=20560-20560msec
 
 Disk stats (read/write):
-  ublk-0: ios=793776/0, merge=0/0, ticks=791637/0, in_queue=791637, util=99.66%
+  ublk-0: ios=792849/0, sectors=202969344/0, merge=0/0, ticks=634796/0, in_queue=634796, util=99.30%
 ```
 
 While _fio_ is working run _iostat_ utility to see IO progress at block devices:
@@ -388,16 +385,16 @@ While _fio_ is working run _iostat_ utility to see IO progress at block devices:
 ```bash
 $ iostat -ym 1
 avg-cpu:  %user   %nice %system %iowait  %steal   %idle
-          14,25    0,00   17,72    0,00    0,00   68,04
+          15,72    0,00   28,27    0,00    0,00   56,01
 
 Device             tps    MB_read/s    MB_wrtn/s    MB_dscd/s    MB_read    MB_wrtn    MB_dscd
-nullb0        10794,00       674,62         0,00         0,00        674          0          0
-nullb1        10793,00       674,56         0,00         0,00        674          0          0
-nullb2        10794,00       674,62         0,00         0,00        674          0          0
-nullb3        10793,00       674,56         0,00         0,00        674          0          0
-nullb4        10793,00       674,56         0,00         0,00        674          0          0
-nullb5        10795,00       674,69         0,00         0,00        674          0          0
-ublk-0        32380,00      4047,50         0,00         0,00       4047          0          0
+nullb0        12572,00       785,75         0,00         0,00        785          0          0
+nullb1        12573,00       785,81         0,00         0,00        785          0          0
+nullb2        12573,00       785,81         0,00         0,00        785          0          0
+nullb3        12573,00       785,81         0,00         0,00        785          0          0
+nullb4        12573,00       785,81         0,00         0,00        785          0          0
+nullb5        12572,00       785,75         0,00         0,00        785          0          0
+ublk-0        37716,00      4714,50         0,00         0,00       4714          0          0
 ...
 ```
 
@@ -444,12 +441,12 @@ Then, check if your system has knowledge how to load _loop_ kernel module:
 
 ```bash
 $ modinfo loop
-filename:       /lib/modules/6.9.3-linux/kernel/drivers/block/loop.ko
+filename:       /lib/modules/6.9.4-linux/kernel/drivers/block/loop.ko
 license:        GPL
 alias:          block-major-7-*
 alias:          char-major-10-237
 alias:          devname:loop-control
-vermagic:       6.9.3-linux SMP preempt mod_unload
+vermagic:       6.9.4-linux SMP preempt mod_unload
 name:           loop
 intree:         Y
 retpoline:      Y
@@ -564,10 +561,10 @@ For the beginning we try to use dd utility performing sequential write operation
 
 ```markdown
 # dd if=/dev/random of=raid5ext4mp/a.dat oflag=direct bs=4K count=51200 status=progress
-202997760 bytes (203 MB, 194 MiB) copied, 17 s, 11.9 MB/s
-51200+0 records in
-51200+0 records out
-209715200 bytes (210 MB, 200 MiB) copied, 17.5307 s, 12.0 MB/s
+192331776 байтов (192 MB, 183 MiB) скопировано, 8 s, 24,0 MB/s
+51200+0 записей получено
+51200+0 записей отправлено
+209715200 байтов (210 MB, 200 MiB) скопировано, 8,69378 s, 24,1 MB/s
 ```
 
 If we take a look at _iostat_'s measurements while _dd_ is working we will see IO progress at block devices:
@@ -575,13 +572,13 @@ If we take a look at _iostat_'s measurements while _dd_ is working we will see I
 ```bash
 $ iostat -ym 1
 avg-cpu:  %user   %nice %system %iowait  %steal   %idle
-           8,86    0,00    6,71   11,39    0,00   73,04
+          13,99    0,00   18,65    7,25    0,00   60,10
 
 Device             tps    MB_read/s    MB_wrtn/s    MB_dscd/s    MB_read    MB_wrtn    MB_dscd
-loop0          4052,00        36,73        35,00         0,00         36         34          0
-loop1          4153,00        36,96        35,20         0,00         36         35          0
-loop2          4195,00        36,83        34,96         0,00         36         34          0
-ublk-0         2836,00         0,00        11,04         0,00          0         11          0
+loop0          9208,00        78,12        78,12         0,00         78         78          0
+loop1          9185,00        77,81        77,80         0,00         77         77          0
+loop2          9214,00        78,22        78,22         0,00         78         78          0
+ublk-0         6310,00         0,00        24,65         0,00          0         24          0
 ...
 ```
 
@@ -590,38 +587,34 @@ Let us do IO write operations by means of fio utility and see how it would go. T
 ```markdown
 # fio --filename=raid5ext4mp/b.dat --filesize=100M --direct=1 --rw=randrw --bs=16K --ioengine=libaio --iodepth=8 --numjobs=1 --group_reporting --name=ublk-raid5ext4-example-write-verify-test --eta-newline=1 --verify=xxhash
 ublk-raid5ext4-example-write-verify-test: (g=0): rw=randrw, bs=(R) 16.0KiB-16.0KiB, (W) 16.0KiB-16.0KiB, (T) 16.0KiB-16.0KiB, ioengine=libaio, iodepth=8
-fio-3.34
+fio-3.36
 Starting 1 process
 ublk-raid5ext4-example-write-verify-test: Laying out IO file (1 file / 100MiB)
-Jobs: 1 (f=1): [V(1)][-.-%][r=44.4MiB/s,w=25.2MiB/s][r=2841,w=1615 IOPS][eta 00m:00s]
-ublk-raid5ext4-example-write-verify-test: (groupid=0, jobs=1): err= 0: pid=96967: Sun Mar 10 18:26:43 2024
-  read: IOPS=3078, BW=48.1MiB/s (50.4MB/s)(100MiB/2079msec)
-    slat (nsec): min=1839, max=56681, avg=4639.17, stdev=3793.38
-    clat (usec): min=72, max=5532, avg=829.30, stdev=745.32
-     lat (usec): min=75, max=5537, avg=833.94, stdev=746.49
+ublk-raid5ext4-example-write-verify-test: (groupid=0, jobs=1): err= 0: pid=84063: Thu Jun 20 16:06:59 2024
+  read: IOPS=13.4k, BW=209MiB/s (219MB/s)(100MiB/478msec)
+    slat (nsec): min=1624, max=421595, avg=6061.59, stdev=7730.37
+    clat (usec): min=36, max=1814, avg=245.64, stdev=149.04
+     lat (usec): min=39, max=1818, avg=251.70, stdev=150.60
     clat percentiles (usec):
-     |  1.00th=[  106],  5.00th=[  147], 10.00th=[  186], 20.00th=[  258],
-     | 30.00th=[  318], 40.00th=[  371], 50.00th=[  437], 60.00th=[  676],
-     | 70.00th=[ 1123], 80.00th=[ 1516], 90.00th=[ 2008], 95.00th=[ 2343],
-     | 99.00th=[ 2966], 99.50th=[ 3261], 99.90th=[ 3752], 99.95th=[ 4015],
-     | 99.99th=[ 5538]
-   bw (  KiB/s): min=22848, max=26400, per=50.84%, avg=25040.00, stdev=1602.24, samples=4
-   iops        : min= 1428, max= 1650, avg=1565.00, stdev=100.14, samples=4
-  write: IOPS=1676, BW=26.2MiB/s (27.5MB/s)(51.1MiB/1950msec); 0 zone resets
-    slat (usec): min=8, max=103, avg=15.47, stdev= 6.84
-    clat (usec): min=823, max=11038, avg=3426.30, stdev=1051.88
-     lat (usec): min=846, max=11050, avg=3441.77, stdev=1051.70
+     |  1.00th=[   60],  5.00th=[   83], 10.00th=[  102], 20.00th=[  135],
+     | 30.00th=[  159], 40.00th=[  184], 50.00th=[  208], 60.00th=[  241],
+     | 70.00th=[  281], 80.00th=[  338], 90.00th=[  424], 95.00th=[  523],
+     | 99.00th=[  758], 99.50th=[  824], 99.90th=[ 1385], 99.95th=[ 1631],
+     | 99.99th=[ 1811]
+  write: IOPS=8406, BW=131MiB/s (138MB/s)(51.1MiB/389msec); 0 zone resets
+    slat (usec): min=8, max=232, avg=18.79, stdev=10.93
+    clat (usec): min=147, max=3556, avg=645.45, stdev=274.97
+     lat (usec): min=157, max=3577, avg=664.24, stdev=277.65
     clat percentiles (usec):
-     |  1.00th=[ 1401],  5.00th=[ 1876], 10.00th=[ 2212], 20.00th=[ 2573],
-     | 30.00th=[ 2868], 40.00th=[ 3097], 50.00th=[ 3359], 60.00th=[ 3621],
-     | 70.00th=[ 3851], 80.00th=[ 4228], 90.00th=[ 4752], 95.00th=[ 5145],
-     | 99.00th=[ 6587], 99.50th=[ 7504], 99.90th=[ 8979], 99.95th=[ 9896],
-     | 99.99th=[11076]
-   bw (  KiB/s): min=24064, max=27616, per=97.50%, avg=26160.00, stdev=1607.77, samples=4
-   iops        : min= 1504, max= 1726, avg=1635.00, stdev=100.49, samples=4
-  lat (usec)   : 100=0.50%, 250=12.17%, 500=23.62%, 750=5.04%, 1000=3.37%
-  lat (msec)   : 2=17.26%, 4=29.50%, 10=8.53%, 20=0.01%
-  cpu          : usr=4.52%, sys=2.60%, ctx=7353, majf=0, minf=103
+     |  1.00th=[  239],  5.00th=[  322], 10.00th=[  371], 20.00th=[  433],
+     | 30.00th=[  486], 40.00th=[  537], 50.00th=[  586], 60.00th=[  660],
+     | 70.00th=[  725], 80.00th=[  824], 90.00th=[  979], 95.00th=[ 1123],
+     | 99.00th=[ 1549], 99.50th=[ 1893], 99.90th=[ 2311], 99.95th=[ 2802],
+     | 99.99th=[ 3556]
+  lat (usec)   : 50=0.19%, 100=6.13%, 250=35.51%, 500=31.64%, 750=16.63%
+  lat (usec)   : 1000=6.54%
+  lat (msec)   : 2=3.26%, 4=0.10%
+  cpu          : usr=16.56%, sys=17.61%, ctx=9029, majf=0, minf=102
   IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=99.9%, 16=0.0%, 32=0.0%, >=64=0.0%
      submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
      complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
@@ -629,11 +622,11 @@ ublk-raid5ext4-example-write-verify-test: (groupid=0, jobs=1): err= 0: pid=96967
      latency   : target=0, window=0, percentile=100.00%, depth=8
 
 Run status group 0 (all jobs):
-   READ: bw=48.1MiB/s (50.4MB/s), 48.1MiB/s-48.1MiB/s (50.4MB/s-50.4MB/s), io=100MiB (105MB), run=2079-2079msec
-  WRITE: bw=26.2MiB/s (27.5MB/s), 26.2MiB/s-26.2MiB/s (27.5MB/s-27.5MB/s), io=51.1MiB (53.6MB), run=1950-1950msec
+   READ: bw=209MiB/s (219MB/s), 209MiB/s-209MiB/s (219MB/s-219MB/s), io=100MiB (105MB), run=478-478msec
+  WRITE: bw=131MiB/s (138MB/s), 131MiB/s-131MiB/s (138MB/s-138MB/s), io=51.1MiB (53.6MB), run=389-389msec
 
 Disk stats (read/write):
-  ublk-0: ios=6088/3270, merge=0/0, ticks=5182/11130, in_queue=16312, util=95.39%
+  ublk-0: ios=2333/2450, sectors=74656/78400, merge=0/0, ticks=618/1456, in_queue=2074, util=72.73%
 ```
 
 While _fio_ is working run _iostat_ utility to see IO progress at block devices:
@@ -641,13 +634,14 @@ While _fio_ is working run _iostat_ utility to see IO progress at block devices:
 ```bash
 $ iostat -ym 1
 avg-cpu:  %user   %nice %system %iowait  %steal   %idle
-          10,68    0,00   20,10    1,38    0,00   67,84
+          16,32    0,00   22,11    1,67    0,00   59,90
 
 Device             tps    MB_read/s    MB_wrtn/s    MB_dscd/s    MB_read    MB_wrtn    MB_dscd
-loop0          2918,00        24,07        36,54         0,00         24         36          0
-loop1          2904,00        24,30        36,54         0,00         24         36          0
-loop2          2850,00        22,83        35,05         0,00         22         35          0
-ublk-0         1923,00        14,30        66,99         0,00         14         66          0
+loop0          8132,00        68,31        98,51         0,00         68         98          0
+loop1          8068,00        68,78        99,14         0,00         68         99          0
+loop2          7974,00        69,45        98,86         0,00         69         98          0
+ublk-0         4927,00        36,80       138,60         0,00         36        138          0
+...
 ```
 
 ##### Cleaning everything created earlier up
