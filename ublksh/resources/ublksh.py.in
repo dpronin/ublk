@@ -248,11 +248,20 @@ class ublksh(Cmd):
     def do_driver_load(self, arg):
         subprocess.run(['modprobe', 'ublkdrv'], check=True)
 
+    def help_driver_load(self):
+        print("Loads the kernel driver.")
+
     def do_driver_info(self, arg):
         subprocess.run(['modinfo', 'ublkdrv'], check=True)
 
+    def help_driver_info(self):
+        print("Shows information about the kernel driver.")
+
     def do_driver_unload(self, arg):
         subprocess.run(['rmmod', 'ublkdrv'], capture_output=True)
+
+    def help_driver_unload(self):
+        print("Unloads the kernel driver.")
 
     def do_target_create(self, arg):
         args = ublksh.__parse_args__(arg)
