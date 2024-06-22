@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import ublk
 from cmd import Cmd
+import subprocess
+
+import ublk
 
 
 class ublksh(Cmd):
@@ -242,6 +244,15 @@ class ublksh(Cmd):
 
     def help_exit(self):
         print('Quits the application. Shorthand: x q Ctrl-D.')
+
+    def do_driver_load(self, arg):
+        subprocess.run(['modprobe', 'ublkdrv'], check=True)
+
+    def do_driver_info(self, arg):
+        subprocess.run(['modinfo', 'ublkdrv'], check=True)
+
+    def do_driver_unload(self, arg):
+        subprocess.run(['rmmod', 'ublkdrv'], capture_output=True)
 
     def do_target_create(self, arg):
         args = ublksh.__parse_args__(arg)
