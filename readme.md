@@ -58,12 +58,12 @@ arch=x86_64
 build_type=Release
 compiler=gcc
 compiler.libcxx=libstdc++11
-compiler.version=13.2
+compiler.version=14.1
 os=Linux
 
 [buildenv]
-CXX=g++
-CC=gcc
+CXX=g++-14
+CC=gcc-14
 ```
 
 ### Debug (with cmake presets)
@@ -77,6 +77,7 @@ $ cmake --build --preset conan-debug --parallel $(nproc)
 $ source out/default/build/Debug/generators/deactivate_conanbuild.sh
 $ source out/default/build/Debug/generators/conanrun.sh
 $ sudo out/default/build/Debug/ublksh/ublksh
+Version 4.3.0
 Type ? to list commands
 ublksh >
 ... Working with ublksh
@@ -95,6 +96,7 @@ $ cmake --build --preset conan-release --parallel $(nproc)
 $ source out/default/build/Release/generators/deactivate_conanbuild.sh
 $ source out/default/build/Release/generators/conanrun.sh
 $ sudo out/default/build/Release/ublksh/ublksh
+Version 4.3.0
 Type ? to list commands
 ublksh >
 ... Working with ublksh
@@ -102,20 +104,48 @@ ublksh > Ctrl^D
 $ source out/default/build/Release/generators/deactivate_conanrun.sh
 ```
 
-## Loading ublkdrv
+## Checking the driver out
 
-Before working with ublksh and configuring RAIDs and other stuff we need to load the driver to the
-kernel, see [ublkdrv](https://github.com/dpronin/ublkdrv). Build the module, install and load:
+Check it out if the kernel module required already exists:
 
 ```markdown
-# modprobe ublkdrv
+$ modinfo ublkdrv
+filename:       /lib/modules/6.9.8-gentoo-x86_64/misc/ublkdrv.ko
+license:        GPL
+author:         Pronin Denis <dannftk@yandex.ru>
+description:    UBLK driver for creating block devices that map on UBLK userspace application targets
+supported:      external
+version:        1.2.7
+vermagic:       6.9.8-gentoo-x86_64 SMP preempt mod_unload
+name:           ublkdrv
+retpoline:      Y
+depends:        uio
+srcversion:     233F9C98F9CA83AAE3CF456
 ```
+
+Before working with ublksh and configuring RAIDs and other stuff we need the driver to exist, otherwise see [ublkdrv](https://github.com/dpronin/ublkdrv) how to build it.
+Unless the module already exists build it up, install and rebuilt the module dependency tree to let **modprobe** find a new module.
 
 ## Working with ublksh
 
-You could see many examples in the [directory](ublksh/samples) for configuring different types of RAIDs, mirrors and inmem storages
+### Load the driver first of all
+
+```bash
+ublksh > driver_load
+```
+
+In `dmesg` we would see something like this:
+
+```bash
+> dmesg | grep ublkdrv
+...
+[ 1661.041485] ublkdrv: ublkdrv-1.2.7 init for kernel 6.9.8-linux-x86_64 #1 SMP PREEMPT_DYNAMIC Fri Jul  5 20:10:43 MSK 2024
+...
+```
 
 ### Examples of assembling block devices
+
+You could see many examples in the [directory](ublksh/samples) for configuring different types of RAIDs, mirrors and inmem storages
 
 #### Building RAID0 up upon extendible files on backend
 
@@ -230,10 +260,10 @@ Then, check if your system has knowledge how to load _null_blk_ kernel module:
 
 ```bash
 $ modinfo null_blk
-filename:       /lib/modules/6.9.4-linux/kernel/drivers/block/null_blk/null_blk.ko
+filename:       /lib/modules/6.9.8-linux/kernel/drivers/block/null_blk/null_blk.ko
 author:         Jens Axboe <axboe@kernel.dk>
 license:        GPL
-vermagic:       6.9.4-linux SMP preempt mod_unload
+vermagic:       6.9.8-linux SMP preempt mod_unload
 name:           null_blk
 intree:         Y
 retpoline:      Y
@@ -430,12 +460,12 @@ Then, check if your system has knowledge how to load _loop_ kernel module:
 
 ```bash
 $ modinfo loop
-filename:       /lib/modules/6.9.4-linux/kernel/drivers/block/loop.ko
+filename:       /lib/modules/6.9.8-linux/kernel/drivers/block/loop.ko
 license:        GPL
 alias:          block-major-7-*
 alias:          char-major-10-237
 alias:          devname:loop-control
-vermagic:       6.9.4-linux SMP preempt mod_unload
+vermagic:       6.9.8-linux SMP preempt mod_unload
 name:           loop
 intree:         Y
 retpoline:      Y
