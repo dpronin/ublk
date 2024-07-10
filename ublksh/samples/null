@@ -1,2 +1,2 @@
 target_create name=null capacity_sectors=2097152 type=null
-bdev_map bdev_suffix=0 target_name=null
+bdev_map bdev_suffix=0 target_name=null zero_copy=1
