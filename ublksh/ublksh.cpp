@@ -47,11 +47,13 @@ PYBIND11_EMBEDDED_MODULE(ublk, m) {
             .bdev_suffix = {},
             .target_name = {},
             .read_only = false,
+            .zero_copy = false,
         };
       }))
       .def_readwrite("bdev_suffix", &ublk::bdev_map_param::bdev_suffix)
       .def_readwrite("target_name", &ublk::bdev_map_param::target_name)
-      .def_readwrite("read_only", &ublk::bdev_map_param::read_only);
+      .def_readwrite("read_only", &ublk::bdev_map_param::read_only)
+      .def_readwrite("zero_copy", &ublk::bdev_map_param::zero_copy);
 
   py::class_<ublk::bdev_unmap_param>(m, "bdev_unmap_param")
       .def(py::init<>())

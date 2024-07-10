@@ -410,6 +410,9 @@ void Master::map(bdev_map_param const &param) {
   if (param.read_only)
     nla_put_flag(msg.get(), UBLKDRV_GENL_BDEV_ATTR_READ_ONLY);
 
+  if (param.zero_copy)
+    nla_put_flag(msg.get(), UBLKDRV_GENL_BDEV_ATTR_ZERO_COPY);
+
   sys::genl::auto_send(*nl_sock, *msg);
 
   nl_sock.reset();

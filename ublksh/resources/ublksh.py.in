@@ -393,7 +393,8 @@ class ublksh(Cmd):
             print("No 'target_name' given in the arguments")
             return
 
-        param.read_only = args.get('read_only', False)
+        param.read_only = bool(int(args.get('read_only', False)))
+        param.zero_copy = bool(int(args.get('zero_copy', False)))
 
         try:
             self.master.map(param)
