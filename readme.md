@@ -110,17 +110,17 @@ Check it out if the kernel module required already exists:
 
 ```markdown
 $ modinfo ublkdrv
-filename:       /lib/modules/6.9.8-gentoo-x86_64/misc/ublkdrv.ko
+filename:       /lib/modules/6.9.8-linux-x86_64/misc/ublkdrv.ko
 license:        GPL
 author:         Pronin Denis <dannftk@yandex.ru>
 description:    UBLK driver for creating block devices that map on UBLK userspace application targets
 supported:      external
-version:        1.2.7
-vermagic:       6.9.8-gentoo-x86_64 SMP preempt mod_unload
+version:        1.3.0
+vermagic:       6.9.8-linux-x86_64 SMP preempt mod_unload
 name:           ublkdrv
 retpoline:      Y
 depends:        uio
-srcversion:     233F9C98F9CA83AAE3CF456
+srcversion:     144741AC90B690082A9E3C6
 ```
 
 Before working with ublksh and configuring RAIDs and other stuff we need the driver to exist, otherwise see [ublkdrv](https://github.com/dpronin/ublkdrv) how to build it.
@@ -139,7 +139,7 @@ In `dmesg` we would see something like this:
 ```bash
 > dmesg | grep ublkdrv
 ...
-[ 1661.041485] ublkdrv: ublkdrv-1.2.7 init for kernel 6.9.8-linux-x86_64 #1 SMP PREEMPT_DYNAMIC Fri Jul  5 20:10:43 MSK 2024
+[ 1661.041485] ublkdrv: ublkdrv-1.3.0 init for kernel 6.9.8-linux-x86_64 #1 SMP PREEMPT_DYNAMIC Fri Jul  5 20:10:43 MSK 2024
 ...
 ```
 
@@ -260,10 +260,10 @@ Then, check if your system has knowledge how to load _null_blk_ kernel module:
 
 ```bash
 $ modinfo null_blk
-filename:       /lib/modules/6.9.8-linux/kernel/drivers/block/null_blk/null_blk.ko
+filename:       /lib/modules/6.9.8-linux-x86_64/kernel/drivers/block/null_blk/null_blk.ko
 author:         Jens Axboe <axboe@kernel.dk>
 license:        GPL
-vermagic:       6.9.8-linux SMP preempt mod_unload
+vermagic:       6.9.8-linux-x86_64 SMP preempt mod_unload
 name:           null_blk
 intree:         Y
 retpoline:      Y
@@ -460,12 +460,12 @@ Then, check if your system has knowledge how to load _loop_ kernel module:
 
 ```bash
 $ modinfo loop
-filename:       /lib/modules/6.9.8-linux/kernel/drivers/block/loop.ko
+filename:       /lib/modules/6.9.8-linux-x86_64/kernel/drivers/block/loop.ko
 license:        GPL
 alias:          block-major-7-*
 alias:          char-major-10-237
 alias:          devname:loop-control
-vermagic:       6.9.8-linux SMP preempt mod_unload
+vermagic:       6.9.8-linux-x86_64 SMP preempt mod_unload
 name:           loop
 intree:         Y
 retpoline:      Y
