@@ -3,13 +3,13 @@ boost/[~1.85]
 jfalcou-eve/v2023.02.15
 libnl/[~3.9]
 liburing/[~2.6]
-pybind11/[~2.12]
+pybind11/[~2.13]
 sml/[~1.1]
 spdlog/[~1.14]
 
 [test_requires]
 benchmark/[~1.8]
-gtest/[~1.14]
+gtest/[~1.15]
 
 [generators]
 CMakeDeps
