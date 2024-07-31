@@ -20,7 +20,7 @@ In case you don't choose to use [python virtual environment](https://docs.python
 $ pip3 install --user conan --upgrade
 ```
 
-- A C++ compiler with at least __C++23__ support
+- A C++ compiler with at least __C++23__ support (tested __gcc >= 14__, __clang >= 18__)
 
 ## Preparing conan
 
