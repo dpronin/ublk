@@ -1,14 +1,17 @@
 [requires]
-boost/[~1.85]
+boost/[~1.86]
 jfalcou-eve/v2023.02.15
 libnl/[~3.9]
-liburing/[~2.6]
+liburing/[~2.7]
 pybind11/[~2.13]
 sml/[~1.1]
 spdlog/[~1.14]
 
+[tool_requires]
+cmake/[^3.12]
+
 [test_requires]
-benchmark/[~1.8]
+benchmark/[~1.9]
 gtest/[~1.15]
 
 [generators]
