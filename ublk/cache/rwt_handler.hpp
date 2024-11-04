@@ -4,13 +4,10 @@
 #include <cstdint>
 
 #include <memory>
-#include <utility>
-#include <vector>
+#include <queue>
+#include <unordered_map>
 
-#include "mm/cache_line_aligned_allocator.hpp"
 #include "mm/mem_chunk_pool.hpp"
-
-#include "utils/bitset_locker.hpp"
 
 #include "write_query.hpp"
 
@@ -39,9 +36,8 @@ public:
 private:
   int process(std::shared_ptr<write_query> wq) noexcept;
 
-  bitset_locker<uint64_t, mm::allocator::cache_line_aligned_allocator<uint64_t>>
-      chunk_w_locker_;
-  std::vector<std::pair<uint64_t, std::shared_ptr<write_query>>> wqs_pending_;
+  std::unordered_map<uint64_t, std::queue<std::shared_ptr<write_query>>>
+      wqs_pending_;
 };
 
 } // namespace ublk::cache
