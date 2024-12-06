@@ -33,10 +33,10 @@ inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_write cmd) {
 
 template <>
 struct fmt::formatter<ublkdrv_cmd_write> : fmt::formatter<std::string> {
-  decltype(auto) format(ublkdrv_cmd_write cmd, format_context &ctx) {
+  auto format(ublkdrv_cmd_write cmd, format_context &ctx) const {
     std::ostringstream oss;
     oss << cmd;
-    return std::format_to(ctx.out(), "{}", oss.str());
+    return fmt::formatter<std::string>::format(oss.str(), ctx);
   }
 };
 

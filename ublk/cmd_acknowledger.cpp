@@ -23,12 +23,11 @@ inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_ack const &cmd) {
 
 template <>
 struct fmt::formatter<ublkdrv_cmd_ack> : fmt::formatter<std::string> {
-  auto format(ublkdrv_cmd_ack const &cmd,
-              format_context &ctx) -> decltype(ctx.out()) {
+  auto format(ublkdrv_cmd_ack const &cmd, format_context &ctx) const {
 
     std::ostringstream oss;
     oss << cmd;
-    return std::format_to(ctx.out(), "{}", oss.str());
+    return fmt::formatter<std::string>::format(oss.str(), ctx);
   }
 };
 
