@@ -16,6 +16,7 @@ target_link_libraries(ublk_raid0 PUBLIC
 )
 target_link_libraries(ublk_raid0 PRIVATE
     sml::sml
+    Microsoft.GSL::GSL
 )
 
 set_target_properties(ublk_raid0 PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -1,12 +1,13 @@
 #include "rwi_handler.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
 #include <algorithm>
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "utils/algo.hpp"
 #include "utils/utility.hpp"
@@ -22,14 +23,14 @@ RWIHandler::RWIHandler(
     std::shared_ptr<mm::mem_chunk_pool> mem_chunk_pool) noexcept
     : cache_(std::move(cache)), handler_(std::move(handler)),
       mem_chunk_pool_(std::move(mem_chunk_pool)), last_wq_done_seq_(0) {
-  assert(cache_);
-  assert(handler_);
-  assert(mem_chunk_pool_);
+  Ensures(cache_);
+  Ensures(handler_);
+  Ensures(mem_chunk_pool_);
 }
 
 int RWIHandler::submit(std::shared_ptr<read_query> rq) noexcept {
-  assert(rq);
-  assert(0 != rq->buf().size());
+  Expects(rq);
+  Expects(0 != rq->buf().size());
 
   auto chunk_id{rq->offset() / cache_->item_sz()};
 
@@ -48,7 +49,7 @@ int RWIHandler::submit(std::shared_ptr<read_query> rq) noexcept {
       algo::copy(from, to);
     } else {
       auto mem_chunk = mem_chunk_pool_->get();
-      assert(mem_chunk);
+      Ensures(mem_chunk);
 
       auto mem_chunk_span = mem_chunk_pool_->chunk_view(mem_chunk);
 
@@ -83,8 +84,8 @@ int RWIHandler::submit(std::shared_ptr<read_query> rq) noexcept {
 }
 
 int RWIHandler::submit(std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-  assert(0 != wq->buf().size());
+  Expects(wq);
+  Expects(0 != wq->buf().size());
 
   auto const chunk_id_first{wq->offset() / cache_->item_sz()};
   auto const chunk_id_last{

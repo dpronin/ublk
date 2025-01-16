@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "target.hpp"
 #include "wrq_submitter_interface.hpp"
@@ -14,7 +14,7 @@ class WRQSubmitter : public IWRQSubmitter {
 public:
   explicit WRQSubmitter(std::shared_ptr<Target> target)
       : target_(std::move(target)) {
-    assert(target_);
+    Ensures(target_);
   }
   ~WRQSubmitter() override = default;
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "rdq_submitter_interface.hpp"
 #include "rw_handler_interface.hpp"
@@ -16,8 +16,8 @@ public:
   explicit RWHandler(std::shared_ptr<IRDQSubmitter> rh,
                      std::shared_ptr<IWRQSubmitter> wh)
       : rh_(std::move(rh)), wh_(std::move(wh)) {
-    assert(rh_);
-    assert(wh_);
+    Ensures(rh_);
+    Ensures(wh_);
   }
   ~RWHandler() override = default;
 

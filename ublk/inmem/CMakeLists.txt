@@ -8,6 +8,7 @@ add_library(ublk_inmem STATIC
 target_include_directories(ublk_inmem PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
 target_link_libraries(ublk_inmem PUBLIC
     Boost::system
+    Microsoft.GSL::GSL
     ublk::utils
     ublk::mm
 )

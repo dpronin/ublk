@@ -12,6 +12,7 @@ target_include_directories(ublk_cache PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
 target_link_libraries(ublk_cache PRIVATE
     Boost::headers
     Boost::system
+    Microsoft.GSL::GSL
     ublk::utils
     ublk::mm
 )

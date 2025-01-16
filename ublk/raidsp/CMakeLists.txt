@@ -17,6 +17,7 @@ target_link_libraries(ublk_raidsp PUBLIC
     ublk::mm
 )
 target_link_libraries(ublk_raidsp PRIVATE
+    Microsoft.GSL::GSL
     sml::sml
 )
 

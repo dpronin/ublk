@@ -1,10 +1,11 @@
 #include "mem_cached_allocator.hpp"
 
-#include <cassert>
 #include <cstdint>
 
 #include <algorithm>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "utils/utility.hpp"
 
@@ -14,8 +15,8 @@ namespace ublk::mm {
 
 void *mem_cached_allocator::allocate_aligned(size_t alignment,
                                              size_t sz) noexcept {
-  assert(is_power_of_2(alignment));
-  assert(sz);
+  Expects(is_power_of_2(alignment));
+  Expects(sz);
 
   alignment = std::max(alignment, alignof(std::max_align_t));
   auto ftbl_it = ftbl_.lower_bound(alignment);
@@ -41,14 +42,14 @@ void *mem_cached_allocator::allocate_aligned(size_t alignment,
   auto *p = uptr.get();
   [[maybe_unused]] auto const [it, emplaced] = btbl_.emplace(
       reinterpret_cast<uintptr_t>(p), busy_desc{std::move(uptr), ftbl_desc_it});
-  assert(emplaced);
+  Ensures(emplaced);
 
   return p;
 }
 
 void mem_cached_allocator::free(void *p [[maybe_unused]]) noexcept {
   auto const it = btbl_.find(reinterpret_cast<uintptr_t>(p));
-  assert(it != btbl_.end());
+  Expects(it != btbl_.end());
   it->second.ftbl_desc_it->second.free_chunks.push(std::move(it->second.chunk));
   btbl_.erase(it);
 }

@@ -43,6 +43,7 @@ configure_file(config.hpp.in ${CMAKE_BINARY_DIR}/config.hpp @ONLY)
 add_compile_options(-include ${CMAKE_BINARY_DIR}/config.hpp)
 
 find_package(Boost CONFIG REQUIRED COMPONENT headers system)
+find_package(Microsoft.GSL CONFIG REQUIRED)
 
 add_subdirectory(sys)
 add_subdirectory(utils)

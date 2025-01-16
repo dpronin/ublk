@@ -1,11 +1,12 @@
 #include "backend.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
 #include <algorithm>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "mm/mem.hpp"
 
@@ -23,9 +24,9 @@ struct backend::static_cfg {
 backend::backend(uint64_t read_strip_sz,
                  std::vector<std::shared_ptr<IRWHandler>> hs) noexcept
     : next_hid_(0), hs_(std::move(hs)) {
-  assert(is_multiple_of(read_strip_sz, kSectorSz));
-  assert(!(hs_.size() < 2));
-  assert(std::ranges::all_of(
+  Ensures(is_multiple_of(read_strip_sz, kSectorSz));
+  Ensures(!(hs_.size() < 2));
+  Ensures(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
   auto cfg = mm::make_unique_aligned<static_cfg>(

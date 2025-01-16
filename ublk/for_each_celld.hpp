@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cassert>
 #include <cerrno>
 
 #include <span>
+
+#include <gsl/assert>
 
 #include <linux/ublkdrv/celld.h>
 
@@ -27,7 +28,7 @@ constexpr auto for_each_celld = []<is_byte T>(
       if (!(celld->offset + celld->data_sz <= cells.size())) [[unlikely]]
         return EINVAL;
 
-      assert(!(celld->offset + celld->data_sz > cells.size()));
+      Expects(!(celld->offset + celld->data_sz > cells.size()));
 
       auto const buf{cells.subspan(celld->offset, celld->data_sz)};
 

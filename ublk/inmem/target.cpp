@@ -1,10 +1,11 @@
 #include "target.hpp"
 
-#include <cassert>
 #include <cerrno>
 
 #include <span>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "mm/mem_types.hpp"
 
@@ -14,12 +15,12 @@ namespace ublk::inmem {
 
 Target::Target(mm::uptrwd<std::byte[]> mem, uint64_t sz) noexcept
     : mem_(std::move(mem)), mem_sz_(sz) {
-  assert(mem_);
+  Ensures(mem_);
 }
 
 int Target::process(std::shared_ptr<read_query> rq) noexcept {
-  assert(rq);
-  assert(!rq->buf().empty());
+  Expects(rq);
+  Expects(!rq->buf().empty());
 
   if (mem_sz_ < rq->offset() + rq->buf().size()) [[unlikely]]
     return EINVAL;
@@ -35,8 +36,8 @@ int Target::process(std::shared_ptr<read_query> rq) noexcept {
 }
 
 int Target::process(std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-  assert(!wq->buf().empty());
+  Expects(wq);
+  Expects(!wq->buf().empty());
 
   if (mem_sz_ < wq->offset() + wq->buf().size()) [[unlikely]]
     return EINVAL;

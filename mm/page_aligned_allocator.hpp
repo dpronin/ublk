@@ -9,6 +9,8 @@
 #include <new>
 #include <utility>
 
+#include <gsl/assert>
+
 #include "sys/page.hpp"
 
 #include "mem_allocator.hpp"
@@ -34,7 +36,7 @@ public:
   constexpr explicit page_aligned_allocator(
       [[maybe_unused]] page_aligned_allocator<U> const &other) noexcept
       : a_(other.underlying_allocator()) {
-    assert(a_);
+    Ensures(a_);
   }
 
   page_aligned_allocator(page_aligned_allocator<T> const &) = default;

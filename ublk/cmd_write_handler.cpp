@@ -1,10 +1,11 @@
 #include "cmd_write_handler.hpp"
 
-#include <cassert>
 #include <cstddef>
 
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include <linux/ublkdrv/cmd.h>
 
@@ -15,11 +16,11 @@ namespace ublk {
 
 CmdWriteHandler::CmdWriteHandler(std::shared_ptr<IWRQSubmitter> writer)
     : writer_(std::move(writer)) {
-  assert(writer_);
+  Ensures(writer_);
 }
 
 int CmdWriteHandler::handle(std::shared_ptr<write_req> req) noexcept {
-  assert(req);
+  Expects(req);
   auto *p_req = req.get();
   return for_each_celld(
       ublkdrv_cmd_write_get_offset(&p_req->cmd()),

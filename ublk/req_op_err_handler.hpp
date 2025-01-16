@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <gsl/assert>
 
 #include "ublk_req_handler_interface.hpp"
 
@@ -19,7 +19,7 @@ public:
   ReqOpErrHandler &operator=(ReqOpErrHandler &&) = default;
 
   int handle(std::shared_ptr<req> req [[maybe_unused]]) noexcept override {
-    assert(req);
+    Expects(req);
     req->set_err(eVal);
     return 0;
   }

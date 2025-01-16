@@ -1,12 +1,13 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstdlib>
 
 #include <algorithm>
 #include <memory>
 #include <new>
+
+#include <gsl/assert>
 
 #include "utils/utility.hpp"
 
@@ -51,14 +52,14 @@ public:
       [[maybe_unused]] pool_allocator<U, A> const &other) noexcept {}
 
   T *allocate(size_t n [[maybe_unused]]) {
-    assert(1 == n);
+    Expects(1 == n);
     if (auto *p = static_cast<T *>(__mpool_a__->allocate()))
       return p;
     throw std::bad_alloc();
   }
 
   void deallocate(T *p, [[maybe_unused]] size_t n) noexcept {
-    assert(1 == n);
+    Expects(1 == n);
     __mpool_a__->free(p);
   }
 

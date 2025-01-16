@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
@@ -8,6 +7,8 @@
 #include <memory>
 #include <span>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "mm/pool_allocators.hpp"
 
@@ -28,7 +29,7 @@ public:
   read_query(std::span<std::byte> buf, uint64_t offset,
              std::function<void(read_query const &)> &&completer = {}) noexcept
       : buf_(buf), offset_(offset), completer_(std::move(completer)) {
-    assert(!buf_.empty());
+    Ensures(!buf_.empty());
   }
   ~read_query() {
     if (completer_) {
@@ -48,8 +49,8 @@ public:
   auto subquery(
       uint64_t buf_offset, uint64_t buf_sz, uint64_t rq_offset,
       std::function<void(read_query const &)> &&completer = {}) const noexcept {
-    assert(0 != buf_sz);
-    assert(!(buf_offset + buf_sz > buf_.size()));
+    Expects(0 != buf_sz);
+    Expects(!(buf_offset + buf_sz > buf_.size()));
     return create(buf_.subspan(buf_offset, buf_sz), rq_offset,
                   std::move(completer));
   }

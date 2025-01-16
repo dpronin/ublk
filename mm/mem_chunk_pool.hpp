@@ -1,10 +1,11 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 
 #include <functional>
 #include <stack>
+
+#include <gsl/assert>
 
 #include "mem.hpp"
 #include "mem_types.hpp"
@@ -18,11 +19,11 @@ class mem_chunk_pool final {
 public:
   explicit mem_chunk_pool(size_t alignment, size_t chunk_sz) noexcept
       : alignment_(alignment), chunk_sz_(chunk_sz) {
-    assert(is_power_of_2(alignment_));
-    assert(chunk_sz_);
+    Ensures(is_power_of_2(alignment_));
+    Ensures(chunk_sz_);
 
     generator_ = get_unique_bytes_generator(alignment_, chunk_sz_);
-    assert(generator_);
+    Ensures(generator_);
   }
   ~mem_chunk_pool() = default;
 

@@ -1,6 +1,5 @@
 #include "target.hpp"
 
-#include <cassert>
 #include <cerrno>
 #include <cstddef>
 
@@ -13,6 +12,8 @@
 #include <boost/asio/write_at.hpp>
 #include <boost/system/detail/errc.hpp>
 #include <boost/system/detail/error_code.hpp>
+
+#include <gsl/assert>
 
 #include <utility>
 
@@ -59,7 +60,7 @@ void async_read(boost::asio::random_access_file *raf,
 namespace ublk::def {
 
 Target::Target(boost::asio::io_context &io_ctx, mm::uptrwd<const int> fd) {
-  assert(fd);
+  Expects(fd);
 
   auto const *p_fd = fd.get();
   raf_ = {
@@ -90,7 +91,7 @@ int Target::process(std::shared_ptr<write_query> wq) noexcept {
           return;
         }
 
-        assert(bytes_written == wq->buf().size());
+        Ensures(bytes_written == wq->buf().size());
       });
   return 0;
 }

@@ -3,6 +3,7 @@ boost/[~1.86]
 jfalcou-eve/v2023.02.15
 libnl/[~3.9]
 liburing/[~2.8]
+ms-gsl/[~4.1.0]
 pybind11/[~2.13]
 sml/[~1.1]
 spdlog/[~1.15]

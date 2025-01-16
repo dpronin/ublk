@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "flq_submitter_interface.hpp"
 #include "target.hpp"
@@ -14,7 +14,7 @@ class FLQSubmitter : public IFLQSubmitter {
 public:
   explicit FLQSubmitter(std::shared_ptr<Target> target)
       : target_(std::move(target)) {
-    assert(target_);
+    Ensures(target_);
   }
   ~FLQSubmitter() override = default;
 

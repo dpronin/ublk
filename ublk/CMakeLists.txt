@@ -78,6 +78,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::headers
     Boost::system
     spdlog::spdlog
+    Microsoft.GSL::GSL
     ublk::cache
     ublk::cfq
     ublk::def

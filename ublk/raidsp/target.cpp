@@ -1,6 +1,5 @@
 #include "target.hpp"
 
-#include <cassert>
 #include <cstdint>
 
 #include <memory>
@@ -10,6 +9,8 @@
 #include <vector>
 
 #include <boost/sml.hpp>
+
+#include <gsl/assert>
 
 #include "read_query.hpp"
 #include "rw_handler_interface.hpp"
@@ -41,7 +42,7 @@ public:
   }
 
   int process(std::shared_ptr<read_query> rq) noexcept {
-    assert(rq);
+    Expects(rq);
 
     auto *p_rq = rq.get();
     rq = p_rq->subquery(0, p_rq->buf().size(), p_rq->offset(),
@@ -59,7 +60,7 @@ public:
   }
 
   int process(std::shared_ptr<write_query> wq) noexcept {
-    assert(wq);
+    Expects(wq);
 
     auto *p_wq = wq.get();
     wq = p_wq->subquery(0, p_wq->buf().size(), p_wq->offset(),

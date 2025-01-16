@@ -21,4 +21,5 @@ target_include_directories(ublk_utils INTERFACE
 target_link_libraries(ublk_utils INTERFACE
     eve::eve
     Boost::boost
+    Microsoft.GSL::GSL
 )

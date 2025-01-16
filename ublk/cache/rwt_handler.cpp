@@ -1,10 +1,11 @@
 #include "rwt_handler.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
 #include <utility>
+
+#include <gsl/assert>
 
 #include "mm/generic_allocators.hpp"
 
@@ -21,18 +22,18 @@ RWTHandler::RWTHandler(
       chunk_w_locker_(0, mm::allocator::cache_line_aligned<uint64_t>::value) {}
 
 int RWTHandler::process(std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-  assert(!wq->buf().empty());
+  Expects(wq);
+  Expects(!wq->buf().empty());
 
   auto chunk_id{wq->offset() / cache_->item_sz()};
   auto chunk_offset{wq->offset() % cache_->item_sz()};
 
   if (auto const chunk{wq->buf()}; !(chunk.size() < cache_->item_sz())) {
-    assert(chunk.size() == cache_->item_sz());
-    assert(0 == chunk_offset);
+    Ensures(chunk.size() == cache_->item_sz());
+    Ensures(0 == chunk_offset);
 
     auto mem_chunk = mem_chunk_pool_->get();
-    assert(mem_chunk);
+    Ensures(mem_chunk);
 
     algo::copy(chunk, mem_chunk_pool_->chunk_view(mem_chunk));
 
@@ -40,13 +41,13 @@ int RWTHandler::process(std::shared_ptr<write_query> wq) noexcept {
     ++last_wq_done_seq_;
   } else if (auto cached_chunk = cache_->find_mutable(chunk_id);
              !cached_chunk.empty()) {
-    assert(!(chunk_offset + chunk.size() > cached_chunk.size()));
+    Expects(!(chunk_offset + chunk.size() > cached_chunk.size()));
     auto const from{chunk};
     auto const to{cached_chunk.subspan(chunk_offset, chunk.size())};
     algo::copy(from, to);
   } else {
     auto mem_chunk = mem_chunk_pool_->get();
-    assert(mem_chunk);
+    Ensures(mem_chunk);
 
     auto mem_chunk_span = mem_chunk_pool_->chunk_view(mem_chunk);
     auto rmwq = read_query::create(
@@ -67,7 +68,8 @@ int RWTHandler::process(std::shared_ptr<write_query> wq) noexcept {
           cache_->update({chunk_id, std::move(*mem_chunk_holder.get())});
           ++last_wq_done_seq_;
 
-          if (auto const res{handler_->submit(std::move(wq))}) [[unlikely]] {
+          if (auto const res [[maybe_unused]]{handler_->submit(std::move(wq))})
+              [[unlikely]] {
             return;
           }
         });
@@ -86,8 +88,8 @@ int RWTHandler::process(std::shared_ptr<write_query> wq) noexcept {
 }
 
 int RWTHandler::submit(std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-  assert(!wq->buf().empty());
+  Expects(wq);
+  Expects(!wq->buf().empty());
 
   chunk_w_locker_.extend(
       div_round_up(wq->offset() + wq->buf().size(), cache_->item_sz()));

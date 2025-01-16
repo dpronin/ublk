@@ -1,6 +1,5 @@
 #include "cmd_handler.hpp"
 
-#include <cassert>
 #include <cstddef>
 
 #include <algorithm>
@@ -8,6 +7,8 @@
 #include <ranges>
 
 #include <linux/ublkdrv/cmd.h>
+
+#include <gsl/assert>
 
 #include "discard_req.hpp"
 #include "flush_req.hpp"
@@ -22,7 +23,7 @@ CmdHandler::CmdHandler(
     std::shared_ptr<IHandler<int(ublkdrv_cmd_ack) noexcept>> acknowledger,
     std::map<ublkdrv_cmd_op, std::shared_ptr<IUblkReqHandler>> const &maphs)
     : cellds_(cellds), cells_(cells), acknowledger_(std::move(acknowledger)) {
-  assert(acknowledger_);
+  Ensures(acknowledger_);
 
   static auto reqh_not_supp{ReqHandlerNotSupp{}};
   static auto const sp_reqh_not_supp{
@@ -34,7 +35,7 @@ CmdHandler::CmdHandler(
 
   auto hs{std::views::all(hs_) | std::views::take(std::size(hs_) - 1)};
   for (auto const &[op, h] : maphs) {
-    assert(op < std::size(hs));
+    Expects(op < std::size(hs));
     hs[op] = h;
   }
 }
@@ -77,7 +78,7 @@ int CmdHandler::handle(ublkdrv_cmd const &cmd) noexcept {
   }
 
   auto const hid{std::min(static_cast<size_t>(op), std::size(hs_) - 1)};
-  assert(hs_[hid]);
+  Expects(hs_[hid]);
   return hs_[hid]->handle(std::move(rq));
 }
 

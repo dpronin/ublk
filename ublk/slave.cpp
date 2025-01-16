@@ -22,6 +22,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <gsl/assert>
 #include <spdlog/spdlog.h>
 
 #include "mm/mem.hpp"
@@ -191,7 +192,7 @@ void run(boost::asio::io_context &io_ctx, slave_param const &param) {
   if (!fd_notify)
     _exit(EXIT_FAILURE);
 
-  assert(param.hfactory);
+  Expects(param.hfactory);
   auto handler = param.hfactory->create_unique(
       {structured_maps.p_cellc->cellds, structured_maps.p_cellc->cellds_len},
       {structured_maps.p_cells.get(), structured_maps.cells_sz},

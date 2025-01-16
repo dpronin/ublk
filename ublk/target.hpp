@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <span>
 #include <utility>
@@ -11,6 +9,7 @@
 #include <linux/ublkdrv/cmd_ack.h>
 
 #include <boost/asio/io_context.hpp>
+#include <gsl/assert>
 
 #include "factory_unique_interface.hpp"
 #include "handler_interface.hpp"
@@ -30,8 +29,8 @@ public:
       target_properties const &props)
       : io_ctx_(std::move(io_ctx)), hfactory_(std::move(hfactory)),
         props_(props) {
-    assert(io_ctx_);
-    assert(hfactory_);
+    Ensures(io_ctx_);
+    Ensures(hfactory_);
   }
   ~Target() = default;
 

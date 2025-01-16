@@ -2,7 +2,6 @@
 
 #include <unistd.h>
 
-#include <cassert>
 #include <cstdint>
 #include <cstdlib>
 
@@ -13,6 +12,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <gsl/assert>
 #include <spdlog/spdlog.h>
 
 inline std::ostream &operator<<(std::ostream &out, ublkdrv_cmd_ack const &cmd) {
@@ -36,9 +36,8 @@ namespace ublk {
 CmdAcknowledger::CmdAcknowledger(std::unique_ptr<qublkcmd_ack_t> qcmd_ack,
                                  mm::uptrwd<const int> fd_notify)
     : qcmd_ack_(std::move(qcmd_ack)), fd_notify_(std::move(fd_notify)) {
-
-  assert(qcmd_ack_);
-  assert(fd_notify_);
+  Ensures(qcmd_ack_);
+  Ensures(fd_notify_);
 }
 
 int CmdAcknowledger::handle(ublkdrv_cmd_ack cmd) noexcept {

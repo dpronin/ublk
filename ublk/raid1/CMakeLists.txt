@@ -15,6 +15,7 @@ target_link_libraries(ublk_raid1 PUBLIC
     ublk::utils
 )
 target_link_libraries(ublk_raid1 PRIVATE
+    Microsoft.GSL::GSL
     sml::sml
 )
 

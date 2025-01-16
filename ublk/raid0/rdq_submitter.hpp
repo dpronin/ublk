@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "rdq_submitter_interface.hpp"
 #include "target.hpp"
@@ -14,7 +14,7 @@ class RDQSubmitter : public IRDQSubmitter {
 public:
   explicit RDQSubmitter(std::shared_ptr<Target> target)
       : target_(std::move(target)) {
-    assert(target_);
+    Ensures(target_);
   }
   ~RDQSubmitter() override = default;
 

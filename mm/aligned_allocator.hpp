@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstdlib>
 
@@ -8,6 +7,8 @@
 #include <limits>
 #include <memory>
 #include <new>
+
+#include <gsl/assert>
 
 #include "utils/utility.hpp"
 
@@ -43,7 +44,7 @@ public:
   constexpr explicit aligned_allocator(
       [[maybe_unused]] aligned_allocator<U, A> const &other) noexcept
       : a_(other.underlying_allocator()) {
-    assert(a_);
+    Ensures(a_);
   }
 
   aligned_allocator(aligned_allocator<T, Alignment> const &other) = default;

@@ -1,6 +1,5 @@
 #include "acceptor.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
@@ -8,6 +7,8 @@
 #include <memory>
 #include <span>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "mm/generic_allocators.hpp"
 
@@ -35,7 +36,7 @@ bool acceptor::is_stripe_parity_coherent(uint64_t stripe_id) const noexcept {
 }
 
 int acceptor::process(std::shared_ptr<read_query> rq) noexcept {
-  assert(rq);
+  Expects(rq);
 
   return be_->data_read(
       rq->offset() / be_->static_cfg().stripe_data_sz,
@@ -46,14 +47,14 @@ int acceptor::process(std::shared_ptr<read_query> rq) noexcept {
 int acceptor::stripe_incoherent_parity_write(
     uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
     std::shared_ptr<write_query> wqp) noexcept {
-  assert(wqd);
-  assert(wqp);
+  Expects(wqd);
+  Expects(wqp);
 
   auto combined_completer_guard{
       std::shared_ptr<std::nullptr_t>{
           nullptr,
           [=, this](std::nullptr_t *) {
-            assert(stripe_id_at < stripe_parity_coherency_state_.size());
+            Expects(stripe_id_at < stripe_parity_coherency_state_.size());
             stripe_parity_coherency_state_.set(stripe_id_at,
                                                !(wqd->err() || wqp->err()));
           },
@@ -87,15 +88,15 @@ int acceptor::stripe_incoherent_parity_write(
 int acceptor::stripe_coherent_parity_write(
     uint64_t stripe_id_at, std::shared_ptr<write_query> wqd,
     std::shared_ptr<write_query> wqp) noexcept {
-  assert(wqd);
-  assert(wqp);
+  Expects(wqd);
+  Expects(wqp);
 
   auto make_a_new_completer{
       [=, this](std::shared_ptr<write_query> wq) {
         return [=, this, wq = std::move(wq)](write_query const &new_wq) {
           if (new_wq.err()) [[unlikely]] {
             wq->set_err(new_wq.err());
-            assert(stripe_id_at < stripe_parity_coherency_state_.size());
+            Expects(stripe_id_at < stripe_parity_coherency_state_.size());
             stripe_parity_coherency_state_.reset(stripe_id_at);
             return;
           }
@@ -126,10 +127,10 @@ int acceptor::stripe_write(uint64_t stripe_id_at,
 
 int acceptor::stripe_data_write(uint64_t stripe_id_at,
                                 std::shared_ptr<write_query> wqd) noexcept {
-  assert(wqd);
-  assert(!wqd->buf().empty());
-  assert(0 == wqd->offset());
-  assert(wqd->buf().size() == be_->static_cfg().stripe_data_sz);
+  Expects(wqd);
+  Expects(!wqd->buf().empty());
+  Expects(0 == wqd->offset());
+  Expects(wqd->buf().size() == be_->static_cfg().stripe_data_sz);
 
   auto stripe_parity_buf{stripe_parity_pool_->get()};
   auto stripe_parity_buf_view{
@@ -165,9 +166,10 @@ int acceptor::stripe_data_write(uint64_t stripe_id_at,
 
 int acceptor::process(uint64_t stripe_id,
                       std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-  assert(!wq->buf().empty());
-  assert(!(wq->offset() + wq->buf().size() > be_->static_cfg().stripe_data_sz));
+  Expects(wq);
+  Expects(!wq->buf().empty());
+  Expects(
+      !(wq->offset() + wq->buf().size() > be_->static_cfg().stripe_data_sz));
 
   /*
    * Read the whole stripe from the backend excluding parity in case we
@@ -235,7 +237,7 @@ int acceptor::process(uint64_t stripe_id,
                    * Write Back the chunk including the newly incoming data
                    * and the parity computed and updated
                    */
-                  if (auto const res{
+                  if (auto const res [[maybe_unused]]{
                           stripe_coherent_parity_write(stripe_id, std::move(wq),
                                                        std::move(wqp)),
                       }) [[unlikely]] {
@@ -347,8 +349,8 @@ int acceptor::process(uint64_t stripe_id,
 }
 
 int acceptor::process(std::shared_ptr<write_query> wq) noexcept {
-  assert(wq);
-  assert(!wq->buf().empty());
+  Expects(wq);
+  Expects(!wq->buf().empty());
 
   stripe_w_locker_.extend(div_round_up(wq->offset() + wq->buf().size(),
                                        be_->static_cfg().stripe_data_sz));

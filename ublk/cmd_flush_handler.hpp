@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "flq_submitter_interface.hpp"
 #include "flush_query.hpp"
@@ -17,7 +17,7 @@ class CmdFlushHandler
 public:
   explicit CmdFlushHandler(std::shared_ptr<IFLQSubmitter> flusher)
       : flusher_(std::move(flusher)) {
-    assert(flusher_);
+    Ensures(flusher_);
   }
   ~CmdFlushHandler() override = default;
 
@@ -28,7 +28,7 @@ public:
   CmdFlushHandler &operator=(CmdFlushHandler &&) = default;
 
   int handle(std::shared_ptr<flush_req> req) noexcept override {
-    assert(req);
+    Expects(req);
     auto completer = [req = std::move(req)](flush_query const &fq
                                             [[maybe_unused]]) {
       if (fq.err())

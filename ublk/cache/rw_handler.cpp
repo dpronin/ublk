@@ -1,11 +1,10 @@
 #include "rw_handler.hpp"
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
 
-#include "mm/mem.hpp"
+#include <gsl/assert>
+
 #include "mm/mem_chunk_pool.hpp"
 
 #include "utils/size_units.hpp"
@@ -27,7 +26,8 @@ make_cache(uint64_t cache_len_bytes) {
     using namespace ublk::literals;
     for (uint64_t cache_item_sz = 1_MiB;
          !cache && !(cache_item_sz < ublk::kSectorSz); cache_item_sz >>= 1) {
-      if (auto const cache_len = cache_len_bytes / cache_item_sz) {
+      if (auto const cache_len
+          [[maybe_unused]]{cache_len_bytes / cache_item_sz}) {
         cache = ublk::cache::flat_lru<uint64_t, std::byte>::create(
             ublk::div_round_up(cache_len_bytes, cache_item_sz), cache_item_sz);
       }
@@ -46,7 +46,7 @@ RWHandler::RWHandler(uint64_t cache_len_sectors,
   auto cache_sp{
       std::shared_ptr{make_cache(sectors_to_bytes(cache_len_sectors))},
   };
-  assert(cache_sp);
+  Ensures(cache_sp);
 
   auto handler_sp{std::shared_ptr{std::move(handler)}};
 

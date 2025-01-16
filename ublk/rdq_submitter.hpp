@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "rdq_submitter_interface.hpp"
 #include "rw_handler_interface.hpp"
@@ -12,8 +12,9 @@ namespace ublk {
 
 class RDQSubmitter final : public IRDQSubmitter {
 public:
-  explicit RDQSubmitter(std::shared_ptr<IRWHandler> rwh) : rwh_(std::move(rwh)) {
-    assert(rwh_);
+  explicit RDQSubmitter(std::shared_ptr<IRWHandler> rwh)
+      : rwh_(std::move(rwh)) {
+    Ensures(rwh_);
   }
   ~RDQSubmitter() override = default;
 

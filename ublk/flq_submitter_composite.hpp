@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cassert>
-
 #include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
+
+#include <gsl/assert>
 
 #include "flq_submitter_interface.hpp"
 
@@ -15,7 +15,7 @@ class FLQSubmitterComposite : public IFLQSubmitter {
 public:
   explicit FLQSubmitterComposite(std::vector<std::shared_ptr<IFLQSubmitter>> hs)
       : hs_(std::move(hs)) {
-    assert(std::ranges::all_of(
+    Ensures(std::ranges::all_of(
         hs_, [](auto const &h) { return static_cast<bool>(h); }));
   }
   ~FLQSubmitterComposite() override = default;

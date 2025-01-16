@@ -1,12 +1,13 @@
 #include "backend.hpp"
 
-#include <cassert>
 #include <cstdint>
 
 #include <algorithm>
 #include <bit>
 #include <concepts>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "mm/mem.hpp"
 #include "mm/mem_types.hpp"
@@ -23,9 +24,9 @@ struct backend::static_cfg {
 
 backend::backend(uint64_t strip_sz, std::vector<std::shared_ptr<IRWHandler>> hs)
     : hs_(std::move(hs)) {
-  assert(is_power_of_2(strip_sz));
-  assert(!hs_.empty());
-  assert(std::ranges::all_of(
+  Ensures(is_power_of_2(strip_sz));
+  Ensures(!hs_.empty());
+  Ensures(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
 
   auto cfg = mm::make_unique_aligned<static_cfg>(
@@ -44,8 +45,8 @@ backend &backend::operator=(backend &&) noexcept = default;
 template <typename T>
   requires std::same_as<T, write_query> || std::same_as<T, read_query>
 int backend::do_op(std::shared_ptr<T> query) noexcept {
-  assert(query);
-  assert(!query->buf().empty());
+  Expects(query);
+  Expects(!query->buf().empty());
 
   auto strip_id{query->offset() >> static_cfg_->strip_shift};
   auto strip_offset{query->offset() & (static_cfg_->strip_sz - 1)};

@@ -15,4 +15,5 @@ target_include_directories(ublk_sys INTERFACE
 target_link_libraries(ublk_sys INTERFACE
     Boost::system
     libnl::libnl
+    Microsoft.GSL::GSL
 )

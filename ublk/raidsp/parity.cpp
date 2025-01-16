@@ -11,7 +11,7 @@ namespace ublk {
 
 void parity_to(std::span<std::byte const> data, std::span<std::byte> parity,
                size_t parity_start_offset /* = 0*/) noexcept {
-  assert(is_multiple_of(parity_start_offset, sizeof(uint64_t)));
+  Expects(is_multiple_of(parity_start_offset, sizeof(uint64_t)));
 
   auto data_u64{to_span_of<uint64_t const>(data)};
   auto const parity_u64{to_span_of<uint64_t>(parity)};

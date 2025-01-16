@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include <linux/ublkdrv/cmd.h>
 
@@ -29,7 +29,7 @@ public:
       std::function<void(read_req const &)> &&completer = {}) noexcept
       : req(cmd), cells_holder(cellds, cells),
         completer_(std::move(completer)) {
-    assert(UBLKDRV_CMD_OP_READ == ublkdrv_cmd_get_op(&req::cmd()));
+    Ensures(UBLKDRV_CMD_OP_READ == ublkdrv_cmd_get_op(&req::cmd()));
   }
   ~read_req() noexcept override {
     static_assert(std::is_nothrow_destructible_v<req>);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -12,6 +11,8 @@
 #include <new>
 #include <type_traits>
 #include <utility>
+
+#include <gsl/assert>
 
 #include "sys/page.hpp"
 
@@ -78,7 +79,7 @@ namespace detail {
 
 inline uptrwd<std::byte[]> make_unique_aligned_bytes(alloc_mode_new,
                                                      size_t align, size_t sz) {
-  assert(is_power_of_2(align));
+  Expects(is_power_of_2(align));
   return {
       new (std::align_val_t{align}) std::byte[sz]{},
       [align](std::byte p[]) { operator delete[](p, std::align_val_t{align}); },

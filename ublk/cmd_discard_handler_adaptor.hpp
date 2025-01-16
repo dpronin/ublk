@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cassert>
-
 #include <format>
 #include <memory>
 #include <sstream>
@@ -9,6 +7,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <gsl/assert>
 #include <spdlog/spdlog.h>
 
 #include <linux/ublkdrv/cmd.h>
@@ -47,7 +46,7 @@ public:
       std::shared_ptr<IHandler<int(std::shared_ptr<discard_req>) noexcept>>
           handler)
       : handler_(std::move(handler)) {
-    assert(handler_);
+    Ensures(handler_);
   }
   ~CmdDiscardHandlerAdaptor() override = default;
 

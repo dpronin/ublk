@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
@@ -13,6 +12,8 @@
 #include <span>
 #include <utility>
 #include <vector>
+
+#include <gsl/assert>
 
 #include "mm/mem_types.hpp"
 
@@ -55,8 +56,8 @@ private:
 public:
   explicit flat_lru(uint64_t len_max, uint64_t item_sz)
       : cache_len_max_(len_max), cache_item_sz_(item_sz) {
-    assert(this->len_max() > 0);
-    assert(this->item_sz() > 0);
+    Ensures(this->len_max() > 0);
+    Ensures(this->item_sz() > 0);
 
     cache_.reserve(this->len_max());
   }
@@ -133,7 +134,7 @@ template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
            std::equivalence_relation<KeyEqual, Key, Key>
 auto flat_lru<Key, T, KeyCompare, KeyEqual>::range_find(
     std::pair<key_type, key_type> const &range) const {
-  assert(range.first < range.second);
+  Expects(range.first < range.second);
   auto const first{
       std::ranges::lower_bound(cache_, range.first, key_compare{},
                                cache_item_to_key_proj),
@@ -184,9 +185,10 @@ flat_lru<Key, T, KeyCompare, KeyEqual>::lower_bound_find(
 
 template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
   requires std::strict_weak_order<KeyCompare, Key, Key> &&
-               std::equivalence_relation<KeyEqual, Key, Key>
-auto flat_lru<Key, T, KeyCompare, KeyEqual>::create(
-    uint64_t cache_len, uint64_t cache_item_sz) -> std::unique_ptr<flat_lru> {
+           std::equivalence_relation<KeyEqual, Key, Key>
+auto flat_lru<Key, T, KeyCompare, KeyEqual>::create(uint64_t cache_len,
+                                                    uint64_t cache_item_sz)
+    -> std::unique_ptr<flat_lru> {
   auto cache{std::unique_ptr<flat_lru>{}};
   if (cache_len && cache_item_sz) {
     cache = std::unique_ptr<flat_lru>{
@@ -203,7 +205,7 @@ template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
   requires std::strict_weak_order<KeyCompare, Key, Key> &&
            std::equivalence_relation<KeyEqual, Key, Key>
 void flat_lru<Key, T, KeyCompare, KeyEqual>::touch(size_t index) const {
-  assert(index < cache_.size());
+  Expects(index < cache_.size());
 
   auto const to_refs{
       [](value_type const &v) -> cache_item_ref_t & { return v.second.refs; },
@@ -224,7 +226,7 @@ void flat_lru<Key, T, KeyCompare, KeyEqual>::touch(size_t index) const {
 
 template <typename Key, typename T, typename KeyCompare, typename KeyEqual>
   requires std::strict_weak_order<KeyCompare, Key, Key> &&
-               std::equivalence_relation<KeyEqual, Key, Key>
+           std::equivalence_relation<KeyEqual, Key, Key>
 auto flat_lru<Key, T, KeyCompare, KeyEqual>::update(
     std::pair<key_type, data_type> value)
     -> std::optional<std::pair<key_type, data_type>> {
@@ -273,10 +275,10 @@ auto flat_lru<Key, T, KeyCompare, KeyEqual>::update(
 
 #ifndef NDEBUG
   if (!exact_match) {
-    assert(
+    Ensures(
         std::ranges::is_sorted(cache_, key_compare{}, cache_item_to_key_proj));
-    assert(cache_.end() == std::ranges::adjacent_find(cache_, key_equal{},
-                                                      cache_item_to_key_proj));
+    Ensures(cache_.end() == std::ranges::adjacent_find(cache_, key_equal{},
+                                                       cache_item_to_key_proj));
   }
 #endif
 

@@ -1,11 +1,12 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
 #include <bit>
 #include <concepts>
+
+#include <gsl/assert>
 
 #include "concepts.hpp"
 
@@ -17,7 +18,7 @@ constexpr bool is_power_of_2(std::unsigned_integral auto x) noexcept {
 
 constexpr auto div_round_up(std::unsigned_integral auto x,
                             std::unsigned_integral auto y) noexcept {
-  assert(0 != y);
+  Expects(0 != y);
   return (x + y - 1) / y;
 }
 
@@ -26,26 +27,26 @@ constexpr auto alignup(std::integral auto x, std::integral auto y) noexcept {
 }
 
 constexpr auto aligndown(std::integral auto x, std::integral auto y) noexcept {
-  assert(0 != y);
+  Expects(0 != y);
   return (x / y) * y;
 }
 
 /* 'y' must be a power of 2 */
 constexpr auto align_up(std::integral auto x, std::integral auto y) noexcept {
-  assert(is_power_of_2(y));
+  Expects(is_power_of_2(y));
   return ((x - 1) | (y - 1)) + 1;
 }
 
 /* 'y' must be a power of 2 */
 constexpr auto align_down(std::integral auto x, std::integral auto y) noexcept {
-  assert(is_power_of_2(y));
+  Expects(is_power_of_2(y));
   return x & ~(y - 1);
 }
 
 /* 'y' must be a power of 2 */
 constexpr bool is_multiple_of(std::unsigned_integral auto x,
                               std::unsigned_integral auto y) noexcept {
-  assert(is_power_of_2(y));
+  Expects(is_power_of_2(y));
   return 0 == (x & (y - 1));
 }
 

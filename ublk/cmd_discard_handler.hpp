@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include <linux/ublkdrv/cmd.h>
 
@@ -19,7 +19,7 @@ class CmdDiscardHandler
 public:
   explicit CmdDiscardHandler(std::shared_ptr<IDiscardHandler> discarder)
       : discarder_(std::move(discarder)) {
-    assert(discarder_);
+    Ensures(discarder_);
   }
   ~CmdDiscardHandler() override = default;
 
@@ -30,7 +30,7 @@ public:
   CmdDiscardHandler &operator=(CmdDiscardHandler &&) = default;
 
   int handle(std::shared_ptr<discard_req> req) noexcept override {
-    assert(req);
+    Expects(req);
     auto *p_req = req.get();
     auto completer = [req = std::move(req)](discard_query const &dq) {
       if (dq.err())

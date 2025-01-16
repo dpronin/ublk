@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
+
+#include <gsl/assert>
 
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
@@ -29,18 +30,18 @@ public:
   }
 
   bool is_locked(size_t pos) const noexcept {
-    assert(pos < lk_state_.size());
+    Expects(pos < lk_state_.size());
     return lk_state_[pos];
   }
 
   bool try_lock(size_t pos) noexcept {
-    assert(pos < lk_state_.size());
+    Expects(pos < lk_state_.size());
     return !lk_state_.test_set(pos);
   }
 
   void unlock(size_t pos) noexcept {
-    assert(pos < lk_state_.size());
-    assert(lk_state_[pos]);
+    Expects(pos < lk_state_.size());
+    Expects(lk_state_[pos]);
     lk_state_.reset(pos);
   }
 

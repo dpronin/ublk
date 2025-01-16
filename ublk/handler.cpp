@@ -1,6 +1,5 @@
 #include "handler.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -18,6 +17,7 @@
 #include <thread>
 #include <utility>
 
+#include <gsl/assert>
 #include <spdlog/spdlog.h>
 
 #include <boost/asio/buffer.hpp>
@@ -53,7 +53,7 @@ mm::uptrwd<int const> fd_open(evpaths_t const &evpaths) {
   if (auto it = evpaths.find(UBLKDRV_UIO_KERNEL_TO_USER_DIR_SUFFIX);
       it != evpaths.end()) {
     fd = sys::open(it->second, O_RDWR);
-    assert(fd);
+    Ensures(0 != fd);
   } else {
     throw std::invalid_argument(std::format(
         "no {} given as event path", UBLKDRV_UIO_KERNEL_TO_USER_DIR_SUFFIX));
@@ -73,7 +73,7 @@ void async_read(std::shared_ptr<handler_ctx> ctx) {
           spdlog::error("failed to async_read, ec {}", ec.value());
           return;
         } else {
-          assert(bytes_read == sizeof(ctx->cmds));
+          Ensures(bytes_read == sizeof(ctx->cmds));
         }
 
         ctx->processed_cmds = 0;
@@ -84,7 +84,8 @@ void async_read(std::shared_ptr<handler_ctx> ctx) {
             std::this_thread::yield();
           boost::asio::post(
               ctx->sd->get_executor(), [ctx, cmd = std::move(*cmd)] {
-                if (auto const r = ctx->handler->handle(cmd)) [[unlikely]]
+                if (auto const r [[maybe_unused]]{ctx->handler->handle(cmd)})
+                    [[unlikely]]
                   std::abort();
               });
         }
@@ -99,7 +100,7 @@ void async_read(std::shared_ptr<handler_ctx> ctx) {
                 spdlog::error("failed to async_write, ec {}", ec.value());
                 return;
               } else {
-                assert(bytes_written == sizeof(ctx->processed_cmds));
+                Ensures(bytes_written == sizeof(ctx->processed_cmds));
               }
             });
 
@@ -115,9 +116,8 @@ void async_start(
     evpaths_t const &evpaths, boost::asio::io_context &io_ctx,
     std::unique_ptr<qublkcmd_t> qcmd,
     std::unique_ptr<IHandler<int(ublkdrv_cmd const &) noexcept>> handler) {
-
-  assert(qcmd);
-  assert(handler);
+  Expects(qcmd);
+  Expects(handler);
 
   auto ctx = std::make_unique<handler_ctx>();
 
@@ -125,7 +125,7 @@ void async_start(
   ctx->handler = std::move(handler);
 
   ctx->fd = fd_open(evpaths);
-  assert(ctx->fd);
+  Ensures(ctx->fd);
 
   ctx->sd =
       std::make_unique<boost::asio::posix::stream_descriptor>(io_ctx, *ctx->fd);

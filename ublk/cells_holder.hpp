@@ -1,10 +1,11 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 
 #include <span>
 #include <type_traits>
+
+#include <gsl/assert>
 
 #include <linux/ublkdrv/celld.h>
 
@@ -17,11 +18,13 @@ public:
 
 protected:
   cells_holder() = default;
-  explicit cells_holder(std::span<ublkdrv_celld const> cellds,
-                        std::span<std::byte> cells) noexcept
+  explicit cells_holder(
+      std::span<ublkdrv_celld const> cellds,
+      std::span<std::conditional_t<CellsImmutable, std::byte const, std::byte>>
+          cells) noexcept
       : cellds_(cellds), cells_(cells) {
-    assert(!cellds.empty());
-    assert(!cells.empty());
+    Ensures(!cellds.empty());
+    Ensures(!cells.empty());
   }
   ~cells_holder() = default;
 

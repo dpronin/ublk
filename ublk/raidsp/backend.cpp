@@ -1,11 +1,11 @@
 #include "backend.hpp"
 
-#include <cassert>
-
 #include <algorithm>
 #include <ranges>
 #include <span>
 #include <utility>
+
+#include <gsl/assert>
 
 #include <range/v3/view/concat.hpp>
 
@@ -16,8 +16,8 @@ namespace {
 auto handlers_data_view(
     std::vector<std::shared_ptr<ublk::IRWHandler>> const &hs,
     uint64_t hid_to_skip, size_t hid_first, size_t hs_nr) noexcept {
-  assert(hid_to_skip < hs.size());
-  assert(hid_first + hs_nr < hs.size());
+  Expects(hid_to_skip < hs.size());
+  Expects(hid_first + hs_nr < hs.size());
 
   auto const hs_first_part{std::span{hs.cbegin(), hid_to_skip}};
   auto const hs_last_part{std::span{hs.cbegin() + hid_to_skip + 1, hs.cend()}};
@@ -38,12 +38,12 @@ backend::backend(
     std::function<uint64_t(uint64_t stripe_id)> stripe_id_to_parity_id)
     : hs_(std::move(hs)),
       stripe_id_to_parity_id_(std::move(stripe_id_to_parity_id)) {
-  assert(is_power_of_2(strip_sz));
-  assert(is_multiple_of(strip_sz, kAlignmentRequiredMin));
-  assert(!(hs_.size() < 3));
-  assert(std::ranges::all_of(
+  Ensures(is_power_of_2(strip_sz));
+  Ensures(is_multiple_of(strip_sz, kAlignmentRequiredMin));
+  Ensures(!(hs_.size() < 3));
+  Ensures(std::ranges::all_of(
       hs_, [](auto const &h) { return static_cast<bool>(h); }));
-  assert(stripe_id_to_parity_id_);
+  Ensures(stripe_id_to_parity_id_);
 
   auto cfg = mm::make_unique_aligned<struct static_cfg>(
       hardware_destructive_interference_size);
@@ -56,8 +56,8 @@ backend::backend(
 
 int backend::data_read(uint64_t stripe_id_from,
                        std::shared_ptr<read_query> rq) noexcept {
-  assert(!rq->buf().empty());
-  assert(rq->offset() < static_cfg_->stripe_data_sz);
+  Expects(!rq->buf().empty());
+  Expects(rq->offset() < static_cfg_->stripe_data_sz);
 
   auto stripe_id{stripe_id_from};
   auto stripe_offset{rq->offset()};
@@ -74,7 +74,7 @@ int backend::data_read(uint64_t stripe_id_from,
     };
 
     auto const strip_parity_id{stripe_id_to_strip_parity_id(stripe_id)};
-    assert(strip_parity_id < hs_.size());
+    Ensures(strip_parity_id < hs_.size());
 
     auto const hs{
         handlers_data_view(hs_, strip_parity_id, strip_id_first,
@@ -95,7 +95,7 @@ int backend::data_read(uint64_t stripe_id_from,
       chunk_sz -= sq_sz;
       strip_offset = 0;
     }
-    assert(0 == chunk_sz);
+    Ensures(0 == chunk_sz);
   }
 
   return 0;
@@ -103,11 +103,11 @@ int backend::data_read(uint64_t stripe_id_from,
 
 int backend::parity_read(uint64_t stripe_id,
                          std::shared_ptr<read_query> rq) noexcept {
-  assert(!rq->buf().empty());
-  assert(!(rq->offset() + rq->buf().size() > static_cfg_->strip_sz));
+  Expects(!rq->buf().empty());
+  Expects(!(rq->offset() + rq->buf().size() > static_cfg_->strip_sz));
 
   auto const strip_parity_id{stripe_id_to_strip_parity_id(stripe_id)};
-  assert(strip_parity_id < hs_.size());
+  Ensures(strip_parity_id < hs_.size());
 
   return hs_[strip_parity_id]->submit(
       rq->subquery(0, std::min(static_cfg_->strip_sz, rq->buf().size()),
@@ -117,12 +117,12 @@ int backend::parity_read(uint64_t stripe_id,
 int backend::stripe_write(uint64_t stripe_id_at,
                           std::shared_ptr<write_query> wqd,
                           std::shared_ptr<write_query> wqp) noexcept {
-  assert(wqd);
-  assert(!wqd->buf().empty());
-  assert(!(wqd->offset() + wqd->buf().size() > static_cfg_->stripe_data_sz));
-  assert(wqp);
-  assert(!wqp->buf().empty());
-  assert(!(wqp->offset() + wqp->buf().size() > static_cfg_->strip_sz));
+  Expects(wqd);
+  Expects(!wqd->buf().empty());
+  Expects(!(wqd->offset() + wqd->buf().size() > static_cfg_->stripe_data_sz));
+  Expects(wqp);
+  Expects(!wqp->buf().empty());
+  Expects(!(wqp->offset() + wqp->buf().size() > static_cfg_->strip_sz));
 
   auto const strip_id_first{wqd->offset() / static_cfg_->strip_sz};
   auto const strip_id_last{
@@ -130,7 +130,7 @@ int backend::stripe_write(uint64_t stripe_id_at,
   };
 
   auto const strip_parity_id{stripe_id_to_strip_parity_id(stripe_id_at)};
-  assert(strip_parity_id < hs_.size());
+  Ensures(strip_parity_id < hs_.size());
 
   auto const hs{
       handlers_data_view(hs_, strip_parity_id, strip_id_first,
@@ -151,7 +151,7 @@ int backend::stripe_write(uint64_t stripe_id_at,
     wb += sq_sz;
     strip_offset = 0;
   }
-  assert(!(wb < wqd->buf().size()));
+  Ensures(!(wb < wqd->buf().size()));
 
   auto new_wqp{
       wqp->subquery(0, wqp->buf().size(),

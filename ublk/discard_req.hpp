@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
-
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include <linux/ublkdrv/cmd.h>
 
@@ -26,7 +26,7 @@ public:
       ublkdrv_cmd const &cmd,
       std::function<void(discard_req const &)> &&completer = {}) noexcept
       : req(cmd), completer_(std::move(completer)) {
-    assert(UBLKDRV_CMD_OP_DISCARD == ublkdrv_cmd_get_op(&req::cmd()));
+    Ensures(UBLKDRV_CMD_OP_DISCARD == ublkdrv_cmd_get_op(&req::cmd()));
   }
   ~discard_req() noexcept override {
     static_assert(std::is_nothrow_destructible_v<req>);

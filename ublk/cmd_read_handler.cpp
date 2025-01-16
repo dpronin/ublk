@@ -1,10 +1,11 @@
 #include "cmd_read_handler.hpp"
 
-#include <cassert>
 #include <cstddef>
 
 #include <memory>
 #include <utility>
+
+#include <gsl/assert>
 
 #include <linux/ublkdrv/cmd.h>
 
@@ -15,11 +16,11 @@ namespace ublk {
 
 CmdReadHandler::CmdReadHandler(std::shared_ptr<IRDQSubmitter> reader)
     : reader_(std::move(reader)) {
-  assert(reader_);
+  Ensures(reader_);
 }
 
 int CmdReadHandler::handle(std::shared_ptr<read_req> req) noexcept {
-  assert(req);
+  Expects(req);
   auto *p_req = req.get();
   return for_each_celld(
       ublkdrv_cmd_read_get_offset(&p_req->cmd()),

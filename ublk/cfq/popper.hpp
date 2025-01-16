@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cassert>
-
 #include <optional>
 #include <span>
 #include <type_traits>
+
+#include <gsl/assert>
 
 #include "utils/align.hpp"
 #include "utils/concepts.hpp"
@@ -40,7 +40,7 @@ public:
     if (auto const ct{__atomic_load_n(this->pt_.get(), __ATOMIC_ACQUIRE)};
         ct != ch) [[likely]] {
 
-      assert(ch < this->capacity_full());
+      Expects(ch < this->capacity_full());
       v = this->items_[ch];
       __atomic_store_n(this->ph_.get(), (ch + 1) % this->capacity_full(),
                        __ATOMIC_RELEASE);

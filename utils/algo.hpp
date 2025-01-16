@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 
 #include <algorithm>
@@ -10,6 +9,7 @@
 #include <type_traits>
 
 #include <eve/module/algo.hpp>
+#include <gsl/assert>
 
 #include "concepts.hpp"
 #include "span.hpp"
@@ -22,7 +22,7 @@ namespace detail {
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void copy_stl(std::span<T const> from, std::span<T> to) noexcept {
-  assert(!(from.size() > to.size()));
+  Expects(!(from.size() > to.size()));
   if constexpr (is_byte<T>) {
     if (is_aligned_to(reinterpret_cast<uintptr_t>(from.data()),
                       sizeof(uint64_t)) &&
@@ -59,7 +59,7 @@ void copy_stl(std::span<T const> from, std::span<T> to) noexcept {
 template <typename T>
   requires std::integral<T> || is_byte<T>
 void copy_eve(std::span<T const> from, std::span<T> to) noexcept {
-  assert(!(from.size() > to.size()));
+  Expects(!(from.size() > to.size()));
   if constexpr (std::is_same_v<T, std::byte>)
     eve::algo::copy(to_span_of<uint8_t const>(from), to_span_of<uint8_t>(to));
   else

@@ -15,6 +15,7 @@ target_link_libraries(ublk_def PUBLIC
 
 target_link_libraries(ublk_def PUBLIC
     Boost::system
+    Microsoft.GSL::GSL
 )
 
 target_compile_definitions(ublk_def PUBLIC

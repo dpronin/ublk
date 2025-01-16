@@ -18,6 +18,7 @@ target_include_directories(ublk_mm PUBLIC ${CMAKE_CURRENT_LIST_DIR}/..)
 target_link_libraries(ublk_mm PUBLIC
     ublk::utils
     ublk::sys
+    Microsoft.GSL::GSL
 )
 
 set_target_properties(ublk_mm PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cassert>
 #include <cerrno>
 
 #include <memory>
+
+#include <gsl/assert>
 
 #include <boost/sml.hpp>
 
@@ -42,7 +43,7 @@ struct transition_table {
         *"online"_s +
             event<ev::rq> /
                 [](ev::rq const &e, ctx &ctx, back::process<ev::fail> process) {
-                  assert(ctx.be);
+                  Expects(ctx.be);
                   e.r = ctx.be->process(e.rq);
                   if (0 != e.r) [[unlikely]] {
                     process(ev::fail{});
@@ -51,7 +52,7 @@ struct transition_table {
         "online"_s +
             event<ev::wq> /
                 [](ev::wq const &e, ctx &ctx, back::process<ev::fail> process) {
-                  assert(ctx.be);
+                  Expects(ctx.be);
                   e.r = ctx.be->process(e.wq);
                   if (0 != e.r) [[unlikely]] {
                     process(ev::fail{});
