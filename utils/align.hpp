@@ -1,5 +1,7 @@
 #pragma once
 
+#include <new>
+
 #ifndef __cpp_lib_hardware_interference_size
 
 #include <cstddef>
