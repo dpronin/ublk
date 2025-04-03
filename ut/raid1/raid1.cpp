@@ -97,8 +97,7 @@ TEST_P(RAID1, TestWriting) {
   /* clang-format off */
   for (auto const &[h, storage_span] : std::views::zip(std::views::all(hs), storage_spans)) {
     EXPECT_CALL(*h, submit(Matcher<std::shared_ptr<write_query>>(NotNull())))
-        .Times(1)
-        .WillRepeatedly(ut::make_inmem_writer(storage_span));
+        .WillOnce(ut::make_inmem_writer(storage_span));
   }
   /* clang-format on */
 
